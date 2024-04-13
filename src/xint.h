@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #define XINT_INIT_VAL { 0, 0, NULL };
+
 typedef uint32_t xword_t;
 
 struct xint_s
@@ -25,6 +26,8 @@ extern "C"
 
 void xint_init(xint_t u, int capacity);
 void xint_delete(xint_t u);
+
+void xint_add(xint_t w, xint_t u, xint_t v);
 
 #ifdef __cplusplus
 }
