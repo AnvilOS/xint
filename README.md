@@ -1,2 +1,2 @@
 # xint
-A multiple-precision arithmetic library
+An embeddable multiple-precision arithmetic library
