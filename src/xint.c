@@ -2,6 +2,7 @@
 #include "xint.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
@@ -44,6 +45,31 @@ void xint_mul(xint_t w, xint_t u, xint_t v)
 {
     w->size = u->size + v->size;
     x_mul(w->data, u->data, u->size, v->data, v->size);
+}
+
+static void resize(xint_t x, size_t new_size)
+{
+    if (new_size > x->size)
+    {
+        if (new_size > x->capacity)
+        {
+            if (x->data)
+            {
+                x->capacity = new_size;
+                x->data = realloc(x->data, sizeof(uint32_t) * x->capacity);
+                // Clear the new words XXX: can we get rid of this or make it an option?
+                memset(&x->data[x->size], 0, sizeof(uint32_t) * (new_size - x->size));
+            }
+            else
+            {
+                x->capacity = new_size<20?20:new_size;
+                x->data = malloc(sizeof(uint32_t) * x->capacity);
+                // Clear the new words XXX: can we get rid of this or make it an option?
+                memset(&x->data[x->size], 0, sizeof(uint32_t) * (new_size - x->size));
+            }
+        }
+    }
+    x->size = new_size;
 }
 
 static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n)
