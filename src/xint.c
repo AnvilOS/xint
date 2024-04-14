@@ -175,3 +175,21 @@ static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
     }
     return 0;
 }
+
+uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v)
+{
+    // Cut down version of alg M with a single xword for V
+    // We assume that U is m long and W is m+1 long.
+    // i.e. W is m+n long as per full alg M
+    xword_t k = 0;
+    for (size_t j=0; j<m; ++j)
+    {
+        // M4. [Multiply and add]
+        uint64_t t = (uint64_t)U[j] * v + k;
+        W[j] = (xword_t)t;
+        k = t >> 32;
+        // M5. [Loop on i]
+    }
+    W[m] = k;
+    return 0;
+}
