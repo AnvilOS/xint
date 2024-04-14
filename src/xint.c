@@ -4,11 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n);
-static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
-static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
+static void resize(xint_t x, size_t new_size);
 
-void xint_init(xint_t u, int hint)
+static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n);
+static xword_t x_add_1(xword_t *W, xword_t *U, xword_t v, size_t n);
+static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
+static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
+static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
+static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v);
+
+void xint_init(xint_t u, size_t hint)
 {
     u->capacity = 0;
     u->size = 0;
@@ -29,6 +34,22 @@ void xint_delete(xint_t u)
     }
     u->capacity = 0;
     u->size = 0;
+}
+
+void xint_copy(xint_t u, const xint_t v)
+{
+    // Copy v to u
+    resize(u, v->size);
+    memcpy(u->data, v->data, u->size * sizeof(uint32_t));
+}
+
+void xint_swap(xint_t u, xint_t v)
+{
+    // Swap the internals of u and v
+    xint_t T;
+    *T = *u;
+    *u = *v;
+    *v = *T;
 }
 
 void xint_add(xint_t w, xint_t u, xint_t v)
