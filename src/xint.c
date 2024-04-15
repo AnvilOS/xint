@@ -76,7 +76,7 @@ int xint_add(xint_t w, xint_t u, xint_t v)
     return 0;
 }
 
-int xint_add_int(xint_t w, xint_t u, xword_t v)
+int xint_add_1(xint_t w, xint_t u, xword_t v)
 {
     size_t Un = u->size;
     xword_t k;
@@ -141,10 +141,87 @@ int xint_sub(xint_t w, xint_t u, xint_t v)
     return cmp;
 }
 
-void xint_mul(xint_t w, xint_t u, xint_t v)
+uint32_t xint_mul(xint_t w, const xint_t u, xint_t v)
 {
-    w->size = u->size + v->size;
-    x_mul(w->data, u->data, u->size, v->data, v->size);
+    if (v->size == 0 || u->size == 0)
+    {
+        w->size = 0;
+        return 0;
+    }
+    
+    size_t Un = u->size;
+    size_t Vn = v->size;
+    
+    resize(w, Un + Vn);
+    
+    xword_t *U = u->data;
+    xword_t *V = v->data;
+    xword_t *W = w->data;
+    
+    if (Vn == 1)
+    {
+        x_mul_1(W, U, Un, V[0]);
+        trim_zeroes(w);
+        return 0;
+    }
+    
+    if (Un == 1)
+    {
+        x_mul_1(W, V, Vn, U[0]);
+        trim_zeroes(w);
+        return 0;
+    }
+    
+    // As pointed out by Knuth, algorithm M can cope with V[j] being in the same
+    // location as W[j+n]. In other words, V can be copied to the upper words
+    // of W as long as there is zeroed space at the bottom of W to hold Un words
+    if (w == v)
+    {
+        // Move V to the top of W - in reverse because there may be overlap
+        for (int i=Vn-1; i>=0; --i)
+        {
+            W[i+Un] = V[i];
+        }
+        // Adjust the V pointer
+        V = W + Un;
+    }
+    else if (w == u)
+    {
+        // Swap the references to U and V - note that the u passed in is never actually
+        // modified. We are just renaming the arguments before running the algorithm
+        size_t t = Un;
+        Un = Vn;
+        Vn = t;
+        xword_t *T = U;
+        U = V;
+        V = T;
+        
+        // Move V to the top of W - in reverse because there may be overlap
+        for (int i=Vn-1; i>=0; --i)
+        {
+            W[i+Un] = V[i];
+        }
+        // Adjust the V pointer
+        V = W + Un;
+    }
+    
+    x_mul(W, U, Un, V, Vn);
+    trim_zeroes(w);
+    return 0;
+}
+
+uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
+{
+    if (n == 0)
+    {
+        w->size = 0;
+        return 0;
+    }
+    size_t Xn = x->size;
+    resize(w, Xn + 1);
+    x_mul_1(w->data, x->data, Xn, n);
+    trim_zeroes(w);
+    return 0;
 }
 
 static void trim_zeroes(xint_t u)

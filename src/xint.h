@@ -29,7 +29,7 @@ void xint_delete(xint_t u);
 
 int xint_add(xint_t w, xint_t u, xint_t v);
 int xint_sub(xint_t w, xint_t u, xint_t v);
-void xint_mul(xint_t w, xint_t u, xint_t v);
+uint32_t xint_mul(xint_t w, const xint_t u, xint_t v);
 
 #ifdef __cplusplus
 }
