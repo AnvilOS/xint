@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MIN(a, b) ((a)<(b)?(a):(b))
+#define MAX(a, b) ((a)>(b)?(a):(b))
+
+static void trim_zeroes(xint_t u);
 static void resize(xint_t x, size_t new_size);
 
 static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n);
@@ -52,20 +56,108 @@ void xint_swap(xint_t u, xint_t v)
     *v = *T;
 }
 
-void xint_add(xint_t w, xint_t u, xint_t v)
+int xint_add(xint_t w, xint_t u, xint_t v)
 {
-    x_add(w->data, u->data, v->data, u->size);
+    size_t Un = u->size;
+    size_t Vn = v->size;
+    xword_t k;
+
+    resize(w, MAX(Un, Vn));
+    size_t part1_len = MIN(Un, Vn);
+    size_t part2_len = Un>Vn?Un-Vn:Vn-Un;
+    k = x_add(w->data, u->data, v->data, part1_len);
+    k = x_add_1(w->data+part1_len, u->data+part1_len, k, part2_len);
+    // Make sure W is long enough for the carry
+    if (k)
+    {
+        resize(w, w->size + 1);
+        w->data[w->size - 1] = k;
+    }
+    return 0;
 }
 
-void xint_sub(xint_t w, xint_t u, xint_t v)
+int xint_add_int(xint_t w, xint_t u, xword_t v)
 {
-    x_sub(w->data, u->data, v->data, u->size);
+    size_t Un = u->size;
+    xword_t k;
+
+    resize(w, Un);
+    k = x_add_1(w->data, u->data, v, w->size);
+    if (k)
+    {
+        resize(w, w->size + 1);
+        w->data[w->size - 1] = k;
+    }
+    return 0;
+}
+
+int xint_cmp(xint_t u, xint_t v)
+{
+    if (u == v)
+    {
+        return 0;
+    }
+    if (u->size != v->size)
+    {
+        return u->size < v->size ? -1 : 1;
+    }
+    for (int j=u->size-1; j>=0; --j)
+    {
+        if (u->data[j] != v->data[j])
+        {
+            return u->data[j] < v->data[j] ? -1 : 1;
+        }
+    }
+    return 0;
+}
+
+int xint_sub(xint_t w, xint_t u, xint_t v)
+{
+    size_t Un = u->size;
+    size_t Vn = v->size;
+    uint32_t b;
+
+    int cmp = xint_cmp(u, v);
+    switch (cmp)
+    {
+        case 0: // U == V
+            w->size = 0;
+            return 0;
+            
+        case -1: // U < V
+            resize(w, Vn);
+            b = x_sub(w->data, v->data, u->data, Un);
+            b = x_sub_1(w->data+Un, v->data+Un, b, Vn-Un);
+            break;
+
+        case 1: // U > V
+            resize(w, Un);
+            b = x_sub(w->data, u->data, v->data, Vn);
+            b = x_sub_1(w->data+Vn, u->data+Vn, b, Un-Vn);
+            break;
+    }
+    //assert(b == 0);
+    trim_zeroes(w);
+    return cmp;
 }
 
 void xint_mul(xint_t w, xint_t u, xint_t v)
 {
     w->size = u->size + v->size;
     x_mul(w->data, u->data, u->size, v->data, v->size);
+}
+
+static void trim_zeroes(xint_t u)
+{
+    for (int j=u->size-1; j>=0; --j)
+    {
+        if (u->data[j] != 0)
+        {
+            u->size = j + 1;
+            return;
+        }
+    }
+    u->size = 0;
 }
 
 static void resize(xint_t x, size_t new_size)
@@ -197,7 +289,7 @@ static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
     return 0;
 }
 
-uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v)
+static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v)
 {
     // Cut down version of alg M with a single xword for V
     // We assume that U is m long and W is m+1 long.

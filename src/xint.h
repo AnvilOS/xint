@@ -24,11 +24,11 @@ extern "C"
 {
 #endif // __cplusplus
 
-void xint_init(xint_t u, int capacity);
+void xint_init(xint_t u, size_t capacity);
 void xint_delete(xint_t u);
 
-void xint_add(xint_t w, xint_t u, xint_t v);
-void xint_sub(xint_t w, xint_t u, xint_t v);
+int xint_add(xint_t w, xint_t u, xint_t v);
+int xint_sub(xint_t w, xint_t u, xint_t v);
 void xint_mul(xint_t w, xint_t u, xint_t v);
 
 #ifdef __cplusplus
