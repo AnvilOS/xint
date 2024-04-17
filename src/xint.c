@@ -24,8 +24,9 @@ static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
 static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v);
+static uint32_t xint_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v);
-static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *U, int m, const xword_t *V, int n);
+static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 
 void xint_init(xint_t u, size_t hint)
 {
@@ -78,7 +79,7 @@ void xint_swap(xint_t u, xint_t v)
     *v = *T;
 }
 
-int xint_add(xint_t w, xint_t u, xint_t v)
+int xint_add(xint_t w, const xint_t u, const xint_t v)
 {
     size_t Un = u->size;
     size_t Vn = v->size;
@@ -113,7 +114,7 @@ int xint_add_1(xint_t w, xint_t u, xword_t v)
     return 0;
 }
 
-int xint_cmp(xint_t u, xint_t v)
+int xint_cmp(const xint_t u, const xint_t v)
 {
     if (u == v)
     {
@@ -133,7 +134,7 @@ int xint_cmp(xint_t u, xint_t v)
     return 0;
 }
 
-int xint_sub(xint_t w, xint_t u, xint_t v)
+int xint_sub(xint_t w, const xint_t u, const xint_t v)
 {
     size_t Un = u->size;
     size_t Vn = v->size;
@@ -163,7 +164,7 @@ int xint_sub(xint_t w, xint_t u, xint_t v)
     return cmp;
 }
 
-uint32_t xint_mul(xint_t w, const xint_t u, xint_t v)
+uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v)
 {
     if (v->size == 0 || u->size == 0)
     {
@@ -300,7 +301,7 @@ uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
     resize(r, r->size + 1);
     r->data[r->size - 1] = 0;
 
-    x_div(q->data, r->data, u->data, m, v->data, n);
+    x_div(q->data, r->data, v->data, m, n);
 
     // D8. Un-normalise
     if (norm)
@@ -335,7 +336,7 @@ uint32_t xint_div_1(xint_t quot, xint_t x, uint32_t v)
     return r;
 }
 
-uint32_t xint_lshift(xint_t y, xint_t x, int numbits)
+uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
 {
     if (x->size == 0)
     {
@@ -376,7 +377,7 @@ uint32_t xint_lshift(xint_t y, xint_t x, int numbits)
     return 0;
 }
 
-uint32_t xint_rshift(xint_t y, xint_t x, int numbits)
+uint32_t xint_rshift(xint_t y, const xint_t x, int numbits)
 {
     if (x->size == 0)
     {
@@ -579,32 +580,32 @@ static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
     // m xwords of W will be zeroed
 
     // M1. [Initialisation.] - clear the bottom part of W
-    for (size_t i=0; i<m; ++i)
-    {
-        W[i] = 0;
-    }
-    
-    for (size_t j=0; j<n; ++j)
+    x_mul_1(W, U, m, V[0]);
+    for (size_t j=1; j<n; ++j)
     {
         // M2. [We skip the optional check for zero multiplier]
-        
-        // M3. [Initialise i (and k)]
-        xword_t k = 0;
-        for (size_t i=0; i<m; ++i)
-        {
-            // M4. [Multiply and add]
-            uint64_t t = (uint64_t)U[i] * V[j] + W[i + j] + k;
-            W[i + j] = (xword_t)t;
-            k = t >> 32;
-            // M5. [Loop on i]
-        }
-        W[j + m] = k;
+        W[j + m] = xint_mul_add_1(W+j, U, m, V[j]);
         // M6. [Loop on j]
     }
     return 0;
 }
 
-static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
+static uint32_t xint_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
+{
+    // M3. [Initialise i (and k)]
+    xword_t k = 0;
+    for (size_t i=0; i<m; ++i)
+    {
+        // M4. [Multiply and add]
+        uint64_t t = (uint64_t)U[i] * v + W[i] + k;
+        W[i] = (xword_t)t;
+        k = t >> 32;
+        // M5. [Loop on i]
+    }
+    return k;
+}
+
+static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
 {
     uint32_t b = 0;
     for (int i=0; i<n; ++i)
@@ -637,7 +638,7 @@ static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v)
     return 0;
 }
 
-static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *U, int m, const xword_t *V, int n)
+static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
 {
     // u[0] to u[m+n-1]
     // v[0] to v[n-1]
@@ -665,7 +666,7 @@ static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *U, int m, const xwo
         // D4. [Multiply and subtract.]
         // Replace u(j+n to j) by u(j+n to j) - qhat * v(n-1 to 0)
         // Since r is u we have r = r - qhat * v
-        uint32_t b = x_sub_mul_1(R+j, V, n, (uint32_t)qhat);
+        uint32_t b = x_mul_sub_1(R+j, V, n, (uint32_t)qhat);
         uint32_t tmp = R[j+n] - b;
         assert(tmp == 0 || tmp == -1);
         b = tmp > R[j+n] ? 1 : 0;
