@@ -27,6 +27,7 @@ static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static uint32_t xint_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
+static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
 
 void xint_init(xint_t u, size_t hint)
 {
@@ -254,25 +255,24 @@ uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
     // v[0] to v[n-1]
     // q[0] to q[m]
     // r[0] to r[n-1]
-    
+    // Pick off the easy ones
     if (u->size == 0)
     {
         q->size = 0;
+        r->size = 0;
+        return 0;
+    }
+
+    if (v->size <= 1)
+    {
+        // Use the algorithm from exercise 16
+        resize(r, 1);
+        xint_div_1(q, r->data, u, v->data[0]);
         return 0;
     }
 
     int n = v->size;
     int m = u->size - v->size;
-
-    if (v->size == 1)
-    {
-        // Use the algorithm from exercise 16
-        uint32_t a = xint_div_1(q, u, v->data[0]);
-        resize(q, 1);
-        q->data[0] = a;
-        trim_zeroes(r);
-        return 0;
-    }
 
     // D1. [Normalise.]
     // Use Knuth's suggestion of a power of 2 for d. For v1 to be > b/2
@@ -318,22 +318,22 @@ uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
     return 0;
 }
 
-uint32_t xint_div_1(xint_t quot, const xint_t x, uint32_t v)
+int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v)
 {
     // This is from Knuth's recommended exercise 16
-    // S1. [Set r = 0, j = n - 1]
-    uint32_t r = 0;
-    resize(quot, x->size);
-    for (int j=x->size-1; j>=0; --j)
+    if (u->size == 0)
     {
-        // S2. [Set wj = (rb + uj) / v , r = (rb + uj) % v
-        uint64_t tmp = (uint64_t)r * B + x->data[j];
-        quot->data[j] = (uint32_t)(tmp / v);
-        r = tmp % v;
-        // S3. [Decrease j by 1, and return to S2]
+        q->size = 0;
+        *r = 0;
+        return 0;
     }
-    trim_zeroes(quot);
-    return r;
+    if (v == 0)
+    {
+        return -1;
+    }
+    x_div_1(q->data, r, u->data, v, u->size);
+    trim_zeroes(q);
+    return 0;
 }
 
 uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
@@ -640,10 +640,15 @@ static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v)
 
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
 {
-    // u[0] to u[m+n-1]
-    // v[0] to v[n-1]
-    // q[0] to q[m]
-    // r[0] to r[n-1]
+    // As per Knuth's algorithm D
+    // Assumptions
+    // U and R are co-located. This should be done by the caller during
+    // normalisation or explicitly as a copy.
+    // When the algorithn completes only the lower n-1 words will be valid
+    // The caller will need to de-normalise R and V
+    // Q[0] to Q[m]
+    // R[0] to R[m+n-1]
+    // V[0] to V[n-1]
 
     // D2. [Initialise j.]
     for (int j=m; j>=0; --j)
@@ -683,6 +688,22 @@ static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
             assert(b - k == 0);
         }
         // D7. Loop on j
+    }
+    return 0;
+}
+
+static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m)
+{
+    // Renamed Knuth's W to Q
+    // S1. [Set r = 0, j = n - 1]
+    *R = 0;
+    for (int j=m; j>=0; --j)
+    {
+        // S2. [Set wj = (r * B + uj) / v , r = (r * B + uj) % v
+        uint64_t tmp = (uint64_t)*R * B + U[j];
+        Q[j] = (uint32_t)(tmp / V);
+        *R = tmp % V;
+        // S3. [Decrease j by 1, and return to S2]
     }
     return 0;
 }
