@@ -3,15 +3,21 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define MIN(a, b) ((a)<(b)?(a):(b))
 #define MAX(a, b) ((a)>(b)?(a):(b))
 
+#define B 0x100000000ULL
+
 static void trim_zeroes(xint_t u);
+static int get_highest_word(xint_t x);
+static int get_highest_bit(uint32_t word);
 static void resize(xint_t x, size_t new_size);
 
 static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
+
 static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_add_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
@@ -40,6 +46,18 @@ void xint_delete(xint_t u)
     }
     u->capacity = 0;
     u->size = 0;
+}
+
+int xint_is_zero(xint_t x)
+{
+    for (int j=0; j<x->size; ++j)
+    {
+        if (x->data[j])
+        {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void xint_copy(xint_t u, const xint_t v)
@@ -226,6 +244,148 @@ uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
     return 0;
 }
 
+uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
+{
+    // As per Knuth's algorithm D
+    // u[0] to u[m+n-1]
+    // v[0] to v[n-1]
+    // q[0] to q[m]
+    // r[0] to r[n-1]
+    
+    if (u->size == 0)
+    {
+        q->size = 0;
+        return 0;
+    }
+
+    int n = v->size;
+    int m = u->size - v->size;
+
+    if (v->size == 1)
+    {
+        // Use the algorithm from exercise 16
+        uint32_t a = xint_div_1(q, u, v->data[0]);
+        resize(q, 1);
+        q->data[0] = a;
+        trim_zeroes(r);
+        return 0;
+    }
+
+    // D1. [Normalise.]
+    // Use Knuth's suggestion of a power of 2 for d. For v1 to be > b/2
+    // we need v1 to have its top bit set.
+
+    // Find the highest bit in the highest word in v that contains data
+    int highest_word = get_highest_word(v);
+    int highest_bit = get_highest_bit(v->data[highest_word]);
+
+    int norm = 0;
+    if ((v->data[v->size-1] & 0x80000000) == 0)
+    {
+        // Move both u and v to the left so that the top bit of V is set
+        // Note that we use r for normalised u from now on
+        xint_lshift(r, u, 31 - highest_bit); // r may sometimes grow
+        xint_lshift(v, v, 31 - highest_bit); // v will never grow
+        norm = 1;
+    }
+    else
+    {
+        xint_copy(r, u); // r may sometimes grow
+    }
+
+    resize(q, m + 1);
+
+    resize(r, r->size + 1);
+    r->data[r->size - 1] = 0;
+
+    uint32_t *Q = q->data;
+    uint32_t *R = r->data;
+    uint32_t *V = v->data;
+
+    // D2. [Initialise j.]
+    for (int j=m; j>=0; --j)
+    {
+        // D3. [Calculate q^]
+        uint64_t numer = (uint64_t)R[j+n] * B + R[j+n-1];
+        uint32_t denom = V[n-1];
+        uint64_t qhat = numer / denom;
+        uint64_t rhat = numer % denom;
+        while (qhat >= B || (qhat * V[n-2] > B * rhat + R[j+n-2]))
+        {
+            --qhat;
+            rhat += V[n-1];
+            if (rhat >= B)
+            {
+                break;
+            }
+        }
+
+        // D4. [Multiply and subtract.]
+        // Replace u(j+n to j) by u(j+n to j) - qhat * v(n-1 to 0)
+        // Since r is u we have r = r - qhat * v
+        uint32_t b = 0;
+        for (int i=0; i<n; ++i)
+        {
+            uint64_t prod = qhat * V[i];
+            uint32_t tmp = R[j+i] - b;
+            b = tmp > R[j+i] ? 1 : 0;
+            R[j+i] = tmp - (uint32_t)prod;
+            b += R[j+i] > tmp ? 1 : 0;
+            b += prod >> 32;
+        }
+        uint32_t tmp = R[j+n] - b;
+        assert(tmp == 0 || tmp == -1);
+        b = tmp > R[j+n] ? 1 : 0;
+        assert(b == 0 || b == 1);
+
+        Q[j] = (uint32_t)qhat;
+
+        // D5. Test remainder
+        if (b)
+        {
+            // D6. [Add back.]
+            // Decrease Qj by one
+            --Q[j];
+            // Add V(Vn-1 to 0) to U(Vn+j to j)
+            uint32_t k = x_add(R+j, R+j, V, n);
+            assert(b - k == 0);
+        }
+        // D7. Loop on j
+    }
+
+    // D8. Un-normalise
+    if (norm)
+    {
+        xint_rshift(v, v, 31 - highest_bit);
+        xint_rshift(r, r, 31 - highest_bit);
+    }
+    r->size = n;
+
+    trim_zeroes(q);
+    trim_zeroes(r);
+    trim_zeroes(v);
+
+    return 0;
+}
+
+uint32_t xint_div_1(xint_t quot, xint_t x, uint32_t v)
+{
+    // This is from Knuth's recommended exercise 16
+    // S1. [Set r = 0, j = n - 1]
+    uint32_t r = 0;
+    resize(quot, x->size);
+    for (int j=x->size-1; j>=0; --j)
+    {
+        // S2. [Set wj = (rb + uj) / v , r = (rb + uj) % v
+        uint64_t tmp = (uint64_t)r * B + x->data[j];
+        quot->data[j] = (uint32_t)(tmp / v);
+        r = tmp % v;
+        // S3. [Decrease j by 1, and return to S2]
+    }
+    trim_zeroes(quot);
+    return r;
+}
+
 uint32_t xint_lshift(xint_t y, xint_t x, int numbits)
 {
     if (x->size == 0)
@@ -322,6 +482,27 @@ static void trim_zeroes(xint_t u)
         }
     }
     u->size = 0;
+}
+
+static int get_highest_word(xint_t x)
+{
+    for (int j=x->size-1; j>=0; --j)
+    {
+        if (x->data[j])
+        {
+            return j;
+        }
+    }
+    return -1;
+}
+
+static int get_highest_bit(uint32_t word)
+{
+    if (word)
+    {
+        return 31 - __builtin_clz(word);
+    }
+    return -1;
 }
 
 static void resize(xint_t x, size_t new_size)
