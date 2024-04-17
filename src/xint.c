@@ -10,6 +10,8 @@
 static void trim_zeroes(xint_t u);
 static void resize(xint_t x, size_t new_size);
 
+static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
+static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
 static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_add_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
@@ -224,6 +226,91 @@ uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
     return 0;
 }
 
+uint32_t xint_lshift(xint_t y, xint_t x, int numbits)
+{
+    if (x->size == 0)
+    {
+        return 0;
+    }
+
+    if (numbits == 0)
+    {
+        if (y != x)
+        {
+            xint_copy(y, x);
+        }
+        return 0;
+    }
+
+    // Calculate the shift
+    int shift_words = numbits / 32;
+    int shift_bits = numbits % 32;
+
+    resize(y, x->size + shift_words + (shift_bits?1:0));
+
+    uint32_t *X = x->data;
+    uint32_t *Y = y->data;
+    
+    if (shift_bits == 0)
+    {
+        for (int j=y->size-1; j>=shift_words; --j)
+        {
+            Y[j] = X[j - shift_words];
+        }
+    }
+    else
+    {
+        x_lshift(Y + shift_words, X, y->size - shift_words, shift_bits);
+    }
+    memset(Y, 0, shift_words * sizeof(uint32_t));
+    trim_zeroes(y);
+    return 0;
+}
+
+uint32_t xint_rshift(xint_t y, xint_t x, int numbits)
+{
+    if (x->size == 0)
+    {
+        return 0;
+    }
+    // Calculate the shift
+    int shift_words = numbits / 32;
+    int shift_bits = numbits % 32;
+
+    // If all of x will be shifted out ...
+    if (x->size <= shift_words)
+    {
+        // set y to 0
+        y->size = 0;
+        return 0;
+    }
+    
+    uint32_t *X = x->data;
+    uint32_t *Y = y->data;
+    // We need y->size to be at least x->size - shift_words in size
+    // Note that if x and y are the same xint, resize
+    // won't be called and x->size won't change
+    if (y->size < x->size - shift_words)
+    {
+        resize(y, x->size - shift_words);
+    }
+    if (shift_bits == 0)
+    {
+        for (int j=0; j<x->size - shift_words; ++j)
+        {
+            y->data[j] = x->data[j + shift_words];
+        }
+    }
+    else
+    {
+        x_rshift(Y, X + shift_words, x->size - shift_words, shift_bits);
+    }
+    resize(y, x->size - shift_words);
+    trim_zeroes(y);
+
+    return 0;
+}
+
 static void trim_zeroes(xint_t u)
 {
     for (int j=u->size-1; j>=0; --j)
@@ -260,6 +347,27 @@ static void resize(xint_t x, size_t new_size)
         }
     }
     x->size = new_size;
+}
+
+static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
+{
+    Y[sz - 1] = X[sz - 2] >> (32 - shift_bits);
+    for (int j=sz-2; j>=1; --j)
+    {
+        Y[j] = (X[j] << shift_bits) | (X[j - 1] >> (32 - shift_bits));
+    }
+    Y[0] = X[0] << shift_bits;
+    return 0;
+}
+
+static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
+{
+    for (int j=0; j<sz - 1; ++j)
+    {
+        Y[j] = (X[j] >> shift_bits) | (X[j + 1] << (32 - shift_bits));
+    }
+    Y[sz - 1] = X[sz - 1] >> shift_bits;
+    return 0;
 }
 
 static xword_t x_add(xword_t *W, xword_t *U, xword_t *V, size_t n)
