@@ -318,7 +318,7 @@ uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
     return 0;
 }
 
-uint32_t xint_div_1(xint_t quot, xint_t x, uint32_t v)
+uint32_t xint_div_1(xint_t quot, const xint_t x, uint32_t v)
 {
     // This is from Knuth's recommended exercise 16
     // S1. [Set r = 0, j = n - 1]
@@ -667,9 +667,7 @@ static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
         // Replace u(j+n to j) by u(j+n to j) - qhat * v(n-1 to 0)
         // Since r is u we have r = r - qhat * v
         uint32_t b = x_mul_sub_1(R+j, V, n, (uint32_t)qhat);
-        uint32_t tmp = R[j+n] - b;
-        assert(tmp == 0 || tmp == -1);
-        b = tmp > R[j+n] ? 1 : 0;
+        b = b - R[j+n];
         assert(b == 0 || b == 1);
         
         Q[j] = (uint32_t)qhat;
