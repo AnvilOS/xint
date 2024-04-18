@@ -29,6 +29,7 @@ static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
 
+// Initialisation functions
 int xint_init(xint_t u, size_t reserve)
 {
     u->capacity = 0;
@@ -56,6 +57,7 @@ void xint_delete(xint_t u)
     u->size = 0;
 }
 
+// Utility functions
 int xint_copy(xint_t u, const xint_t v)
 {
     // Copy v to u
@@ -97,8 +99,11 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     size_t Un = u->size;
     size_t Vn = v->size;
     xword_t k;
-
-    resize(w, MAX(Un, Vn) + 1);
+    // This is the only failure point
+    if (resize(w, MAX(Un, Vn) + 1) == -1)
+    {
+        return -1;
+    }
     size_t part1_len = MIN(Un, Vn);
     size_t part2_len = Un>Vn?Un-Vn:Vn-Un;
     k = x_add(w->data, u->data, v->data, part1_len);
@@ -111,17 +116,19 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     return 0;
 }
 
-int xint_add_1(xint_t w, xint_t u, xword_t v)
+int xint_adda_1(xint_t w, const xint_t u, xword_t v)
 {
     size_t Un = u->size;
     xword_t k;
-
-    resize(w, Un);
-    k = x_add_1(w->data, u->data, v, w->size);
-    if (k)
+    // This is the only failure point
+    if (resize(w, Un + 1) == -1)
     {
-        resize(w, w->size + 1);
-        w->data[w->size - 1] = k;
+        return -1;
+    }
+    w->data[w->size - 1] = x_add_1(w->data, u->data, v, Un);
+    if (w->data[w->size - 1] == 0)
+    {
+        --w->size;
     }
     return 0;
 }
@@ -433,10 +440,7 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
 
     if (numbits == 0)
     {
-        if (y != x)
-        {
-            xint_copy(y, x);
-        }
+        xint_copy(y, x);
         return 0;
     }
 
