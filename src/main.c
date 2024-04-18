@@ -14,9 +14,9 @@ int main(int argc, const char * argv[])
     xword_t zdata[6];
     xint_t Z = { 6, 6, zdata };
     
-    xint_add(Z, X, Y);
+    xint_adda(Z, X, Y);
     printf("%d %d %d\n", zdata[2], zdata[1], zdata[0]);
-    xint_sub(Z, X, Y);
+    xint_suba(Z, X, Y);
     printf("%d %d %d\n", zdata[2], zdata[1], zdata[0]);
     xint_mul(Z, X, Y);
     printf("%d %d %d %d %d %d\n", zdata[5], zdata[4], zdata[3], zdata[2], zdata[1], zdata[0]);

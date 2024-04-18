@@ -13,7 +13,7 @@
 static void trim_zeroes(xint_t u);
 static int get_highest_word(xint_t x);
 static int get_highest_bit(uint32_t word);
-static void resize(xint_t x, size_t new_size);
+static int resize(xint_t x, size_t new_size);
 
 static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
@@ -29,16 +29,20 @@ static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
 
-void xint_init(xint_t u, size_t hint)
+int xint_init(xint_t u, size_t reserve)
 {
     u->capacity = 0;
     u->size = 0;
     u->data = NULL;
-    if (hint)
+    if (reserve)
     {
-        u->capacity = hint;
-        u->data = malloc(sizeof(uint32_t) * u->capacity);
+        u->capacity = reserve;
+        if ((u->data = malloc(sizeof(uint32_t) * u->capacity)) == NULL)
+        {
+            return -1;
+        }
     }
+    return 0;
 }
 
 void xint_delete(xint_t u)
@@ -50,6 +54,30 @@ void xint_delete(xint_t u)
     }
     u->capacity = 0;
     u->size = 0;
+}
+
+int xint_copy(xint_t u, const xint_t v)
+{
+    // Copy v to u
+    if (u == v)
+    {
+        return 0;
+    }
+    if (resize(u, v->size) == -1)
+    {
+        return -1;
+    }
+    memcpy(u->data, v->data, u->size * sizeof(uint32_t));
+    return 0;
+}
+
+void xint_swap(xint_t u, xint_t v)
+{
+    // Swap the internals of u and v
+    xint_t T;
+    *T = *u;
+    *u = *v;
+    *v = *T;
 }
 
 int xint_is_zero(xint_t x)
@@ -64,42 +92,21 @@ int xint_is_zero(xint_t x)
     return 1;
 }
 
-void xint_copy(xint_t u, const xint_t v)
-{
-    // Copy v to u
-    if (u == v)
-    {
-        return;
-    }
-    resize(u, v->size);
-    memcpy(u->data, v->data, u->size * sizeof(uint32_t));
-}
-
-void xint_swap(xint_t u, xint_t v)
-{
-    // Swap the internals of u and v
-    xint_t T;
-    *T = *u;
-    *u = *v;
-    *v = *T;
-}
-
-int xint_add(xint_t w, const xint_t u, const xint_t v)
+int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     size_t Un = u->size;
     size_t Vn = v->size;
     xword_t k;
 
-    resize(w, MAX(Un, Vn));
+    resize(w, MAX(Un, Vn) + 1);
     size_t part1_len = MIN(Un, Vn);
     size_t part2_len = Un>Vn?Un-Vn:Vn-Un;
     k = x_add(w->data, u->data, v->data, part1_len);
-    k = x_add_1(w->data+part1_len, u->data+part1_len, k, part2_len);
+    w->data[w->size - 1] = x_add_1(w->data+part1_len, u->data+part1_len, k, part2_len);
     // Make sure W is long enough for the carry
-    if (k)
+    if (w->data[w->size - 1] == 0)
     {
-        resize(w, w->size + 1);
-        w->data[w->size - 1] = k;
+    	    --w->size;
     }
     return 0;
 }
@@ -139,7 +146,71 @@ int xint_cmp(const xint_t u, const xint_t v)
     return 0;
 }
 
-int xint_sub(xint_t w, const xint_t u, const xint_t v)
+//void xint_set_size(xint u, int sz)
+//{
+//	u->size = u->size < 0 ? -sz : sz;
+//}
+//
+//void xint_get_size(xint u)
+//{
+//	return abs(u->size);
+//}
+//
+//void xint_negate(xint u)
+//{
+//	u->size = -u->size;
+//}
+//
+//void xint_abs(xint u)
+//{
+//	u->size = abs(u->size);
+//}
+//
+//void xint_set_neg(xint u, int sz)
+//{
+//	u->size = -abs(u->size);
+//}
+//
+//int add(xint_t W, xint_t U, xint_t V)
+//{
+//	add_sub(W, U, V, xint_is_pos(U), xint_is_pos(V));
+//}
+//
+//int sub(xint_t W, xint_t U, xint_t V)
+//{
+//	add_sub(W, U, V, xint_is_pos(U), !xint_is_pos(V));
+//}
+//
+//int addsub(xint_t W, xint_t U, xint_t V, int Upos, int Vpos)
+//{
+//	if (Upos == Vpos)
+//	{
+//		xint_adda(W, U, V);
+//		if (!Upos)
+//		{
+//			xint_neg(W);
+//		}
+//	}
+//	else
+//	{
+//		if (Upos)
+//		{
+//			if (xint_suba(W, U, V) < 0)
+//			{
+//				xint_neg(W);
+//			}
+//		}
+//		else
+//		{
+//			if (xint_suba(W, V, U) < 0)
+//			{
+//				xint_neg(W);
+//			}
+//		}
+//	}
+//}
+
+int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
     size_t Un = u->size;
     size_t Vn = v->size;
@@ -176,16 +247,16 @@ uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         w->size = 0;
         return 0;
     }
-    
+
     size_t Un = u->size;
     size_t Vn = v->size;
-    
+
     resize(w, Un + Vn);
-    
+
     xword_t *U = u->data;
     xword_t *V = v->data;
     xword_t *W = w->data;
-    
+
     if (Vn == 1)
     {
         W[Un] = x_mul_1(W, U, Un, V[0], 0);
@@ -223,7 +294,7 @@ uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         xword_t *T = U;
         U = V;
         V = T;
-        
+
         // Move V to the top of W - in reverse because there may be overlap
         for (int i=Vn-1; i>=0; --i)
         {
@@ -362,7 +433,10 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
 
     if (numbits == 0)
     {
-        xint_copy(y, x);
+        if (y != x)
+        {
+            xint_copy(y, x);
+        }
         return 0;
     }
 
@@ -469,7 +543,7 @@ static int get_highest_bit(uint32_t word)
     return -1;
 }
 
-static void resize(xint_t x, size_t new_size)
+static int resize(xint_t x, size_t new_size)
 {
     if (new_size > x->size)
     {
@@ -477,21 +551,33 @@ static void resize(xint_t x, size_t new_size)
         {
             if (x->data)
             {
+                void *new_mem = realloc(x->data, sizeof(uint32_t) * new_size);
+                if (new_mem == NULL)
+                {
+                    return -1;
+                }
                 x->capacity = new_size;
-                x->data = realloc(x->data, sizeof(uint32_t) * x->capacity);
+                x->data = new_mem;
                 // Clear the new words XXX: can we get rid of this or make it an option?
                 memset(&x->data[x->size], 0, sizeof(uint32_t) * (new_size - x->size));
             }
             else
             {
-                x->capacity = new_size<20?20:new_size;
-                x->data = malloc(sizeof(uint32_t) * x->capacity);
+                size_t new_capacity = new_size<20?20:new_size;
+                void *new_mem = malloc(sizeof(uint32_t) * new_capacity);
+                if (new_mem == NULL)
+                {
+                    return -1;
+                }
+                x->capacity = new_capacity;
+                x->data = new_mem;
                 // Clear the new words XXX: can we get rid of this or make it an option?
                 memset(&x->data[x->size], 0, sizeof(uint32_t) * (new_size - x->size));
             }
         }
     }
     x->size = new_size;
+    return 0;
 }
 
 static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
@@ -517,6 +603,7 @@ static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
 
 static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
+	// W[] = U[] + V[]
     // This function will work if any or all of the xints are
     // in the same place in memory. e.g. a = a + a will work
     // A1. [Initialise.]
@@ -540,6 +627,7 @@ static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
 {
+	// W[] = U[] + v
     xword_t k = v;
     for (size_t j=0; j<n; ++j)
     {
@@ -606,6 +694,7 @@ static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
 
 static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
 {
+	// W[] += U[] * v
     // M3. [Initialise i (and k)]
     xword_t k = 0;
     for (size_t i=0; i<m; ++i)
@@ -621,6 +710,7 @@ static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
 
 static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
 {
+	// W[] -= U[] * v
     uint32_t b = 0;
     for (int i=0; i<n; ++i)
     {
@@ -636,6 +726,7 @@ static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
 
 static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k)
 {
+	// W[] = U[] * v + k
     // Cut down version of alg M with a single xword for V
     // We assume that U is m long and W is m+1 long.
     // i.e. W is m+n long as per full alg M
@@ -679,16 +770,16 @@ static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
                 break;
             }
         }
-        
+
         // D4. [Multiply and subtract.]
         // Replace u(j+n to j) by u(j+n to j) - qhat * v(n-1 to 0)
         // Since r is u we have r = r - qhat * v
         uint32_t b = x_mul_sub_1(R+j, V, n, (uint32_t)qhat);
         b = b - R[j+n];
         assert(b == 0 || b == 1);
-        
+
         Q[j] = (uint32_t)qhat;
-        
+
         // D5. Test remainder
         if (b)
         {
