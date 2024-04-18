@@ -23,8 +23,8 @@ static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
-static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v);
-static uint32_t xint_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
+static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
+static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
@@ -67,6 +67,10 @@ int xint_is_zero(xint_t x)
 void xint_copy(xint_t u, const xint_t v)
 {
     // Copy v to u
+    if (u == v)
+    {
+        return;
+    }
     resize(u, v->size);
     memcpy(u->data, v->data, u->size * sizeof(uint32_t));
 }
@@ -184,14 +188,14 @@ uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v)
     
     if (Vn == 1)
     {
-        x_mul_1(W, U, Un, V[0]);
+        W[Un] = x_mul_1(W, U, Un, V[0], 0);
         trim_zeroes(w);
         return 0;
     }
     
     if (Un == 1)
     {
-        x_mul_1(W, V, Vn, U[0]);
+        W[Vn] = x_mul_1(W, V, Vn, U[0], 0);
         trim_zeroes(w);
         return 0;
     }
@@ -243,18 +247,19 @@ uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
     }
     size_t Xn = x->size;
     resize(w, Xn + 1);
-    x_mul_1(w->data, x->data, Xn, n);
+    w->data[Xn] = x_mul_1(w->data, x->data, Xn, n, 0);
     trim_zeroes(w);
     return 0;
 }
 
-uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
+uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v)
 {
     // As per Knuth's algorithm D
     // u[0] to u[m+n-1]
     // v[0] to v[n-1]
     // q[0] to q[m]
     // r[0] to r[n-1]
+    
     // Pick off the easy ones
     if (u->size == 0)
     {
@@ -262,7 +267,6 @@ uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
         r->size = 0;
         return 0;
     }
-
     if (v->size <= 1)
     {
         // Use the algorithm from exercise 16
@@ -270,6 +274,20 @@ uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
         xint_div_1(q, r->data, u, v->data[0]);
         return 0;
     }
+    int cmp = xint_cmp(u, v);
+    if (cmp <= 0)
+    {
+        if (cmp == 0)
+        {
+            resize(q, 1);
+            q->data[0] = 1;
+            r->size = 0;
+        }
+        q->size = 0;
+        xint_copy(r, u);
+        return 0;
+    }
+    
 
     int n = v->size;
     int m = u->size - v->size;
@@ -297,8 +315,7 @@ uint32_t xint_div(xint_t q, xint_t r, xint_t u, xint_t v)
     }
 
     resize(q, m + 1);
-
-    resize(r, r->size + 1);
+    resize(r, m + n + 1);
     r->data[r->size - 1] = 0;
 
     x_div(q->data, r->data, v->data, m, n);
@@ -345,10 +362,7 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
 
     if (numbits == 0)
     {
-        if (y != x)
-        {
-            xint_copy(y, x);
-        }
+        xint_copy(y, x);
         return 0;
     }
 
@@ -580,17 +594,17 @@ static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
     // m xwords of W will be zeroed
 
     // M1. [Initialisation.] - clear the bottom part of W
-    x_mul_1(W, U, m, V[0]);
+    W[m] = x_mul_1(W, U, m, V[0], 0);
     for (size_t j=1; j<n; ++j)
     {
         // M2. [We skip the optional check for zero multiplier]
-        W[j + m] = xint_mul_add_1(W+j, U, m, V[j]);
+        W[j + m] = x_mul_add_1(W+j, U, m, V[j]);
         // M6. [Loop on j]
     }
     return 0;
 }
 
-static uint32_t xint_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
+static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
 {
     // M3. [Initialise i (and k)]
     xword_t k = 0;
@@ -620,12 +634,11 @@ static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
     return b;
 }
 
-static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v)
+static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k)
 {
     // Cut down version of alg M with a single xword for V
     // We assume that U is m long and W is m+1 long.
     // i.e. W is m+n long as per full alg M
-    xword_t k = 0;
     for (size_t j=0; j<m; ++j)
     {
         // M4. [Multiply and add]
@@ -634,8 +647,7 @@ static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v)
         k = t >> 32;
         // M5. [Loop on i]
     }
-    W[m] = k;
-    return 0;
+    return k;
 }
 
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
