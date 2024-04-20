@@ -173,49 +173,57 @@ int xint_cmp(const xint_t u, const xint_t v)
 //	u->size = abs(u->size);
 //}
 //
-//void xint_set_neg(xint u, int sz)
-//{
-//	u->size = -abs(u->size);
-//}
-//
-//int add(xint_t W, xint_t U, xint_t V)
-//{
-//	add_sub(W, U, V, xint_is_pos(U), xint_is_pos(V));
-//}
-//
-//int sub(xint_t W, xint_t U, xint_t V)
-//{
-//	add_sub(W, U, V, xint_is_pos(U), !xint_is_pos(V));
-//}
-//
-//int addsub(xint_t W, xint_t U, xint_t V, int Upos, int Vpos)
-//{
-//	if (Upos == Vpos)
-//	{
-//		xint_adda(W, U, V);
-//		if (!Upos)
-//		{
-//			xint_neg(W);
-//		}
-//	}
-//	else
-//	{
-//		if (Upos)
-//		{
-//			if (xint_suba(W, U, V) < 0)
-//			{
-//				xint_neg(W);
-//			}
-//		}
-//		else
-//		{
-//			if (xint_suba(W, V, U) < 0)
-//			{
-//				xint_neg(W);
-//			}
-//		}
-//	}
-//}
+void xint_chs(xint_t u)
+{
+	u->size = -abs(u->size);
+}
+
+int xint_is_neg(xint_t u)
+{
+    return 0;
+}
+
+int add_signed(xint_t W, xint_t U, xint_t V, int Upos, int Vpos);
+
+int add(xint_t W, xint_t U, xint_t V)
+{
+    return add_signed(W, U, V, !xint_is_neg(U), !xint_is_neg(V));
+}
+
+int sub(xint_t W, xint_t U, xint_t V)
+{
+    return add_signed(W, U, V, !xint_is_neg(U), xint_is_neg(V));
+}
+
+int add_signed(xint_t W, xint_t U, xint_t V, int Upos, int Vpos)
+{
+	if (Upos == Vpos)
+	{
+		xint_adda(W, U, V);
+		if (!Upos)
+		{
+            xint_chs(W);
+		}
+	}
+	else
+	{
+		if (Upos)
+		{
+			if (xint_suba(W, U, V) < 0)
+			{
+                xint_chs(W);
+			}
+		}
+		else
+		{
+			if (xint_suba(W, V, U) < 0)
+			{
+                xint_chs(W);
+			}
+		}
+	}
+    return -1;
+}
 
 int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
