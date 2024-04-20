@@ -338,7 +338,7 @@ uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
     return 0;
 }
 
-uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v)
+uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
     // As per Knuth's algorithm D
     // u[0] to u[m+n-1]
@@ -375,39 +375,14 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v)
         return 0;
     }
     
-
     int n = v->size;
     int m = u->size - v->size;
 
-    // D1. [Normalise.]
-    // Use Knuth's suggestion of a power of 2 for d. For v1 to be > b/2
-    // we need v1 to have its top bit set.
-
-    // Find the highest bit in the highest word in v that contains data
-    int highest_word = get_highest_word(v);
-    int highest_bit = get_highest_bit(v->data[highest_word]);
-
-    int norm = 0;
-    if ((v->data[v->size-1] & 0x80000000) == 0)
-    {
-        // Move both u and v to the left so that the top bit of V is set
-        // Note that we use r for normalised u from now on
-        xint_lshift(r, u, 31 - highest_bit); // r may sometimes grow
-        xint_lshift(v, v, 31 - highest_bit); // v will never grow
-        norm = 1;
-    }
-    else
-    {
-        xint_copy(r, u); // r may sometimes grow
-    }
+    xint_copy(r, u); // r may sometimes grow
 
     resize(q, m + 1);
     if (r->size != m + n + 1)
     {
-        if (r->size != m + n)
-        {
-            printf("Bad %d %d", r->size, m+n);
-        }
         resize(r, m + n + 1);
         r->data[r->size - 1] = 0;
     }
@@ -418,13 +393,6 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v)
     x_div(q->data, r->data, v->data, m, n);
 
     resize(r, n);
-
-    // D8. Un-normalise
-    if (norm)
-    {
-        xint_rshift(v, v, 31 - highest_bit);
-        xint_rshift(r, r, 31 - highest_bit);
-    }
 
     trim_zeroes(q);
     trim_zeroes(r);
@@ -789,18 +757,38 @@ static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
     // R[0] to R[m+n-1]
     // V[0] to V[n-1]
 
+    // D1. [Normalise.]
+    // Use Knuth's suggestion of a power of 2 for d. For v1 to be > b/2
+    // we need v1 to have its top bit set
+    // Instead of shifting both U and V to the left we follow Knuth's suggestion
+    // in problem 37 in 4.3.1
+    int bit_shift = 31 - get_highest_bit(V[n-1]);
+    uint32_t V_nm1 = bit_shift ? V[n-1] << bit_shift | V[n-2] >> (32 - bit_shift) : V[n-1];
+    uint32_t V_nm2 = bit_shift ? V[n-2] << bit_shift | V[n-3] >> (32 - bit_shift) : V[n-2];
+
     // D2. [Initialise j.]
     for (int j=m; j>=0; --j)
     {
         // D3. [Calculate q^]
         uint64_t numer = (uint64_t)R[j+n] * B + R[j+n-1];
-        uint32_t denom = V[n-1];
+        uint32_t R_jnm2 = R[j+n-2];;
+        if (bit_shift)
+        {
+            numer <<= bit_shift;
+            numer |= R[j+n-2] >> (32 - bit_shift);
+            R_jnm2 <<= bit_shift;
+            if (j+n-3 >= 0)
+            {
+                R_jnm2 |= R[j+n-3] >> (32 - bit_shift);
+            }
+        }
+        uint32_t denom = V_nm1;
         uint64_t qhat = numer / denom;
         uint64_t rhat = numer % denom;
-        while (qhat >= B || (qhat * V[n-2] > B * rhat + R[j+n-2]))
+        while (qhat >= B || (qhat * V_nm2 > B * rhat + R_jnm2))
         {
             --qhat;
-            rhat += V[n-1];
+            rhat += denom;
             if (rhat >= B)
             {
                 break;
@@ -828,6 +816,8 @@ static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
         }
         // D7. Loop on j
     }
+    // D8. Un-normalise
+    // Not needed
     return 0;
 }
 

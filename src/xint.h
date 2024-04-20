@@ -53,7 +53,7 @@ int xint_adda_1(xint_t w, const xint_t u, xword_t v);
 int xint_suba(xint_t w, const xint_t u, const xint_t v);
 uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v);
 uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n);
-uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v);
+uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v);
 int xint_cmp(const xint_t u, const xint_t v);
 int add(xint_t W, xint_t U, xint_t V);
