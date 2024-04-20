@@ -368,6 +368,7 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v)
             resize(q, 1);
             q->data[0] = 1;
             r->size = 0;
+            return 0;
         }
         q->size = 0;
         xint_copy(r, u);
@@ -401,10 +402,22 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v)
     }
 
     resize(q, m + 1);
-    resize(r, m + n + 1);
-    r->data[r->size - 1] = 0;
+    if (r->size != m + n + 1)
+    {
+        if (r->size != m + n)
+        {
+            printf("Bad %d %d", r->size, m+n);
+        }
+        resize(r, m + n + 1);
+        r->data[r->size - 1] = 0;
+    }
 
+    assert(q->size == m + 1);
+    assert(r->size == m + n + 1);
+    assert(v->size == n);
     x_div(q->data, r->data, v->data, m, n);
+
+    resize(r, n);
 
     // D8. Un-normalise
     if (norm)
@@ -412,11 +425,9 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, xint_t v)
         xint_rshift(v, v, 31 - highest_bit);
         xint_rshift(r, r, 31 - highest_bit);
     }
-    r->size = n;
 
     trim_zeroes(q);
     trim_zeroes(r);
-    trim_zeroes(v);
 
     return 0;
 }
@@ -434,7 +445,9 @@ int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v)
     {
         return -1;
     }
-    x_div_1(q->data, r, u->data, v, u->size);
+    int Un = u->size;
+    resize(q, Un);
+    x_div_1(q->data, r, u->data, v, Un);
     trim_zeroes(q);
     return 0;
 }
@@ -451,12 +464,21 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
         xint_copy(y, x);
         return 0;
     }
+    
+    int Xn = x->size;
 
     // Calculate the shift
     int shift_words = numbits / 32;
     int shift_bits = numbits % 32;
 
     resize(y, x->size + shift_words + (shift_bits?1:0));
+    
+    int Yn = y->size;
+
+//    for (int i=0; i<shift_words + (shift_bits?1:0); ++i)
+//    {
+//        y->data[y->size - 1 - i] = 0;
+//    }
 
     uint32_t *X = x->data;
     uint32_t *Y = y->data;
@@ -470,7 +492,7 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
     }
     else
     {
-        x_lshift(Y + shift_words, X, y->size - shift_words, shift_bits);
+        Y[Yn - 1] = x_lshift(Y + shift_words, X, Xn, shift_bits);
     }
     memset(Y, 0, shift_words * sizeof(uint32_t));
     trim_zeroes(y);
@@ -495,8 +517,9 @@ uint32_t xint_rshift(xint_t y, const xint_t x, int numbits)
         return 0;
     }
     
+    int Xn = x->size;
     uint32_t *X = x->data;
-    uint32_t *Y = y->data;
+    
     // We need y->size to be at least x->size - shift_words in size
     // Note that if x and y are the same xint, resize
     // won't be called and x->size won't change
@@ -504,6 +527,8 @@ uint32_t xint_rshift(xint_t y, const xint_t x, int numbits)
     {
         resize(y, x->size - shift_words);
     }
+    int Yn = y->size;
+    uint32_t *Y = y->data;
     if (shift_bits == 0)
     {
         for (int j=0; j<x->size - shift_words; ++j)
@@ -513,9 +538,8 @@ uint32_t xint_rshift(xint_t y, const xint_t x, int numbits)
     }
     else
     {
-        x_rshift(Y, X + shift_words, x->size - shift_words, shift_bits);
+        x_rshift(Y, X + shift_words, Yn, shift_bits);
     }
-    resize(y, x->size - shift_words);
     trim_zeroes(y);
 
     return 0;
@@ -594,13 +618,13 @@ static int resize(xint_t x, size_t new_size)
 
 static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
 {
-    Y[sz - 1] = X[sz - 2] >> (32 - shift_bits);
-    for (int j=sz-2; j>=1; --j)
+    xword_t ret = X[sz - 1] >> (32 - shift_bits);
+    for (int j=sz-1; j>=1; --j)
     {
         Y[j] = (X[j] << shift_bits) | (X[j - 1] >> (32 - shift_bits));
     }
     Y[0] = X[0] << shift_bits;
-    return 0;
+    return ret;
 }
 
 static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
@@ -807,12 +831,12 @@ static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
     return 0;
 }
 
-static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m)
+static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int n)
 {
     // Renamed Knuth's W to Q
     // S1. [Set r = 0, j = n - 1]
     *R = 0;
-    for (int j=m; j>=0; --j)
+    for (int j=n-1; j>=0; --j)
     {
         // S2. [Set wj = (r * B + uj) / v , r = (r * B + uj) % v
         uint64_t tmp = (uint64_t)*R * B + U[j];
