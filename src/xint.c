@@ -111,7 +111,7 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     // Make sure W is long enough for the carry
     if (w->data[w->size - 1] == 0)
     {
-    	    --w->size;
+        --w->size;
     }
     return 0;
 }
@@ -155,27 +155,27 @@ int xint_cmp(const xint_t u, const xint_t v)
 
 //void xint_set_size(xint u, int sz)
 //{
-//	u->size = u->size < 0 ? -sz : sz;
+//    u->size = u->size < 0 ? -sz : sz;
 //}
 //
 //void xint_get_size(xint u)
 //{
-//	return abs(u->size);
+//    return abs(u->size);
 //}
 //
 //void xint_negate(xint u)
 //{
-//	u->size = -u->size;
+//    u->size = -u->size;
 //}
 //
 //void xint_abs(xint u)
 //{
-//	u->size = abs(u->size);
+//    u->size = abs(u->size);
 //}
 //
 void xint_chs(xint_t u)
 {
-	u->size = -abs(u->size);
+    u->size = -abs(u->size);
 }
 
 int xint_is_neg(xint_t u)
@@ -197,31 +197,31 @@ int sub(xint_t W, xint_t U, xint_t V)
 
 int add_signed(xint_t W, xint_t U, xint_t V, int Upos, int Vpos)
 {
-	if (Upos == Vpos)
-	{
-		xint_adda(W, U, V);
-		if (!Upos)
-		{
+    if (Upos == Vpos)
+    {
+        xint_adda(W, U, V);
+        if (!Upos)
+        {
             xint_chs(W);
-		}
-	}
-	else
-	{
-		if (Upos)
-		{
-			if (xint_suba(W, U, V) < 0)
-			{
+        }
+    }
+    else
+    {
+        if (Upos)
+        {
+            if (xint_suba(W, U, V) < 0)
+            {
                 xint_chs(W);
-			}
-		}
-		else
-		{
-			if (xint_suba(W, V, U) < 0)
-			{
+            }
+        }
+        else
+        {
+            if (xint_suba(W, V, U) < 0)
+            {
                 xint_chs(W);
-			}
-		}
-	}
+            }
+        }
+    }
     return -1;
 }
 
@@ -607,7 +607,7 @@ static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
 
 static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
-	// W[] = U[] + V[]
+    // W[] = U[] + V[]
     // This function will work if any or all of the xints are
     // in the same place in memory. e.g. a = a + a will work
     // A1. [Initialise.]
@@ -631,7 +631,7 @@ static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
 {
-	// W[] = U[] + v
+    // W[] = U[] + v
     xword_t k = v;
     for (size_t j=0; j<n; ++j)
     {
@@ -698,7 +698,7 @@ static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
 
 static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
 {
-	// W[] += U[] * v
+    // W[] += U[] * v
     // M3. [Initialise i (and k)]
     xword_t k = 0;
     for (size_t i=0; i<m; ++i)
@@ -714,7 +714,7 @@ static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
 
 static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
 {
-	// W[] -= U[] * v
+    // W[] -= U[] * v
     uint32_t b = 0;
     for (int i=0; i<n; ++i)
     {
@@ -730,7 +730,7 @@ static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
 
 static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k)
 {
-	// W[] = U[] * v + k
+    // W[] = U[] * v + k
     // Cut down version of alg M with a single xword for V
     // We assume that U is m long and W is m+1 long.
     // i.e. W is m+n long as per full alg M
