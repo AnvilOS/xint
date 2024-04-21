@@ -39,6 +39,7 @@ void xint_abs(xint_t u);
 void xint_chs(xint_t u);
 
 // Assignment
+void xint_assign_uint64(xint_t x, uint64_t val);
 
 // Signed arithmetic
 int xint_add(xint_t w, const xint_t u, const xint_t v);

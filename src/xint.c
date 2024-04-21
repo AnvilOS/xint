@@ -57,6 +57,21 @@ void xint_delete(xint_t u)
     u->size = 0;
 }
 
+void xint_assign_uint64(xint_t x, uint64_t val)
+{
+    if (val == 0)
+    {
+        x->size = 0;
+        return;
+    }
+    resize(x, val > 0xffffffffULL ? 2 : 1);
+    x->data[0] = val & 0xffffffff;
+    if (x->size > 1)
+    {
+        x->data[1] = val >> 32;
+    }
+}
+
 // Utility functions
 int xint_copy(xint_t u, const xint_t v)
 {
