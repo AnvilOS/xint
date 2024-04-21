@@ -37,11 +37,11 @@ int xint_init(xint_t u, size_t reserve)
     u->data = NULL;
     if (reserve)
     {
-        u->capacity = reserve;
-        if ((u->data = malloc(sizeof(uint32_t) * u->capacity)) == NULL)
+        if ((u->data = malloc(sizeof(uint32_t) * reserve)) == NULL)
         {
             return -1;
         }
+        u->capacity = reserve;
     }
     return 0;
 }

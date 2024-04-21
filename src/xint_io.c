@@ -1,0 +1,112 @@
+
+#include "xint_io.h"
+
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void xint_print_raw(const char *label, xint_t u)
+{
+    printf("%s = [ ", label);
+    for (long j=u->size-1; j>=0; --j)
+    {
+        printf("0x%08x", u->data[j]);
+        if (j)
+        {
+            printf(", ");
+        }
+    }
+    printf(" ]");
+    printf("\n");
+}
+
+void xint_print(const char *label, const xint_t u)
+{
+    printf("%s: ", label);
+    const char *str = xint_to_string(u, 10);
+    printf("%s\n", str);
+    free((void*)str);
+}
+
+void xint_print_hex(const char *label, const xint_t u)
+{
+    printf("%s: ", label);
+    const char *str = xint_to_string(u, 16);
+    printf("%s\n", str);
+    free((void*)str);
+}
+
+char *xint_to_string(const xint_t u, int base)
+{
+    xint_t TEMP;
+    char *str;
+    int n = 0;
+
+    xint_init(TEMP, 0);
+    xint_copy(TEMP, u);
+
+    // Figure out how much space we need
+    size_t needed;
+    if (base == 10)
+    {
+        // needed = size * log10(2^32)
+        //        = size * 32 * log10(2)
+        //        = size * 9.633
+        needed = TEMP->size * 9633 / 1000;
+    }
+    else if (base == 16)
+    {
+        // needed = size * log16(2^32)
+        //        = size * 32 * log16(2)
+        //        = size * 32 * 0.25
+        needed = TEMP->size * 8;
+    }
+    else
+    {
+        return NULL;
+    }
+    needed += 2;
+    
+    str = (char *)malloc(needed);
+    
+    while (1)
+    {
+        xword_t ch;
+        xint_div_1(TEMP, &ch, TEMP, base);
+        if (ch >= 0 && ch <= 9)
+        {
+            str[n] = ch + '0';
+        }
+        else if (ch >= 10 && ch <= 15)
+        {
+            str[n] = ch - 10 + 'a';
+        }
+        else
+        {
+            str[n] = '*';
+        }
+        if (n + 1 >= needed)
+        {
+            printf("OOOOOM\n");
+            exit(1);
+        }
+        ++n;
+        if (xint_is_zero(TEMP))
+        {
+            str[n] = 0;
+            break;
+        }
+    }
+    
+    // Reverse the string
+    size_t len = strlen(str);
+    for (int i=0; i<len/2; ++i)
+    {
+        char tmpc = str[i];
+        str[i] = str[len - i - 1];
+        str[len - i - 1] = tmpc;
+    }
+    
+    xint_delete(TEMP);
+    return str;
+}

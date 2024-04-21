@@ -11,9 +11,8 @@ typedef uint32_t xword_t;
 
 struct xint_s
 {
-    short capacity; // Indicates the total size of the xword array
-    short size;     // Words currently in use.
-    
+    int capacity; // Indicates the total size of the xword array
+    int size;     // Words currently in use.
     // This stores the data in little-endian format. This will simplify
     // growing and shrinking the array
     xword_t *data;
@@ -37,7 +36,7 @@ void xint_set_size(xint_t u, int sz);
 void xint_get_size(xint_t u);
 void xint_negate(xint_t u);
 void xint_abs(xint_t u);
-void xint_set_neg(xint_t u, int sz);
+void xint_chs(xint_t u);
 
 // Assignment
 
