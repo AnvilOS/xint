@@ -113,6 +113,7 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     size_t Un = u->size;
     size_t Vn = v->size;
+    xword_t *bigger;
     xword_t k;
     // This is the only failure point
     if (resize(w, MAX(Un, Vn) + 1) == -1)
@@ -121,10 +122,14 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     }
     size_t part1_len = MIN(Un, Vn);
     size_t part2_len = Un>Vn?Un-Vn:Vn-Un;
+    bigger = Un>Vn ? u->data : v->data;
     k = x_add(w->data, u->data, v->data, part1_len);
-    w->data[w->size - 1] = x_add_1(w->data+part1_len, u->data+part1_len, k, part2_len);
-    // Make sure W is long enough for the carry
-    if (w->data[w->size - 1] == 0)
+    k = x_add_1(w->data+part1_len, bigger+part1_len, k, part2_len);
+    if (k)
+    {
+        w->data[w->size - 1] = k;
+    }
+    else
     {
         --w->size;
     }
@@ -439,6 +444,7 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
 {
     if (x->size == 0)
     {
+        xint_copy(y, x);
         return 0;
     }
 
@@ -486,6 +492,7 @@ uint32_t xint_rshift(xint_t y, const xint_t x, int numbits)
 {
     if (x->size == 0)
     {
+        xint_copy(y, x);
         return 0;
     }
     // Calculate the shift

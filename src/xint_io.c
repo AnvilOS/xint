@@ -24,7 +24,22 @@ void xint_print(const char *label, const xint_t u)
 {
     printf("%s: ", label);
     const char *str = xint_to_string(u, 10);
-    printf("%s\n", str);
+    const char *p = str;
+    int nchars = (int)strlen(str);
+    int first = nchars % 3;
+    if (first == 0)
+    {
+        first = 3;
+    }
+    printf("%.*s", first, p);
+    nchars -= first;
+    p += first;
+    for (int i=0; i<nchars; i+=3)
+    {
+        printf(",%.3s", p);
+        p += 3;
+    }
+    printf("\n");
     free((void*)str);
 }
 
