@@ -358,6 +358,37 @@ uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
     return 0;
 }
 
+uint32_t xint_mul_2(xint_t x, uint64_t n)
+{
+    uint64_t k = 0;
+    uint32_t m1 = n >> 32;
+    uint32_t m0 = n & 0xffffffff;
+    uint64_t p;
+    if (m1 == 0)
+    {
+        return xint_mul_1(x, x, m0);
+    }
+    for (int j=0; j<x->size; ++j)
+    {
+        p = (uint64_t)x->data[j] * m0 + (k & 0xffffffff);
+        k = (uint64_t)x->data[j] * m1 + (k >> 32) + (p >> 32);
+        x->data[j] = p & 0xffffffff;
+    }
+    if (k > 0xffffffff)
+    {
+        resize(x, x->size + 2);
+        x->data[x->size-2] = k & 0xffffffff;
+        x->data[x->size-1] = k >> 32;
+    }
+    else if (k)
+    {
+        resize(x, x->size + 1);
+        x->data[x->size-1] = k & 0xffffffff;
+    }
+    //trim_zeroes(x);
+    return 0;
+}
+
 uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
     // As per Knuth's algorithm D
@@ -585,7 +616,6 @@ static int resize(xint_t x, size_t new_size)
                 x->capacity = new_size;
                 x->data = new_mem;
                 // Clear the new words XXX: can we get rid of this or make it an option?
-                memset(&x->data[x->size], 0, sizeof(uint32_t) * (new_size - x->size));
             }
             else
             {
@@ -597,8 +627,6 @@ static int resize(xint_t x, size_t new_size)
                 }
                 x->capacity = new_capacity;
                 x->data = new_mem;
-                // Clear the new words XXX: can we get rid of this or make it an option?
-                memset(&x->data[x->size], 0, sizeof(uint32_t) * (new_size - x->size));
             }
         }
     }
