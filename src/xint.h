@@ -47,6 +47,8 @@ int xint_sub(xint_t w, const xint_t u, const xint_t v);
 uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v);
 
+uint32_t xint_sqr(xint_t w, const xint_t u);
+
 // Absolute arithmetic
 int xint_adda(xint_t w, const xint_t u, const xint_t v);
 int xint_adda_1(xint_t w, const xint_t u, xword_t v);
