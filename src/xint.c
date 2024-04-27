@@ -277,24 +277,54 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
     return cmp;
 }
 
-static uint64_t x_squ_add_1(xword_t *W, xword_t *U, int start, int Un)
+static uint64_t x_squ_1(xword_t *W, xword_t *U, int sz)
 {
     uint64_t k = 0;
-    for (int i=start; i<Un; ++i)
+
+    uint64_t t = (uint64_t)U[0] * U[0];
+    W[0] = t & 0xffffffff;
+    k = t >> 32;
+
+    for (int i=1; i<sz; ++i)
     {
         int of = 0;
-        uint64_t t = (uint64_t)U[i] * U[start];
-        if (i > start)
+        uint64_t t = (uint64_t)U[i] * U[0];
+        if (t & 0x8000000000000000ULL)
         {
-            if (t & 0x8000000000000000ULL)
-            {
-                of = 1;
-            }
-            t <<= 1;
-            // Max was fffffffd3d43b852 at b504f333
+            of = 1;
         }
-        t += W[i + start];
-        if (t < W[i + start])
+        t <<= 1;
+        t += k;
+        if (t < k)
+        {
+            ++of;
+        }
+        W[i] = t & 0xffffffff;
+        k = t >> 32;
+        k |= (uint64_t)of << 32;
+    }
+    return k;
+}
+
+static uint64_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
+{
+    uint64_t k = 0;
+
+    uint64_t t = (uint64_t)U[0] * U[0] + W[0];
+    W[0] = t & 0xffffffff;
+    k = t >> 32;
+
+    for (int i=1; i<sz; ++i)
+    {
+        int of = 0;
+        uint64_t t = (uint64_t)U[i] * U[0];
+        if (t & 0x8000000000000000ULL)
+        {
+            of = 1;
+        }
+        t <<= 1;
+        t += W[i];
+        if (t < W[i])
         {
             ++of;
         }
@@ -305,7 +335,7 @@ static uint64_t x_squ_add_1(xword_t *W, xword_t *U, int start, int Un)
         {
             ++of;
         }
-        W[i + start] = t & 0xffffffff;
+        W[i] = t & 0xffffffff;
         k = t >> 32;
         k |= (uint64_t)of << 32;
     }
@@ -332,14 +362,12 @@ uint32_t xint_sqr(xint_t w, const xint_t u)
         U = W + Un;
     }
 
-    for (int j=0; j<Un; ++j)
+    uint64_t k = x_squ_1(W, U, Un);
+    W[Un] = (uint32_t)k;
+    uint32_t prev_k = k >> 32;
+    for (int j=1; j<Un; ++j)
     {
-        W[j] = 0;
-    }
-    uint32_t prev_k = 0;
-    for (int j=0; j<Un; ++j)
-    {
-        uint64_t k = x_squ_add_1(W, U, j, Un);
+        uint64_t k = x_squ_add_1(W+j+j, U+j, Un-j);
         W[Un + j] = (uint32_t)k;
         W[Un + j] += prev_k;
         prev_k = k >> 32;
