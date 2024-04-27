@@ -9,8 +9,10 @@ extern "C"
 {
 #endif // __cplusplus
 
-uint32_t xint_pow_1_lr(xint_t x, int a, int e);
-uint32_t xint_pow_1_rl(xint_t x, int a, int e);
+uint32_t xint_exp_1_lr(xint_t x, int a, int e);
+uint32_t xint_exp_1_rl(xint_t x, int a, int e);
+
+uint32_t xint_mod_exp(xint_t x, xint_t base, xint_t exp, xint_t mod);
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 void xint_print_raw(const char *label, xint_t u)
 {
@@ -23,6 +24,10 @@ void xint_print_raw(const char *label, xint_t u)
 void xint_print(const char *label, const xint_t u)
 {
     printf("%s: ", label);
+    if (xint_is_neg(u))
+    {
+        printf("-");
+    }
     const char *str = xint_to_string(u, 10);
     const char *p = str;
     int nchars = (int)strlen(str);
@@ -124,4 +129,22 @@ char *xint_to_string(const xint_t u, int base)
     
     xint_delete(TEMP);
     return str;
+}
+
+void xint_from_string(xint_t x, const char *s)
+{
+    while (*s)
+    {
+        int val;
+        if (*s >= '0' && *s <= '9')
+        {
+            val = *s - '0';
+        }
+        else
+        {
+            val = tolower(*s) - 'a' + 10;
+        }
+        xint_mul_1_add_1(x, 16, val);
+        ++s;
+    }
 }

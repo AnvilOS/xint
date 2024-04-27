@@ -1,6 +1,6 @@
 
-#ifndef XINT_SIGNED_C
-#define XINT_SIGNED_C
+#ifndef XINT_SIGNED_H
+#define XINT_SIGNED_H
 
 #include "xint.h"
 
@@ -9,11 +9,11 @@ extern "C"
 {
 #endif // __cplusplus
 
-int adds(xint_t W, xint_t U, xint_t V);
-int subs(xint_t W, xint_t U, xint_t V);
+int xint_adds(xint_t W, xint_t U, xint_t V);
+int xint_subs(xint_t W, xint_t U, xint_t V);
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-#endif // XINT_SIGNED_C
+#endif // XINT_SIGNED_H

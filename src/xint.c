@@ -29,7 +29,9 @@ static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
 static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
+static uint32_t x_mod(xword_t *R, const xword_t *V, int m, int n);
 static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
+static uint32_t x_mod_1(xword_t *R, const xword_t *U, xword_t V, int n);
 
 // Initialisation functions
 int xint_init(xint_t u, size_t reserve)
@@ -37,6 +39,7 @@ int xint_init(xint_t u, size_t reserve)
     u->capacity = 0;
     u->size = 0;
     u->data = NULL;
+    u->neg = 0;
     if (reserve)
     {
         if ((u->data = malloc(sizeof(uint32_t) * reserve)) == NULL)
@@ -109,6 +112,28 @@ int xint_is_zero(xint_t x)
         }
     }
     return 1;
+}
+
+void xint_set_neg(xint_t u)
+{
+    u->neg = 1;
+}
+
+void xint_set_pos(xint_t u)
+{
+    u->neg = 0;
+}
+
+void xint_chs(xint_t u)
+{
+    if (u->neg)
+    {
+        u->neg = 0;
+    }
+    else
+    {
+        u->neg = 1;
+    }
 }
 
 int xint_adda(xint_t w, const xint_t u, const xint_t v)
@@ -195,56 +220,10 @@ int xint_cmp(const xint_t u, const xint_t v)
 //    u->size = abs(u->size);
 //}
 //
-void xint_chs(xint_t u)
-{
-    u->size = -abs(u->size);
-}
 
-int xint_is_neg(xint_t u)
+int xint_is_neg(const xint_t u)
 {
-    return 0;
-}
-
-int add_signed(xint_t W, xint_t U, xint_t V, int Upos, int Vpos);
-
-int add(xint_t W, xint_t U, xint_t V)
-{
-    return add_signed(W, U, V, !xint_is_neg(U), !xint_is_neg(V));
-}
-
-int sub(xint_t W, xint_t U, xint_t V)
-{
-    return add_signed(W, U, V, !xint_is_neg(U), xint_is_neg(V));
-}
-
-int add_signed(xint_t W, xint_t U, xint_t V, int Upos, int Vpos)
-{
-    if (Upos == Vpos)
-    {
-        xint_adda(W, U, V);
-        if (!Upos)
-        {
-            xint_chs(W);
-        }
-    }
-    else
-    {
-        if (Upos)
-        {
-            if (xint_suba(W, U, V) < 0)
-            {
-                xint_chs(W);
-            }
-        }
-        else
-        {
-            if (xint_suba(W, V, U) < 0)
-            {
-                xint_chs(W);
-            }
-        }
-    }
-    return -1;
+    return u->neg;
 }
 
 int xint_suba(xint_t w, const xint_t u, const xint_t v)
@@ -490,6 +469,66 @@ uint32_t xint_mul_2(xint_t x, uint64_t n)
     return 0;
 }
 
+uint32_t xint_mul_1_add_1(xint_t x, xword_t m, xword_t a)
+{
+    xword_t k = x_mul_1(x->data, x->data, x->size, m, a);
+    if (k)
+    {
+        resize(x, x->size + 1);
+        x->data[x->size-1] = k;
+    }
+    //trim_zeroes(x);
+    return k;
+}
+
+uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v)
+{
+    // r = v mod v
+
+    // Pick off the easy ones
+    if (u->size == 0)
+    {
+        r->size = 0;
+        return 0;
+    }
+    if (v->size <= 1)
+    {
+        xword_t rem;
+        xint_mod_1(&rem, u, v->data[0]);
+        resize(r, 1);
+        r->data[0] = rem;
+        return 0;
+    }
+    int cmp = xint_cmp(u, v);
+    if (cmp <= 0)
+    {
+        if (cmp == 0)
+        {
+            r->size = 0;
+            return 0;
+        }
+        xint_copy(r, u);
+        return 0;
+    }
+    
+    int n = v->size;
+    int m = u->size - v->size;
+
+    xint_copy(r, u); // r may sometimes grow
+
+    resize(r, m + n + 1);
+    r->data[r->size - 1] = 0;
+
+    assert(r->size == m + n + 1);
+    assert(v->size == n);
+    
+    x_div(r->data + n, r->data, v->data, m, n);
+
+    resize(r, n);
+    trim_zeroes(r);
+
+    return 0;
+}
 uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
     // As per Knuth's algorithm D
@@ -569,6 +608,23 @@ int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v)
     resize(q, Un);
     x_div_1(q->data, r, u->data, v, Un);
     trim_zeroes(q);
+    return 0;
+}
+
+int xint_mod_1(xword_t *r, const xint_t u, uint32_t v)
+{
+    // This is from Knuth's recommended exercise 16
+    if (u->size == 0)
+    {
+        *r = 0;
+        return 0;
+    }
+    if (v == 0)
+    {
+        return -1;
+    }
+    int Un = u->size;
+    x_mod_1(r, u->data, v, Un);
     return 0;
 }
 
@@ -946,6 +1002,18 @@ static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int
         Q[j] = (uint32_t)(tmp / V);
         *R = tmp % V;
         // S3. [Decrease j by 1, and return to S2]
+    }
+    return 0;
+}
+
+static uint32_t x_mod_1(xword_t *R, const xword_t *U, xword_t V, int n)
+{
+    // Modified x_div_1 that doesn't store q
+    *R = 0;
+    for (int j=n-1; j>=0; --j)
+    {
+        uint64_t tmp = (uint64_t)*R * B + U[j];
+        *R = tmp % V;
     }
     return 0;
 }

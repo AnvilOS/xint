@@ -1,43 +1,34 @@
 
 #include "xint_signed.h"
 
-static int add_signed(xint_t W, xint_t U, xint_t V, int Upos, int Vpos);
+static int add_signed(xint_t w, xint_t u, xint_t v, int Upos, int Vpos);
 
-int adds(xint_t W, xint_t U, xint_t V)
+int xint_adds(xint_t w, xint_t u, xint_t v)
 {
-    return add_signed(W, U, V, !xint_is_neg(U), !xint_is_neg(V));
+    return add_signed(w, u, v, !xint_is_neg(u), !xint_is_neg(v));
 }
 
-int subs(xint_t W, xint_t U, xint_t V)
+int xint_subs(xint_t w, xint_t u, xint_t v)
 {
-    return add_signed(W, U, V, !xint_is_neg(U), xint_is_neg(V));
+    return add_signed(w, u, v, !xint_is_neg(u), xint_is_neg(v));
 }
 
-int add_signed(xint_t W, xint_t U, xint_t V, int Upos, int Vpos)
+int add_signed(xint_t w, xint_t u, xint_t v, int upos, int vpos)
 {
-    if (Upos == Vpos)
+    if (upos == vpos)
     {
-        xint_adda(W, U, V);
-        if (!Upos)
-        {
-            xint_chs(W);
-        }
+        xint_adda(w, u, v);
+        upos ? xint_set_pos(w) : xint_set_neg(w);
     }
     else
     {
-        if (Upos)
+        if (xint_suba(w, u, v) < 0)
         {
-            if (xint_suba(W, U, V) < 0)
-            {
-                xint_chs(W);
-            }
+            upos ? xint_set_neg(w) : xint_set_pos(w);
         }
         else
         {
-            if (xint_suba(W, V, U) < 0)
-            {
-                xint_chs(W);
-            }
+            upos ? xint_set_pos(w) : xint_set_neg(w);
         }
     }
     return -1;
