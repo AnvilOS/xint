@@ -1,7 +1,7 @@
 
 #include "xint_exp.h"
 
-uint32_t xint_exp_1_lr(xint_t x, int a, int e)
+uint32_t xint_exp_1_rl(xint_t x, int a, int e)
 {
     // x = x . a ^ b
     xint_t tmp;
@@ -21,7 +21,7 @@ uint32_t xint_exp_1_lr(xint_t x, int a, int e)
     return 0;
 }
 
-uint32_t xint_exp_1_rl(xint_t x, int a, int e)
+uint32_t xint_exp_1_lr(xint_t x, int a, int e)
 {
     xint_assign_uint64(x, 1);
     int highest_bit = 31 - __builtin_clz(e);
