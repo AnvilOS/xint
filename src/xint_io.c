@@ -9,7 +9,7 @@
 void xint_print_raw(const char *label, xint_t u)
 {
     printf("%s = [ ", label);
-    for (long j=u->size-1; j>=0; --j)
+    for (long j=xint_size(u)-1; j>=0; --j)
     {
         printf("0x%08x", u->data[j]);
         if (j)
@@ -72,14 +72,14 @@ char *xint_to_string(const xint_t u, int base)
         // needed = size * log10(2^32)
         //        = size * 32 * log10(2)
         //        = size * 9.633
-        needed = TEMP->size * 9633 / 1000;
+        needed = xint_size(TEMP) * 9633 / 1000;
     }
     else if (base == 16)
     {
         // needed = size * log16(2^32)
         //        = size * 32 * log16(2)
         //        = size * 32 * 0.25
-        needed = TEMP->size * 8;
+        needed = xint_size(TEMP) * 8;
     }
     else
     {
@@ -144,7 +144,7 @@ void xint_from_string(xint_t x, const char *s)
         {
             val = tolower(*s) - 'a' + 10;
         }
-        xint_mul_1_add_1(x, 16, val);
+        xint_mul_1_add_1(x, x, 16, val);
         ++s;
     }
 }

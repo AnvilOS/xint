@@ -17,8 +17,8 @@ static int resize(xint_t x, int new_size);
 
 static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
-static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
-static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits);
+static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
+static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 
 static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
@@ -27,19 +27,16 @@ static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
 static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
 static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
-static xword_t x_sub_mul_1(xword_t *W, const xword_t *U, size_t n, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
-static uint32_t x_mod(xword_t *R, const xword_t *V, int m, int n);
 static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
 static uint32_t x_mod_1(xword_t *R, const xword_t *U, xword_t V, int n);
 
 // Initialisation functions
-int xint_init(xint_t u, size_t reserve)
+int xint_init(xint_t u, int reserve)
 {
     u->capacity = 0;
     u->size = 0;
     u->data = NULL;
-    u->neg = 0;
     if (reserve)
     {
         if ((u->data = malloc(sizeof(uint32_t) * reserve)) == NULL)
@@ -62,22 +59,28 @@ void xint_delete(xint_t u)
     u->size = 0;
 }
 
-void xint_assign_uint64(xint_t x, uint64_t val)
+void xint_assign_uint32(xint_t x, uint32_t val)
 {
     if (val == 0)
     {
         x->size = 0;
         return;
     }
-    resize(x, val > 0xffffffffULL ? 2 : 1);
-    x->data[0] = val & 0xffffffff;
-    if (x->size > 1)
-    {
-        x->data[1] = val >> 32;
-    }
+    resize(x, 1);
+    x->data[0] = val;
 }
 
-// Utility functions
+void xint_assign_uint64(xint_t x, uint64_t val)
+{
+    if (val < 0x100000000ULL)
+    {
+        return xint_assign_uint32(x, (uint32_t)val);
+    }
+    resize(x, 2);
+    x->data[0] = val & 0xffffffffULL;
+    x->data[1] = val >> 32;
+}
+
 int xint_copy(xint_t u, const xint_t v)
 {
     // Copy v to u
@@ -85,11 +88,12 @@ int xint_copy(xint_t u, const xint_t v)
     {
         return 0;
     }
-    if (resize(u, v->size) == -1)
+    int Vn = abs(v->size);
+    if (resize(u, Vn) == -1)
     {
         return -1;
     }
-    x_move(u->data, v->data, u->size);
+    x_move(u->data, v->data, Vn);
     return 0;
 }
 
@@ -102,44 +106,24 @@ void xint_swap(xint_t u, xint_t v)
     *v = *T;
 }
 
-int xint_is_zero(xint_t x)
+// Utility functions
+uint32_t xint_mul_1_add_1(xint_t w, xint_t u, xword_t m, xword_t a)
 {
-    for (int j=0; j<x->size; ++j)
+    int Un = abs(u->size);
+    resize(w, Un);
+    xword_t k = x_mul_1(w->data, u->data, Un, m, a);
+    if (k)
     {
-        if (x->data[j])
-        {
-            return 0;
-        }
+        resize(w, Un + 1);
+        w->data[Un] = k;
     }
-    return 1;
-}
-
-void xint_set_neg(xint_t u)
-{
-    u->neg = 1;
-}
-
-void xint_set_pos(xint_t u)
-{
-    u->neg = 0;
-}
-
-void xint_chs(xint_t u)
-{
-    if (u->neg)
-    {
-        u->neg = 0;
-    }
-    else
-    {
-        u->neg = 1;
-    }
+    return k;
 }
 
 int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
-    size_t Un = u->size;
-    size_t Vn = v->size;
+    int Un = abs(u->size);
+    int Vn = abs(v->size);
     xword_t *bigger;
     xword_t k;
     // This is the only failure point
@@ -165,8 +149,7 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
 
 int xint_adda_1(xint_t w, const xint_t u, xword_t v)
 {
-    size_t Un = u->size;
-    xword_t k;
+    int Un = u->size;
     // This is the only failure point
     if (resize(w, Un + 1) == -1)
     {
@@ -186,11 +169,13 @@ int xint_cmp(const xint_t u, const xint_t v)
     {
         return 0;
     }
-    if (u->size != v->size)
+    int Un = abs(u->size);
+    int Vn = abs(v->size);
+    if (Un != Vn)
     {
-        return u->size < v->size ? -1 : 1;
+        return Un < Vn ? -1 : 1;
     }
-    for (int j=u->size-1; j>=0; --j)
+    for (int j=Un-1; j>=0; --j)
     {
         if (u->data[j] != v->data[j])
         {
@@ -200,37 +185,11 @@ int xint_cmp(const xint_t u, const xint_t v)
     return 0;
 }
 
-//void xint_set_size(xint u, int sz)
-//{
-//    u->size = u->size < 0 ? -sz : sz;
-//}
-//
-//void xint_get_size(xint u)
-//{
-//    return abs(u->size);
-//}
-//
-//void xint_negate(xint u)
-//{
-//    u->size = -u->size;
-//}
-//
-//void xint_abs(xint u)
-//{
-//    u->size = abs(u->size);
-//}
-//
-
-int xint_is_neg(const xint_t u)
-{
-    return u->neg;
-}
-
 int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
-    size_t Un = u->size;
-    size_t Vn = v->size;
-    uint32_t b;
+    int Un = abs(u->size);
+    int Vn = abs(v->size);
+    uint32_t b = 0;
 
     int cmp = xint_cmp(u, v);
     switch (cmp)
@@ -251,7 +210,7 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
             b = x_sub_1(w->data+Vn, u->data+Vn, b, Un-Vn);
             break;
     }
-    //assert(b == 0);
+    assert(b == 0);
     trim_zeroes(w);
     return cmp;
 }
@@ -359,34 +318,43 @@ uint32_t xint_sqr(xint_t w, const xint_t u)
 
 uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v)
 {
-    if (v->size == 0 || u->size == 0)
-    {
-        w->size = 0;
-        return 0;
-    }
+    int Un = abs(u->size);
+    int Vn = abs(v->size);
 
-    size_t Un = u->size;
-    size_t Vn = v->size;
+    if (Vn <= 2)
+    {
+        if (Vn == 2)
+        {
+            return xint_mul_2(w, u, ((uint64_t)v->data[1] << 32) | v->data[0]);
+        }
+        else
+        {
+            return xint_mul_1(w, u, v->data[0]);
+        }
+    }
+    
+    if (Un <= 2)
+    {
+        if (Un == 2)
+        {
+            return xint_mul_2(w, v, ((uint64_t)u->data[1] << 32) | u->data[0]);
+        }
+        else
+        {
+            return xint_mul_1(w, v, u->data[0]);
+        }
+    }
+    
+    if (u == v)
+    {
+        return xint_sqr(w, u);
+    }
 
     resize(w, Un + Vn);
 
     xword_t *U = u->data;
     xword_t *V = v->data;
     xword_t *W = w->data;
-
-    if (Vn == 1)
-    {
-        W[Un] = x_mul_1(W, U, Un, V[0], 0);
-        trim_zeroes(w);
-        return 0;
-    }
-    
-    if (Un == 1)
-    {
-        W[Vn] = x_mul_1(W, V, Vn, U[0], 0);
-        trim_zeroes(w);
-        return 0;
-    }
     
     // As pointed out by Knuth, algorithm M can cope with V[j] being in the same
     // location as W[j+n]. In other words, V can be copied to the upper words
@@ -396,102 +364,84 @@ uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         // Move V to the top of W - in reverse because there may be overlap
         x_move(W+Un, V, Vn);
         V = W + Un;
+        x_mul(W, U, Un, V, Vn);
     }
     else if (w == u)
     {
-        // Swap the references to U and V - note that the u passed in is never actually
-        // modified. We are just renaming the arguments before running the algorithm
-        size_t t = Un;
-        Un = Vn;
-        Vn = t;
-        xword_t *T = U;
-        U = V;
-        V = T;
-
-        // Move V to the top of W - in reverse because there may be overlap
-        x_move(W+Un, V, Vn);
+        // Move U to the top of W - in reverse because there may be overlap
+        x_move(W+Vn, U, Un);
         // Adjust the V pointer
-        V = W + Un;
+        U = W + Vn;
+        x_mul(W, V, Vn, U, Un);
+    }
+    else
+    {
+        x_mul(W, U, Un, V, Vn);
     }
     
-    x_mul(W, U, Un, V, Vn);
     trim_zeroes(w);
     return 0;
 }
 
 uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
 {
-    if (n == 0)
+    int Xn = abs(x->size);
+    resize(w, Xn);
+    xword_t k = x_mul_1(w->data, x->data, Xn, n, 0);
+    if (k)
     {
-        w->size = 0;
-        return 0;
+        resize(w, Xn + 1);
+        w->data[Xn] = k;
     }
-    if (x == 0)
-    {
-        w->size = 0;
-        return 0;
-    }
-    size_t Xn = x->size;
-    resize(w, Xn + 1);
-    w->data[Xn] = x_mul_1(w->data, x->data, Xn, n, 0);
-    trim_zeroes(w);
     return 0;
 }
 
-uint32_t xint_mul_2(xint_t x, uint64_t n)
+uint32_t xint_mul_2(xint_t w, const xint_t x, uint64_t n)
 {
     uint64_t k = 0;
     uint32_t m1 = n >> 32;
     uint32_t m0 = n & 0xffffffff;
     uint64_t p;
+    int Xn = abs(x->size);
     if (m1 == 0)
     {
-        return xint_mul_1(x, x, m0);
+        return xint_mul_1(w, x, m0);
     }
-    for (int j=0; j<x->size; ++j)
+    resize(w, Xn);
+    for (int j=0; j<Xn; ++j)
     {
         p = (uint64_t)x->data[j] * m0 + (k & 0xffffffff);
         k = (uint64_t)x->data[j] * m1 + (k >> 32) + (p >> 32);
-        x->data[j] = p & 0xffffffff;
+        w->data[j] = p & 0xffffffff;
     }
     if (k > 0xffffffff)
     {
-        resize(x, x->size + 2);
-        x->data[x->size-2] = k & 0xffffffff;
-        x->data[x->size-1] = k >> 32;
+        resize(w, Xn + 2);
+        w->data[Xn] = k & 0xffffffff;
+        w->data[Xn + 1] = k >> 32;
     }
     else if (k)
     {
-        resize(x, x->size + 1);
-        x->data[x->size-1] = k & 0xffffffff;
+        resize(w, Xn + 1);
+        w->data[Xn] = k & 0xffffffff;
     }
     //trim_zeroes(x);
     return 0;
 }
 
-uint32_t xint_mul_1_add_1(xint_t x, xword_t m, xword_t a)
+int xint_highest_bit(xint_t x)
 {
-    xword_t k = x_mul_1(x->data, x->data, x->size, m, a);
-    if (k)
-    {
-        resize(x, x->size + 1);
-        x->data[x->size-1] = k;
-    }
-    //trim_zeroes(x);
-    return k;
+    // Find the highest bit in the highest word in v that contains data
+    int highest_word = get_highest_word(x);
+    int highest_bit = get_highest_bit(x->data[highest_word]);
+    return highest_word * 32 + highest_bit;
 }
 
 uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v)
 {
     // r = v mod v
-
-    // Pick off the easy ones
-    if (u->size == 0)
-    {
-        r->size = 0;
-        return 0;
-    }
-    if (v->size <= 1)
+    // Algortihm D doesn't work for vn <= 1
+    if (xint_size(v) <= 1)
     {
         xword_t rem;
         xint_mod_1(&rem, u, v->data[0]);
@@ -504,23 +454,23 @@ uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v)
     {
         if (cmp == 0)
         {
-            r->size = 0;
+            xint_set_zero(r);
             return 0;
         }
         xint_copy(r, u);
         return 0;
     }
     
-    int n = v->size;
-    int m = u->size - v->size;
+    int n = abs(v->size);
+    int m = abs(u->size) - n;
 
     xint_copy(r, u); // r may sometimes grow
 
     resize(r, m + n + 1);
-    r->data[r->size - 1] = 0;
+    r->data[xint_size(r) - 1] = 0;
 
-    assert(r->size == m + n + 1);
-    assert(v->size == n);
+    assert(abs(r->size) == m + n + 1);
+    assert(abs(v->size) == n);
     
     x_div(r->data + n, r->data, v->data, m, n);
 
@@ -529,6 +479,7 @@ uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v)
 
     return 0;
 }
+
 uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
     // As per Knuth's algorithm D
@@ -537,13 +488,7 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     // q[0] to q[m]
     // r[0] to r[n-1]
     
-    // Pick off the easy ones
-    if (u->size == 0)
-    {
-        q->size = 0;
-        r->size = 0;
-        return 0;
-    }
+    // Algortihm D doesn't work for vn <= 1
     if (v->size <= 1)
     {
         // Use the algorithm from exercise 16
@@ -594,12 +539,6 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v)
 {
     // This is from Knuth's recommended exercise 16
-    if (u->size == 0)
-    {
-        q->size = 0;
-        *r = 0;
-        return 0;
-    }
     if (v == 0)
     {
         return -1;
@@ -614,16 +553,11 @@ int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v)
 int xint_mod_1(xword_t *r, const xint_t u, uint32_t v)
 {
     // This is from Knuth's recommended exercise 16
-    if (u->size == 0)
-    {
-        *r = 0;
-        return 0;
-    }
     if (v == 0)
     {
         return -1;
     }
-    int Un = u->size;
+    int Un = xint_size(u);
     x_mod_1(r, u->data, v, Un);
     return 0;
 }
@@ -634,21 +568,22 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
     int shift_words = numbits / 32;
     int shift_bits = numbits % 32;
 
-    if (x->size == 0)
+    int Xn = x->size;
+
+    if (Xn == 0)
     {
-        xint_copy(y, x);
+        y->size = 0;
         return 0;
     }
 
-    int Xn = x->size;
-    resize(y, x->size + shift_words + (shift_bits?1:0));
+    resize(y, Xn + shift_words + (shift_bits?1:0));
     uint32_t *X = x->data;
     int Yn = y->size;
     uint32_t *Y = y->data;
     
     if (shift_bits == 0)
     {
-        x_move(Y + shift_words, X, y->size - shift_words);
+        x_move(Y + shift_words, X, Xn);
     }
     else
     {
@@ -665,41 +600,41 @@ uint32_t xint_rshift(xint_t y, const xint_t x, int numbits)
     int shift_words = numbits / 32;
     int shift_bits = numbits % 32;
 
+    int Xn = abs(x->size);
+
     // If all of x will be shifted out ...
-    if (x->size <= shift_words)
+    if (Xn <= shift_words)
     {
         // set y to 0
         y->size = 0;
         return 0;
     }
 
-    int Xn = x->size;
-    
-    resize(y, x->size - shift_words);
+    resize(y, Xn - shift_words);
 
     uint32_t *X = x->data;
-    int Yn = y->size;
     uint32_t *Y = y->data;
+
     if (shift_bits == 0)
     {
-        x_move(Y, X + shift_words, x->size - shift_words);
+        x_move(Y, X + shift_words, Xn - shift_words);
     }
     else
     {
-        x_rshift(Y, X + shift_words, Yn, shift_bits);
+        x_rshift(Y, X + shift_words, Xn - shift_words, shift_bits);
     }
-    trim_zeroes(y);
 
     return 0;
 }
 
 static void trim_zeroes(xint_t u)
 {
-    for (int j=u->size-1; j>=0; --j)
+    int Un = abs(u->size);
+    for (int j=Un-1; j>=0; --j)
     {
         if (u->data[j] != 0)
         {
-            u->size = j + 1;
+            resize(u, j + 1);
             return;
         }
     }
@@ -739,7 +674,7 @@ static int resize(xint_t x, int new_size)
         x->capacity = new_size;
         x->data = new_mem;
     }
-    x->size = new_size;
+    x->size = x->size < 0 ? -new_size : new_size;
     return 0;
 }
 
@@ -753,7 +688,7 @@ static void x_move(xword_t *Y, xword_t *X, size_t sz)
     memmove(Y, X, sz * sizeof(xword_t));
 }
 
-static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
+static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
 {
     xword_t ret = X[sz - 1] >> (32 - shift_bits);
     for (int j=sz-1; j>=1; --j)
@@ -764,7 +699,7 @@ static xword_t x_lshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
     return ret;
 }
 
-static xword_t x_rshift(xword_t *Y, xword_t *X, size_t sz, int shift_bits)
+static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
 {
     for (int j=0; j<sz - 1; ++j)
     {

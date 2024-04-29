@@ -7,8 +7,8 @@ uint32_t xint_exp_1_rl(xint_t x, int a, int e)
     xint_t tmp;
     xint_init(tmp, 20);
 
-    xint_assign_uint64(x, 1);
-    xint_assign_uint64(tmp, a);
+    xint_assign_uint32(x, 1);
+    xint_assign_uint32(tmp, a);
     while (e)
     {
         if (e & 1)
@@ -23,7 +23,7 @@ uint32_t xint_exp_1_rl(xint_t x, int a, int e)
 
 uint32_t xint_exp_1_lr(xint_t x, int a, int e)
 {
-    xint_assign_uint64(x, 1);
+    xint_assign_uint32(x, 1);
     int highest_bit = 31 - __builtin_clz(e);
     uint32_t mask = 1 << highest_bit;
     while (mask)
@@ -41,8 +41,8 @@ uint32_t xint_exp_1_lr(xint_t x, int a, int e)
 uint32_t xint_mod_exp(xint_t x, xint_t base, xint_t exp, xint_t mod)
 {
     // This is the vanilla wikipedia algorithm
-    xint_assign_uint64(x, 1);
-    for (int j=exp->size-1; j>=0; --j)
+    xint_assign_uint32(x, 1);
+    for (int j=xint_size(exp)-1; j>=0; --j)
     {
         xword_t word = exp->data[j];
         uint32_t mask = 1 << 31;
