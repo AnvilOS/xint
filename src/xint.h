@@ -81,4 +81,3 @@ uint32_t xint_rshift(xint_t y, const xint_t x, int numbits);
 #endif // __cplusplus
 
 #endif // XINT_H
-

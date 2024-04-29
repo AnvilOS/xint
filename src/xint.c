@@ -441,7 +441,8 @@ uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v)
 {
     // r = v mod v
     // Algortihm D doesn't work for vn <= 1
-    if (xint_size(v) <= 1)
+    int Xn = abs(v->size);
+    if (Xn <= 1)
     {
         xword_t rem;
         xint_mod_1(&rem, u, v->data[0]);
