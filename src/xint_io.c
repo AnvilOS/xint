@@ -148,3 +148,12 @@ void xint_from_string(xint_t x, const char *s)
         ++s;
     }
 }
+
+void xint_from_bin(xint_t x, const uint8_t *p, size_t len)
+{
+    while (len--)
+    {
+        xint_mul_1_add_1(x, x, 256, *p);
+        ++p;
+    }
+}

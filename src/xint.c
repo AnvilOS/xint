@@ -26,6 +26,7 @@ static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
 static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
+static uint64_t x_mul_2(xword_t *W, xword_t *U, size_t m, uint64_t v/*, xword_t k*/);
 static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
@@ -398,22 +399,15 @@ uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
 
 uint32_t xint_mul_2(xint_t w, const xint_t x, uint64_t n)
 {
-    uint64_t k = 0;
     uint32_t m1 = n >> 32;
     uint32_t m0 = n & 0xffffffff;
-    uint64_t p;
     int Xn = abs(x->size);
     if (m1 == 0)
     {
         return xint_mul_1(w, x, m0);
     }
     resize(w, Xn);
-    for (int j=0; j<Xn; ++j)
-    {
-        p = (uint64_t)x->data[j] * m0 + (k & 0xffffffff);
-        k = (uint64_t)x->data[j] * m1 + (k >> 32) + (p >> 32);
-        w->data[j] = p & 0xffffffff;
-    }
+    uint64_t k = x_mul_2(w->data, x->data, Xn, n);
     if (k > 0xffffffff)
     {
         resize(w, Xn + 2);
@@ -846,6 +840,20 @@ static uint32_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k)
         W[j] = (xword_t)t;
         k = t >> 32;
         // M5. [Loop on i]
+    }
+    return k;
+}
+
+static uint64_t x_mul_2(xword_t *W, xword_t *U, size_t m, uint64_t v/*, xword_t k*/)
+{
+    xword_t v0 = (uint32_t)v;
+    xword_t v1 = v >> 32;
+    uint64_t k = 0;
+    for (int j=0; j<m; ++j)
+    {
+        uint64_t p = (uint64_t)U[j] * v0 + (k & 0xffffffff);
+        k = (uint64_t)U[j] * v1 + (k >> 32) + (p >> 32);
+        W[j] = p & 0xffffffff;
     }
     return k;
 }
