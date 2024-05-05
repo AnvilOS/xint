@@ -125,25 +125,22 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
     int Vn = abs(v->size);
-    xword_t *bigger;
-    xword_t k;
+    int Wn = MAX(Un, Vn);
+
     // This is the only failure point
-    if (resize(w, MAX(Un, Vn) + 1) == -1)
+    if (resize(w, Wn) == -1)
     {
         return -1;
     }
-    size_t part1_len = MIN(Un, Vn);
-    size_t part2_len = Un>Vn?Un-Vn:Vn-Un;
-    bigger = Un>Vn ? u->data : v->data;
-    k = x_add(w->data, u->data, v->data, part1_len);
+    int part1_len = MIN(Un, Vn);
+    int part2_len = abs(Un - Vn);
+    xword_t *bigger = Un>Vn ? u->data : v->data;
+    xword_t k = x_add(w->data, u->data, v->data, part1_len);
     k = x_add_1(w->data+part1_len, bigger+part1_len, k, part2_len);
     if (k)
     {
-        w->data[w->size - 1] = k;
-    }
-    else
-    {
-        --w->size;
+        resize(w, Wn + 1);
+        w->data[Wn] = k;
     }
     return 0;
 }
@@ -257,23 +254,14 @@ static uint64_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
     {
         int of = 0;
         uint64_t t = (uint64_t)U[i] * U[0];
-        if (t & 0x8000000000000000ULL)
-        {
-            of = 1;
-        }
+        of = ((t & 0x8000000000000000ULL) != 0);
         t <<= 1;
         t += W[i];
-        if (t < W[i])
-        {
-            ++of;
-        }
+        of += t < W[i];
         // Max was fffffffe3d43b851 at b504f333
         t += k;
         // 1C2BC47AE
-        if (t < k)
-        {
-            ++of;
-        }
+        of += t < k;
         W[i] = t & 0xffffffff;
         k = t >> 32;
         k |= (uint64_t)of << 32;
@@ -399,27 +387,20 @@ uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
 
 uint32_t xint_mul_2(xint_t w, const xint_t x, uint64_t n)
 {
-    uint32_t m1 = n >> 32;
-    uint32_t m0 = n & 0xffffffff;
     int Xn = abs(x->size);
-    if (m1 == 0)
-    {
-        return xint_mul_1(w, x, m0);
-    }
     resize(w, Xn);
     uint64_t k = x_mul_2(w->data, x->data, Xn, n);
     if (k > 0xffffffff)
     {
         resize(w, Xn + 2);
-        w->data[Xn] = k & 0xffffffff;
+        w->data[Xn] = (xword_t)k;
         w->data[Xn + 1] = k >> 32;
     }
     else if (k)
     {
         resize(w, Xn + 1);
-        w->data[Xn] = k & 0xffffffff;
+        w->data[Xn] = (xword_t)k;
     }
-    //trim_zeroes(x);
     return 0;
 }
 
@@ -853,7 +834,7 @@ static uint64_t x_mul_2(xword_t *W, xword_t *U, size_t m, uint64_t v/*, xword_t 
     {
         uint64_t p = (uint64_t)U[j] * v0 + (k & 0xffffffff);
         k = (uint64_t)U[j] * v1 + (k >> 32) + (p >> 32);
-        W[j] = p & 0xffffffff;
+        W[j] = (xword_t)p;
     }
     return k;
 }

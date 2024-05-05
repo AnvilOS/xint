@@ -8,6 +8,7 @@
 
 #define XINT_INIT_VAL { 0, 0, NULL };
 
+static const int bits_per_xword = 32;
 typedef uint32_t xword_t;
 
 struct xint_s
