@@ -149,6 +149,20 @@ void xint_from_string(xint_t x, const char *s)
     }
 }
 
+void xint_from_dec_string(xint_t x, const char *s)
+{
+    while (*s)
+    {
+        int val = 0;
+        if (*s >= '0' && *s <= '9')
+        {
+            val = *s - '0';
+        }
+        xint_mul_1_add_1(x, x, 10, val);
+        ++s;
+    }
+}
+
 void xint_from_bin(xint_t x, const uint8_t *p, size_t len)
 {
     while (len--)

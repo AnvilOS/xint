@@ -38,7 +38,7 @@ uint32_t xint_exp_1_lr(xint_t x, int a, int e)
     return 0;
 }
 
-uint32_t xint_mod_exp(xint_t x, xint_t base, xint_t exp, xint_t mod)
+uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
 {
     // This is the vanilla wikipedia algorithm
     xint_assign_uint32(x, 1);

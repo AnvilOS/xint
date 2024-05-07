@@ -213,6 +213,19 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
     return cmp;
 }
 
+int xint_suba_1(xint_t w, const xint_t u, xword_t v)
+{
+    int Un = u->size;
+    if (resize(w, Un) == -1)
+    {
+        return -1;
+    }
+    xword_t b = x_sub_1(w->data, u->data, v, Un);
+    assert(b == 0);
+    trim_zeroes(w);
+    return 0;
+}
+
 static uint64_t x_squ_1(xword_t *W, xword_t *U, int sz)
 {
     uint64_t k = 0;
