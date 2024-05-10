@@ -612,6 +612,7 @@ uint32_t xint_rshift(xint_t y, const xint_t x, int numbits)
     {
         x_rshift(Y, X + shift_words, Xn - shift_words, shift_bits);
     }
+    trim_zeroes(y);
 
     return 0;
 }

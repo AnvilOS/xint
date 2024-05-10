@@ -9,6 +9,7 @@ extern "C"
 {
 #endif // __cplusplus
 
+int xint_is_prime(xint_t n);
 int xint_miller_rabin(xint_t n, int t);
 
 #ifdef __cplusplus
