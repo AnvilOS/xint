@@ -45,19 +45,14 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
 {
     int max_win_sz = 6;
     uint32_t window_mask = ((uint32_t)-1) >> (32 - max_win_sz);
-    
-    int nwords = xint_size(exp);
-    int wordnum = nwords - 1;
+    int wordnum = xint_size(exp) - 1;
     
     // Figure out where the msb is
-    xword_t curr_word = exp->data[wordnum];
-    --wordnum;
+    xword_t curr_word = exp->data[wordnum--];
     uint32_t mask = 1 << 31;
-    int remaining_in_word = 32;
     while (!(curr_word & mask))
     {
         mask >>= 1;
-        --remaining_in_word;
     }
 
     xint_assign_uint32(x, 1);
@@ -98,7 +93,6 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
             // We are in a window
             window <<= 1;
             window |= bit;
-            ++nbits;
             if (bit == 0)
             {
                 ++trailing_zeros;
@@ -107,7 +101,7 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
             {
                 trailing_zeros = 0;
             }
-            if (nbits == max_win_sz || ((wordnum < 0) && (mask == 0)))
+            if ((++nbits == max_win_sz) || ((wordnum < 0) && (mask == 0)))
             {
                 // Remove the trailing zeroes
                 window >>= trailing_zeros;
@@ -133,8 +127,7 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
             {
                 break;
             }
-            curr_word = exp->data[wordnum];
-            --wordnum;
+            curr_word = exp->data[wordnum--];
             mask = 1 << 31;
         }
     }
