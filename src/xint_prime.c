@@ -64,6 +64,7 @@ int xint_miller_rabin(xint_t n, int t)
     // Output 1 for prime, 0 for composite
     
     // 1. Write n − 1 = 2^s * r such that r is odd.
+    int ret = 0;
     xint_t nm1 = XINT_INIT_VAL;
     xint_suba_1(nm1, n, 1);
     // Remove as many factors of 2 as possible
@@ -100,19 +101,28 @@ int xint_miller_rabin(xint_t n, int t)
                 // If y == 1 then return(“composite”).
                 if (xint_cmp(y, one) == 0)
                 {
-                    return 0; // composite
+                    ret = 0;
+                    goto cleanup;
                 }
                 // j = j + 1.
             }
             // If y != n − 1 then return (“composite”).
             if (xint_cmp(y, nm1) != 0)
             {
-                return 0; // composite
+                ret = 0;
+                goto cleanup;
             }
         }
     }
     // 3. Return(“prime”).
-    return 1; // prime
+    ret = 1;
+    
+cleanup:
+    xint_delete(nm1);
+    xint_delete(r);
+    xint_delete(a);
+    xint_delete(y);
+    return ret;
 }
 
 void xint_rand(xint_t u, xint_t max)
