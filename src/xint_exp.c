@@ -131,6 +131,12 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
             mask = 1 << 31;
         }
     }
+    xint_delete(g[1]);
+    xint_delete(g[2]);
+    for (int i=1; i<(window_mask>>1)+1; ++i)
+    {
+        xint_delete(g[2*i+1]);
+    }
     return 0;
 }
 
