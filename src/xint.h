@@ -67,6 +67,7 @@ int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v);
 uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v);
 int xint_mod_1(xword_t *r, const xint_t u, uint32_t v);
 int xint_add_1(xint_t w, xint_t u, xword_t v);
+int xint_cmp_uint32(const xint_t u, uint32_t v);
 int xint_cmp(const xint_t u, const xint_t v);
 int add(xint_t W, xint_t U, xint_t V);
 int sub(xint_t W, xint_t U, xint_t V);

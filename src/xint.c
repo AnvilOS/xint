@@ -161,6 +161,23 @@ int xint_adda_1(xint_t w, const xint_t u, xword_t v)
     return 0;
 }
 
+int xint_cmp_uint32(const xint_t u, uint32_t v)
+{
+    if (u->size > 1)
+    {
+        return 1;
+    }
+    else if (u->size < 1)
+    {
+        return -1;
+    }
+    else if (u->data[0] != v)
+    {
+        return u->data[0] < v ? -1 : 1;
+    }
+    return 0;
+}
+
 int xint_cmp(const xint_t u, const xint_t v)
 {
     if (u == v)

@@ -7,9 +7,6 @@
 
 static void xint_rand(xint_t u, xint_t max);
 
-xword_t p_one[] = { 1 };
-xint_t one = { 1, 1, (xword_t *)&p_one };
-
 static int primes[] =
 {
     3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
@@ -39,12 +36,24 @@ static int primes[] =
 
 int xint_is_prime(xint_t n)
 {
+    if (xint_cmp_uint32(n, 2) == 0)
+    {
+        // 2 is kind of an exception
+        return 1;
+    }
+    
     if ((n->data[0] & 1) == 0)
     {
+        // Even numbers are composite
         return 0;
     }
+    
     for (int i=0; i<sizeof(primes)/sizeof(primes[0]); ++i)
     {
+        if (xint_cmp_uint32(n, primes[i]) == 0)
+        {
+            return 1;
+        }
         uint32_t r;
         xint_mod_1(&r, n, primes[i]);
         if (r == 0)
@@ -89,7 +98,7 @@ int xint_miller_rabin(xint_t n, int t)
         xint_mod_exp(y, a, r, n);
 
         // 2.3 If y̸ != 1 and y̸ != n−1 then do the following:
-        if (xint_cmp(y, one) != 0 && xint_cmp(y, nm1) != 0)
+        if (xint_cmp_uint32(y, 1) != 0 && xint_cmp(y, nm1) != 0)
         {
             // j = 1.
             // While j <= s − 1 and y != n − 1 do the following:
@@ -99,7 +108,7 @@ int xint_miller_rabin(xint_t n, int t)
                 xint_sqr(y, y);
                 xint_mod(y, y, n);
                 // If y == 1 then return(“composite”).
-                if (xint_cmp(y, one) == 0)
+                if (xint_cmp_uint32(y, 1) == 0)
                 {
                     ret = 0;
                     goto cleanup;
