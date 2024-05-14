@@ -325,25 +325,35 @@ uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v)
 
     if (Vn <= 2)
     {
-        if (Vn == 2)
+        if (Vn == 0)
         {
-            return xint_mul_2(w, u, ((uint64_t)v->data[1] << 32) | v->data[0]);
+            w->size = 0;
+            return 0;
+        }
+        else if (Vn == 1)
+        {
+            return xint_mul_1(w, u, v->data[0]);
         }
         else
         {
-            return xint_mul_1(w, u, v->data[0]);
+            return xint_mul_2(w, u, ((uint64_t)v->data[1] << 32) | v->data[0]);
         }
     }
     
     if (Un <= 2)
     {
-        if (Un == 2)
+        if (Un == 0)
         {
-            return xint_mul_2(w, v, ((uint64_t)u->data[1] << 32) | u->data[0]);
+            w->size = 0;
+            return 0;
+        }
+        else if (Un == 1)
+        {
+            return xint_mul_1(w, v, u->data[0]);
         }
         else
         {
-            return xint_mul_1(w, v, u->data[0]);
+            return xint_mul_2(w, v, ((uint64_t)u->data[1] << 32) | u->data[0]);
         }
     }
     
