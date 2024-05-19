@@ -39,5 +39,4 @@ int test_prime(void)
     CALL_TEST(prime, simple);
     
     END_TEST_GROUP(prime);
-    
 }

@@ -68,7 +68,6 @@ TEST(rsa, simple)
 
     // Add a pkcs#1 header
     int emlen = 256;
-    int hlen = len / 2;
     uint8_t em[256];
     int tlen = sizeof(der_256) + 32;
     int pos = 0;
