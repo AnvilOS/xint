@@ -1,6 +1,6 @@
 
-#ifndef RSA_H
-#define RSA_H
+#ifndef TEST_RSA_H
+#define TEST_RSA_H
 
 #include <stdio.h>
 
@@ -15,4 +15,4 @@ int test_rsa(void);
 }
 #endif // __cplusplus
 
-#endif // RSA_H
+#endif // TEST_RSA_H

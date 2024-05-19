@@ -147,16 +147,17 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
 
 int xint_adda_1(xint_t w, const xint_t u, xword_t v)
 {
-    int Un = u->size;
+    int Un = abs(u->size);
     // This is the only failure point
-    if (resize(w, Un + 1) == -1)
+    if (resize(w, Un) == -1)
     {
         return -1;
     }
-    w->data[w->size - 1] = x_add_1(w->data, u->data, v, Un);
-    if (w->data[w->size - 1] == 0)
+    xword_t k = x_add_1(w->data, u->data, v, Un);
+    if (k)
     {
-        --w->size;
+        resize(w, Un + 1);
+        w->data[Un] = k;
     }
     return 0;
 }
@@ -233,7 +234,7 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
 
 int xint_suba_1(xint_t w, const xint_t u, xword_t v)
 {
-    int Un = u->size;
+    int Un = abs(u->size);
     if (resize(w, Un) == -1)
     {
         return -1;
@@ -307,7 +308,7 @@ uint32_t xint_sqr(xint_t w, const xint_t u)
         w->size = 0;
         return 0;
     }
-    int Un = u->size;
+    int Un = abs(u->size);
     resize(w, 2 * Un);
     
     xword_t *U = u->data;
@@ -506,7 +507,9 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     // r[0] to r[n-1]
     
     // Algortihm D doesn't work for vn <= 1
-    if (v->size <= 1)
+    int Un = abs(u->size);
+    int Vn = abs(v->size);
+    if (Vn <= 1)
     {
         // Use the algorithm from exercise 16
         xword_t rem;
@@ -530,18 +533,18 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         return 0;
     }
     
-    int n = v->size;
-    int m = u->size - v->size;
+    int n = Vn;
+    int m = Un - Vn;
 
     xint_copy(r, u); // r may sometimes grow
 
     resize(q, m + 1);
     resize(r, m + n + 1);
-    r->data[r->size - 1] = 0;
+    r->data[m + n] = 0;
 
-    assert(q->size == m + 1);
-    assert(r->size == m + n + 1);
-    assert(v->size == n);
+    assert(abs(q->size) == m + 1);
+    assert(abs(r->size) == m + n + 1);
+    assert(abs(v->size) == n);
     
     x_div(q->data, r->data, v->data, m, n);
 
@@ -560,7 +563,7 @@ int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v)
     {
         return -1;
     }
-    int Un = u->size;
+    int Un = abs(u->size);
     resize(q, Un);
     x_div_1(q->data, r, u->data, v, Un);
     trim_zeroes(q);
@@ -585,7 +588,7 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
     int shift_words = numbits / 32;
     int shift_bits = numbits % 32;
 
-    int Xn = x->size;
+    int Xn = abs(x->size);
 
     if (Xn == 0)
     {
@@ -595,7 +598,7 @@ uint32_t xint_lshift(xint_t y, const xint_t x, int numbits)
 
     resize(y, Xn + shift_words + (shift_bits?1:0));
     uint32_t *X = x->data;
-    int Yn = y->size;
+    int Yn = abs(y->size);
     uint32_t *Y = y->data;
     
     if (shift_bits == 0)
@@ -661,7 +664,8 @@ static void trim_zeroes(xint_t u)
 
 static int get_highest_word(xint_t x)
 {
-    for (int j=x->size-1; j>=0; --j)
+    int Xn = abs(x->size);
+    for (int j=Xn-1; j>=0; --j)
     {
         if (x->data[j])
         {
