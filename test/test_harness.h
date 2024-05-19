@@ -3,6 +3,7 @@
 #define TEST_HARNESS_H
 
 #include <time.h>
+#include <stdio.h>
 
 #define TEST(__group, __test) int __group ## _ ## __test(void) {
 
