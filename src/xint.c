@@ -163,11 +163,12 @@ int xint_adda_1(xint_t w, const xint_t u, xword_t v)
 
 int xint_cmp_uint32(const xint_t u, uint32_t v)
 {
-    if (u->size > 1)
+    int Un = abs(u->size);
+    if (Un > 1)
     {
         return 1;
     }
-    else if (u->size < 1)
+    else if (Un < 1)
     {
         return -1;
     }

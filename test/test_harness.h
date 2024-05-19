@@ -7,6 +7,16 @@
 
 #define TEST(__group, __test) int __group ## _ ## __test(void) {
 
+#define ASSERT_TRUE(__actual)    \
+    do \
+    { \
+         if (!((1) == (__actual))) \
+         { \
+             __test_harness_print_error(__FILE__, __LINE__, #__actual, (__actual), (1)); \
+             return 1; \
+         } \
+    } while (0)
+
 #define ASSERT_EQ(__expected, __actual)    \
     do \
     { \

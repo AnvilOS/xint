@@ -1,5 +1,5 @@
 
-#include "rsa.h"
+#include "test_rsa.h"
 
 #include "sha256.h"
 #include "xint.h"
