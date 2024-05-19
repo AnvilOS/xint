@@ -5,6 +5,7 @@
 #include "xint.h"
 #include "xint_io.h"
 #include "xint_exp.h"
+#include "test_harness.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -21,9 +22,11 @@
 // SHA-512/224:    (0x)30 2d 30 0d 06 09 60 86 48 01 65 03 04 02 05 05 00 04 1c || H.
 // SHA-512/256:    (0x)30 31 30 0d 06 09 60 86 48 01 65 03 04 02 06 05 00 04 20 || H.
 
-const char der_256[] = { 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20 };
+const unsigned char der_256[] = { 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20 };
 
-void test_rsa(void)
+TEST_GROUP(rsa)
+
+TEST(rsa, simple)
 {
     xint_t n = XINT_INIT_VAL;
     xint_from_string(n, "cea80475324c1dc8347827818da58bac069d3419c614a6ea1ac6a3b510dcd72cc516954905e9fef908d45e13006adf27d467a7d83c111d1a5df15ef293771aefb920032a5bb989f8e4f5e1b05093d3f130f984c07a772a3683f4dc6fb28a96815b32123ccdd13954f19d5b8b24a103e771a34c328755c65ed64e1924ffd04d30b2142cc262f6e0048fef6dbc652f21479ea1c4b1d66d28f4d46ef7185e390cbfa2e02380582f3188bb94ebbf05d31487a09aff01fcbb4cd4bfd1f0a833b38c11813c84360bb53c7d4481031c40bad8713bb6b835cb08098ed15ba31ee4ba728a8c8e10f7294e1b4163b7aee57277bfd881a6f9d43e02c6925aa3a043fb7fb78d");
@@ -38,7 +41,7 @@ void test_rsa(void)
     
     // Convert msg to a binary array
     long len = strlen(msg);
-    uint8_t *bin_msg = malloc(len);
+    uint8_t *bin_msg = (uint8_t *)malloc(len);
     for (int i=0; i<len/2; ++i)
     {
         uint8_t c[2];
@@ -93,13 +96,20 @@ void test_rsa(void)
     xint_t c_calc = XINT_INIT_VAL;
     // c_calc = m ^ d mod n
     xint_mod_exp(c_calc, m, d, n);
-    //xint_print_raw("c_calc", c_calc);
-
 
     xint_t S = XINT_INIT_VAL;
     xint_from_string(S, "6b8be97d9e518a2ede746ff4a7d91a84a1fc665b52f154a927650db6e7348c69f8c8881f7bcf9b1a6d3366eed30c3aed4e93c203c43f5528a45de791895747ade9c5fa5eee81427edee02082147aa311712a6ad5fb1732e93b3d6cd23ffd46a0b3caf62a8b69957cc68ae39f9993c1a779599cdda949bdaababb77f248fcfeaa44059be5459fb9b899278e929528ee130facd53372ecbc42f3e8de2998425860406440f248d817432de687112e504d734028e6c5620fa282ca07647006cf0a2ff83e19a916554cc61810c2e855305db4e5cf893a6a96767365794556ff033359084d7e38a8456e68e21155b76151314a29875feee09557161cbc654541e89e42");
     
-    printf("RSA test result was %d\n", xint_cmp(c_calc, S));
+    
+    ASSERT_EQ(0, xint_cmp(c_calc, S));
+
+    END_TEST(rsa);
+}
+
+int test_rsa(void)
+{
+    CALL_TEST(rsa, simple);
+    END_TEST_GROUP(rsa);
 }
 
 

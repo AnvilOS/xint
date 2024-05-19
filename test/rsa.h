@@ -9,7 +9,7 @@ extern "C"
 {
 #endif // __cplusplus
 
-void test_rsa(void);
+int test_rsa(void);
 
 #ifdef __cplusplus
 }
