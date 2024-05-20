@@ -204,6 +204,7 @@ int xint_cmp(const xint_t u, const xint_t v)
 
 int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
+    // XXX: what about if u or v are 0
     int Un = abs(u->size);
     int Vn = abs(v->size);
     uint32_t b = 0;
@@ -235,14 +236,29 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
 int xint_suba_1(xint_t w, const xint_t u, xword_t v)
 {
     int Un = abs(u->size);
-    if (resize(w, Un) == -1)
+    uint32_t b = 0;
+
+    int cmp = xint_cmp_uint32(u, v);
+    switch (cmp)
     {
-        return -1;
+        case 0: // U == V
+            w->size = 0;
+            return 0;
+            
+        case -1: // U < V
+            // XXX: what about if u is 0
+            resize(w, 1);
+            b = x_sub_1(w->data, &v, u->data[0], 1);
+            break;
+
+        case 1: // U > V
+            resize(w, Un);
+            b = x_sub_1(w->data, u->data, v, Un);
+            break;
     }
-    xword_t b = x_sub_1(w->data, u->data, v, Un);
     assert(b == 0);
     trim_zeroes(w);
-    return 0;
+    return cmp;
 }
 
 static uint64_t x_squ_1(xword_t *W, xword_t *U, int sz)
