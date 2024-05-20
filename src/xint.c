@@ -70,6 +70,7 @@ void xint_delete(xint_t u)
     u->size = 0;
 }
 
+// Copy functions
 int xint_copy(xint_t u, const xint_t v)
 {
     // Copy v to u
@@ -95,6 +96,7 @@ void xint_swap(xint_t u, xint_t v)
     *v = *T;
 }
 
+// Assignment functions
 void xint_assign_uint32(xint_t u, uint32_t val)
 {
     if (val == 0)
@@ -129,6 +131,54 @@ void xint_assign_long(xint_t u, long val)
     {
         xint_chs(u);
     }
+}
+
+// Absolute arithmetic
+int xint_cmpa_uint32(const xint_t u, uint32_t v)
+{
+    int Un = abs(u->size);
+    if (Un > 1)
+    {
+        // u is clearly bigger
+        return 1;
+    }
+    else if (Un == 0)
+    {
+        if (v == 0)
+        {
+            // both are zero
+            return 0;
+        }
+        // u is zero, v is greater
+        return -1;
+    }
+    else if (u->data[0] != v)
+    {
+        return u->data[0] < v ? -1 : 1;
+    }
+    return 0;
+}
+
+int xint_cmpa(const xint_t u, const xint_t v)
+{
+    if (u == v)
+    {
+        return 0;
+    }
+    int Un = abs(u->size);
+    int Vn = abs(v->size);
+    if (Un != Vn)
+    {
+        return Un < Vn ? -1 : 1;
+    }
+    for (int j=Un-1; j>=0; --j)
+    {
+        if (u->data[j] != v->data[j])
+        {
+            return u->data[j] < v->data[j] ? -1 : 1;
+        }
+    }
+    return 0;
 }
 
 // Utility functions
@@ -186,46 +236,6 @@ int xint_adda_1(xint_t w, const xint_t u, xword_t v)
     return 0;
 }
 
-int xint_cmp_uint32(const xint_t u, uint32_t v)
-{
-    int Un = abs(u->size);
-    if (Un > 1)
-    {
-        return 1;
-    }
-    else if (Un < 1)
-    {
-        return -1;
-    }
-    else if (u->data[0] != v)
-    {
-        return u->data[0] < v ? -1 : 1;
-    }
-    return 0;
-}
-
-int xint_cmp(const xint_t u, const xint_t v)
-{
-    if (u == v)
-    {
-        return 0;
-    }
-    int Un = abs(u->size);
-    int Vn = abs(v->size);
-    if (Un != Vn)
-    {
-        return Un < Vn ? -1 : 1;
-    }
-    for (int j=Un-1; j>=0; --j)
-    {
-        if (u->data[j] != v->data[j])
-        {
-            return u->data[j] < v->data[j] ? -1 : 1;
-        }
-    }
-    return 0;
-}
-
 int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
     // XXX: what about if u or v are 0
@@ -233,7 +243,7 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
     int Vn = abs(v->size);
     uint32_t b = 0;
 
-    int cmp = xint_cmp(u, v);
+    int cmp = xint_cmpa(u, v);
     switch (cmp)
     {
         case 0: // U == V
@@ -262,7 +272,7 @@ int xint_suba_1(xint_t w, const xint_t u, xword_t v)
     int Un = abs(u->size);
     uint32_t b = 0;
 
-    int cmp = xint_cmp_uint32(u, v);
+    int cmp = xint_cmpa_uint32(u, v);
     switch (cmp)
     {
         case 0: // U == V
@@ -451,7 +461,7 @@ uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v)
         r->data[0] = rem;
         return 0;
     }
-    int cmp = xint_cmp(u, v);
+    int cmp = xint_cmpa(u, v);
     if (cmp <= 0)
     {
         if (cmp == 0)
@@ -502,7 +512,7 @@ uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         r->data[0] = rem;
         return 0;
     }
-    int cmp = xint_cmp(u, v);
+    int cmp = xint_cmpa(u, v);
     if (cmp <= 0)
     {
         if (cmp == 0)

@@ -21,17 +21,17 @@ TEST(signed_arith, simple)
     xint_set_neg(c);
     
     xint_adds(z, a, b); // 1100
-    ASSERT_TRUE(xint_cmp_uint32(z, 1100) == 0 && xint_is_pos(z));
+    ASSERT_TRUE(xint_cmpa_uint32(z, 1100) == 0 && xint_is_pos(z));
     xint_adds(z, a, c); // -100
-    ASSERT_TRUE(xint_cmp_uint32(z, 100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmpa_uint32(z, 100) == 0 && xint_is_neg(z));
     xint_adds(z, c, a); // -100
-    ASSERT_TRUE(xint_cmp_uint32(z, 100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmpa_uint32(z, 100) == 0 && xint_is_neg(z));
     xint_subs(z, a, b); // -100
-    ASSERT_TRUE(xint_cmp_uint32(z, 100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmpa_uint32(z, 100) == 0 && xint_is_neg(z));
     xint_subs(z, a, c); // 1100
-    ASSERT_TRUE(xint_cmp_uint32(z, 1100) == 0 && xint_is_pos(z));
+    ASSERT_TRUE(xint_cmpa_uint32(z, 1100) == 0 && xint_is_pos(z));
     xint_subs(z, c, a); // -1100
-    ASSERT_TRUE(xint_cmp_uint32(z, 1100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmpa_uint32(z, 1100) == 0 && xint_is_neg(z));
     
     END_TEST(signed_arith);
 }

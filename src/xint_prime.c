@@ -36,7 +36,7 @@ static int primes[] =
 
 int xint_is_prime(xint_t n)
 {
-    if (xint_cmp_uint32(n, 2) == 0)
+    if (xint_cmpa_uint32(n, 2) == 0)
     {
         // 2 is kind of an exception
         return 1;
@@ -50,7 +50,7 @@ int xint_is_prime(xint_t n)
     
     for (int i=0; i<sizeof(primes)/sizeof(primes[0]); ++i)
     {
-        if (xint_cmp_uint32(n, primes[i]) == 0)
+        if (xint_cmpa_uint32(n, primes[i]) == 0)
         {
             return 1;
         }
@@ -98,17 +98,17 @@ int xint_miller_rabin(xint_t n, int t)
         xint_mod_exp(y, a, r, n);
 
         // 2.3 If y̸ != 1 and y̸ != n−1 then do the following:
-        if (xint_cmp_uint32(y, 1) != 0 && xint_cmp(y, nm1) != 0)
+        if (xint_cmpa_uint32(y, 1) != 0 && xint_cmpa(y, nm1) != 0)
         {
             // j = 1.
             // While j <= s − 1 and y != n − 1 do the following:
-            for (int j=0; (j<s) && (xint_cmp(y, nm1) != 0); ++j)
+            for (int j=0; (j<s) && (xint_cmpa(y, nm1) != 0); ++j)
             {
                 // Compute y = y^2 mod n.
                 xint_sqr(y, y);
                 xint_mod(y, y, n);
                 // If y == 1 then return(“composite”).
-                if (xint_cmp_uint32(y, 1) == 0)
+                if (xint_cmpa_uint32(y, 1) == 0)
                 {
                     ret = 0;
                     goto cleanup;
@@ -116,7 +116,7 @@ int xint_miller_rabin(xint_t n, int t)
                 // j = j + 1.
             }
             // If y != n − 1 then return (“composite”).
-            if (xint_cmp(y, nm1) != 0)
+            if (xint_cmpa(y, nm1) != 0)
             {
                 ret = 0;
                 goto cleanup;
