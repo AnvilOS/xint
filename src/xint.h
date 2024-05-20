@@ -27,14 +27,19 @@ extern "C"
 #endif // __cplusplus
 
 // Initialisation functions
-int xint_init(xint_t u, int hint);
+int xint_init(xint_t u);
+int xint_init2(xint_t u, int reserve);
 void xint_delete(xint_t u);
 
-// Assignment functions
-void xint_assign_uint32(xint_t x, uint32_t val);
-void xint_assign_uint64(xint_t x, uint64_t val);
+// Copy functions
 int xint_copy(xint_t u, const xint_t v);
 void xint_swap(xint_t u, xint_t v);
+
+// Assignment functions
+void xint_assign_uint32(xint_t u, uint32_t val);
+void xint_assign_uint64(xint_t u, uint64_t val);
+void xint_assign_ulong(xint_t u, unsigned long val);
+void xint_assign_long(xint_t u, long val);
 
 // Utility functions
 static inline int xint_is_neg(const xint_t u) { return u->size < 0; }

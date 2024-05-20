@@ -31,9 +31,19 @@ static uint32_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static uint32_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static uint32_t x_div_1(xword_t *Q, xword_t *R, const xword_t *U, xword_t V, int m);
 static uint32_t x_mod_1(xword_t *R, const xword_t *U, xword_t V, int n);
+static uint64_t x_squ_1(xword_t *W, xword_t *U, int sz);
+static uint64_t x_squ_add_1(xword_t *W, xword_t *U, int sz);
 
 // Initialisation functions
-int xint_init(xint_t u, int reserve)
+int xint_init(xint_t u)
+{
+    u->capacity = 0;
+    u->size = 0;
+    u->data = NULL;
+    return 0;
+}
+
+int xint_init2(xint_t u, int reserve)
 {
     u->capacity = 0;
     u->size = 0;
@@ -60,28 +70,6 @@ void xint_delete(xint_t u)
     u->size = 0;
 }
 
-void xint_assign_uint32(xint_t x, uint32_t val)
-{
-    if (val == 0)
-    {
-        x->size = 0;
-        return;
-    }
-    resize(x, 1);
-    x->data[0] = val;
-}
-
-void xint_assign_uint64(xint_t x, uint64_t val)
-{
-    if (val < 0x100000000ULL)
-    {
-        return xint_assign_uint32(x, (uint32_t)val);
-    }
-    resize(x, 2);
-    x->data[0] = val & 0xffffffffULL;
-    x->data[1] = val >> 32;
-}
-
 int xint_copy(xint_t u, const xint_t v)
 {
     // Copy v to u
@@ -105,6 +93,42 @@ void xint_swap(xint_t u, xint_t v)
     *T = *u;
     *u = *v;
     *v = *T;
+}
+
+void xint_assign_uint32(xint_t u, uint32_t val)
+{
+    if (val == 0)
+    {
+        u->size = 0;
+        return;
+    }
+    resize(u, 1);
+    u->data[0] = val;
+}
+
+void xint_assign_uint64(xint_t u, uint64_t val)
+{
+    if (val < 0x100000000ULL)
+    {
+        return xint_assign_uint32(u, (uint32_t)val);
+    }
+    resize(u, 2);
+    u->data[0] = val & 0xffffffffULL;
+    u->data[1] = val >> 32;
+}
+
+void xint_assign_ulong(xint_t u, unsigned long val)
+{
+    return xint_assign_uint64(u, val);
+}
+
+void xint_assign_long(xint_t u, long val)
+{
+    xint_assign_uint64(u, labs(val));
+    if (val < 0)
+    {
+        xint_chs(u);
+    }
 }
 
 // Utility functions
@@ -259,62 +283,6 @@ int xint_suba_1(xint_t w, const xint_t u, xword_t v)
     assert(b == 0);
     trim_zeroes(w);
     return cmp;
-}
-
-static uint64_t x_squ_1(xword_t *W, xword_t *U, int sz)
-{
-    uint64_t k = 0;
-
-    uint64_t t = (uint64_t)U[0] * U[0];
-    W[0] = t & 0xffffffff;
-    k = t >> 32;
-
-    for (int i=1; i<sz; ++i)
-    {
-        int of = 0;
-        uint64_t t = (uint64_t)U[i] * U[0];
-        if (t & 0x8000000000000000ULL)
-        {
-            of = 1;
-        }
-        t <<= 1;
-        t += k;
-        if (t < k)
-        {
-            ++of;
-        }
-        W[i] = t & 0xffffffff;
-        k = t >> 32;
-        k |= (uint64_t)of << 32;
-    }
-    return k;
-}
-
-static uint64_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
-{
-    uint64_t k = 0;
-
-    uint64_t t = (uint64_t)U[0] * U[0] + W[0];
-    W[0] = t & 0xffffffff;
-    k = t >> 32;
-
-    for (int i=1; i<sz; ++i)
-    {
-        int of = 0;
-        uint64_t t = (uint64_t)U[i] * U[0];
-        of = ((t & 0x8000000000000000ULL) != 0);
-        t <<= 1;
-        t += W[i];
-        of += t < W[i];
-        // Max was fffffffe3d43b851 at b504f333
-        t += k;
-        // 1C2BC47AE
-        of += t < k;
-        W[i] = t & 0xffffffff;
-        k = t >> 32;
-        k |= (uint64_t)of << 32;
-    }
-    return k;
 }
 
 uint32_t xint_sqr(xint_t w, const xint_t u)
@@ -1003,4 +971,60 @@ static uint32_t x_mod_1(xword_t *R, const xword_t *U, xword_t V, int n)
         *R = tmp % V;
     }
     return 0;
+}
+
+static uint64_t x_squ_1(xword_t *W, xword_t *U, int sz)
+{
+    uint64_t k = 0;
+
+    uint64_t t = (uint64_t)U[0] * U[0];
+    W[0] = t & 0xffffffff;
+    k = t >> 32;
+
+    for (int i=1; i<sz; ++i)
+    {
+        int of = 0;
+        uint64_t t = (uint64_t)U[i] * U[0];
+        if (t & 0x8000000000000000ULL)
+        {
+            of = 1;
+        }
+        t <<= 1;
+        t += k;
+        if (t < k)
+        {
+            ++of;
+        }
+        W[i] = t & 0xffffffff;
+        k = t >> 32;
+        k |= (uint64_t)of << 32;
+    }
+    return k;
+}
+
+static uint64_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
+{
+    uint64_t k = 0;
+
+    uint64_t t = (uint64_t)U[0] * U[0] + W[0];
+    W[0] = t & 0xffffffff;
+    k = t >> 32;
+
+    for (int i=1; i<sz; ++i)
+    {
+        int of = 0;
+        uint64_t t = (uint64_t)U[i] * U[0];
+        of = ((t & 0x8000000000000000ULL) != 0);
+        t <<= 1;
+        t += W[i];
+        of += t < W[i];
+        // Max was fffffffe3d43b851 at b504f333
+        t += k;
+        // 1C2BC47AE
+        of += t < k;
+        W[i] = t & 0xffffffff;
+        k = t >> 32;
+        k |= (uint64_t)of << 32;
+    }
+    return k;
 }

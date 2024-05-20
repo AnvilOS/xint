@@ -62,7 +62,7 @@ char *xint_to_string(const xint_t u, int base)
     char *str;
     int n = 0;
 
-    xint_init(TEMP, 0);
+    xint_init(TEMP);
     xint_copy(TEMP, u);
 
     // Figure out how much space we need

@@ -8,7 +8,7 @@ uint32_t xint_exp_1_rl(xint_t x, int a, int e)
 {
     // x = x . a ^ b
     xint_t tmp;
-    xint_init(tmp, 20);
+    xint_init(tmp);
 
     xint_assign_uint32(x, 1);
     xint_assign_uint32(tmp, a);
@@ -58,17 +58,17 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
     xint_assign_uint32(x, 1);
     xint_t g[window_mask + 2];
 
-    xint_init(g[1], 0);
+    xint_init(g[1]);
     xint_copy(g[1], base);
     xint_mod(g[1], g[1], mod);
 
-    xint_init(g[2], 0);
+    xint_init(g[2]);
     xint_sqr(g[2], g[1]);
     xint_mod(g[2], g[2], mod);
 
     for (int i=1; i<(window_mask>>1)+1; ++i)
     {
-        xint_init(g[2*i+1], 0);
+        xint_init(g[2*i+1]);
         xint_mul(g[2*i+1], g[2*i-1], g[2]);
         xint_mod(g[2*i+1], g[2*i+1], mod);
     }
@@ -161,11 +161,11 @@ uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const 
 
     xint_assign_uint32(x, 1);
     xint_t g[window_mask + 1];
-    xint_init(g[0], 0);
+    xint_init(g[0]);
     xint_assign_uint32(g[0], 1);
     for (int i=1; i<window_mask+1; ++i)
     {
-        xint_init(g[i], 0);
+        xint_init(g[i]);
         xint_mul(g[i], g[i-1], base);
     }
     
