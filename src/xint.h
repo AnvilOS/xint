@@ -8,8 +8,9 @@
 
 #define XINT_INIT_VAL { 0, 0, NULL };
 
-static const int bits_per_xword = 32;
-typedef uint32_t xword_t;
+typedef unsigned xword_t;
+typedef unsigned long xdword_t;
+static const int bits_per_xword = sizeof(xword_t) * 8;
 
 struct xint_s
 {
@@ -36,8 +37,8 @@ int xint_copy(xint_t u, const xint_t v);
 void xint_swap(xint_t u, xint_t v);
 
 // Assignment functions
-void xint_assign_uint32(xint_t u, uint32_t val);
-void xint_assign_uint64(xint_t u, uint64_t val);
+void xint_assign_1(xint_t u, xword_t val);
+void xint_assign_2(xint_t u, xdword_t val);
 void xint_assign_ulong(xint_t u, unsigned long val);
 void xint_assign_long(xint_t u, long val);
 
@@ -53,8 +54,9 @@ static inline int xint_size(const xint_t u) { return abs(u->size); }
 static inline void xint_set_zero(xint_t u) { u->size = 0; }
 
 // Absolute arithmetic
-int xint_cmpa_uint32(const xint_t u, uint32_t v);
+int xint_cmpa_1(const xint_t u, xword_t v);
 int xint_cmpa(const xint_t u, const xint_t v);
+int xint_cmpa_long(const xint_t u, const unsigned long v);
 int xint_adda(xint_t w, const xint_t u, const xint_t v);
 int xint_adda_1(xint_t w, const xint_t u, xword_t v);
 int xint_suba(xint_t w, const xint_t u, const xint_t v);

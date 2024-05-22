@@ -97,7 +97,7 @@ void xint_swap(xint_t u, xint_t v)
 }
 
 // Assignment functions
-void xint_assign_uint32(xint_t u, uint32_t val)
+void xint_assign_1(xint_t u, xword_t val)
 {
     if (val == 0)
     {
@@ -108,11 +108,11 @@ void xint_assign_uint32(xint_t u, uint32_t val)
     u->data[0] = val;
 }
 
-void xint_assign_uint64(xint_t u, uint64_t val)
+void xint_assign_2(xint_t u, xdword_t val)
 {
     if (val < 0x100000000ULL)
     {
-        return xint_assign_uint32(u, (uint32_t)val);
+        return xint_assign_1(u, (uint32_t)val);
     }
     resize(u, 2);
     u->data[0] = val & 0xffffffffULL;
@@ -121,12 +121,12 @@ void xint_assign_uint64(xint_t u, uint64_t val)
 
 void xint_assign_ulong(xint_t u, unsigned long val)
 {
-    return xint_assign_uint64(u, val);
+    return xint_assign_2(u, val);
 }
 
 void xint_assign_long(xint_t u, long val)
 {
-    xint_assign_uint64(u, labs(val));
+    xint_assign_2(u, labs(val));
     if (val < 0)
     {
         xint_chs(u);
@@ -134,7 +134,7 @@ void xint_assign_long(xint_t u, long val)
 }
 
 // Absolute arithmetic
-int xint_cmpa_uint32(const xint_t u, uint32_t v)
+int xint_cmpa_1(const xint_t u, xword_t v)
 {
     int Un = abs(u->size);
     if (Un > 1)
@@ -157,6 +157,21 @@ int xint_cmpa_uint32(const xint_t u, uint32_t v)
         return u->data[0] < v ? -1 : 1;
     }
     return 0;
+}
+
+int xint_cmpa_long(const xint_t u, const unsigned long v)
+{
+    if (v <= 0xffffffff)
+    {
+        // fits in a single xword
+        return xint_cmpa_1(u, (xword_t)v);
+    }
+    xword_t vvv[2];
+    vvv[0] = (xword_t)v;
+    vvv[1] = v >> 32;
+    xint_t vv = { 2, 2, vvv };
+    int ret = xint_cmpa(u, vv);
+    return ret;
 }
 
 int xint_cmpa(const xint_t u, const xint_t v)
@@ -182,19 +197,6 @@ int xint_cmpa(const xint_t u, const xint_t v)
 }
 
 // Utility functions
-uint32_t xint_mul_1_add_1(xint_t w, xint_t u, xword_t m, xword_t a)
-{
-    int Un = abs(u->size);
-    resize(w, Un);
-    xword_t k = x_mul_1(w->data, u->data, Un, m, a);
-    if (k)
-    {
-        resize(w, Un + 1);
-        w->data[Un] = k;
-    }
-    return k;
-}
-
 int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
@@ -272,7 +274,7 @@ int xint_suba_1(xint_t w, const xint_t u, xword_t v)
     int Un = abs(u->size);
     uint32_t b = 0;
 
-    int cmp = xint_cmpa_uint32(u, v);
+    int cmp = xint_cmpa_long(u, v);
     switch (cmp)
     {
         case 0: // U == V
@@ -438,6 +440,19 @@ uint32_t xint_mul_2(xint_t w, const xint_t x, uint64_t n)
         w->data[Xn] = (xword_t)k;
     }
     return 0;
+}
+
+uint32_t xint_mul_1_add_1(xint_t w, xint_t u, xword_t m, xword_t a)
+{
+    int Un = abs(u->size);
+    resize(w, Un);
+    xword_t k = x_mul_1(w->data, u->data, Un, m, a);
+    if (k)
+    {
+        resize(w, Un + 1);
+        w->data[Un] = k;
+    }
+    return k;
 }
 
 int xint_highest_bit(xint_t x)

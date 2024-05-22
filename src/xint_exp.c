@@ -10,8 +10,8 @@ uint32_t xint_exp_1_rl(xint_t x, int a, int e)
     xint_t tmp;
     xint_init(tmp);
 
-    xint_assign_uint32(x, 1);
-    xint_assign_uint32(tmp, a);
+    xint_assign_ulong(x, 1);
+    xint_assign_ulong(tmp, a);
     while (e)
     {
         if (e & 1)
@@ -26,7 +26,7 @@ uint32_t xint_exp_1_rl(xint_t x, int a, int e)
 
 uint32_t xint_exp_1_lr(xint_t x, int a, int e)
 {
-    xint_assign_uint32(x, 1);
+    xint_assign_ulong(x, 1);
     int highest_bit = 31 - __builtin_clz(e);
     uint32_t mask = 1 << highest_bit;
     while (mask)
@@ -55,7 +55,7 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
         mask >>= 1;
     }
 
-    xint_assign_uint32(x, 1);
+    xint_assign_ulong(x, 1);
     xint_t g[window_mask + 2];
 
     xint_init(g[1]);
@@ -159,10 +159,10 @@ uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const 
         --remaining_in_word;
     }
 
-    xint_assign_uint32(x, 1);
+    xint_assign_ulong(x, 1);
     xint_t g[window_mask + 1];
     xint_init(g[0]);
-    xint_assign_uint32(g[0], 1);
+    xint_assign_ulong(g[0], 1);
     for (int i=1; i<window_mask+1; ++i)
     {
         xint_init(g[i]);
@@ -221,7 +221,7 @@ uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const 
 uint32_t xint_mod_exp_old(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
 {
     // This is the vanilla wikipedia algorithm
-    xint_assign_uint32(x, 1);
+    xint_assign_ulong(x, 1);
     for (int j=xint_size(exp)-1; j>=0; --j)
     {
         xword_t word = exp->data[j];

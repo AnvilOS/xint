@@ -61,8 +61,8 @@ TEST(abs_arith, adda_suba)
     xint_t w = XINT_INIT_VAL;
     
     // Identical terms
-    xint_assign_uint64(u, 0xffffffffffffffffULL);
-    xint_assign_uint64(v, 0xffffffffffffffffULL);
+    xint_assign_ulong(u, 0xffffffffffffffffULL);
+    xint_assign_ulong(v, 0xffffffffffffffffULL);
     ASSERT_TRUE(u->size == 2 && u->data[1] == 0xffffffff && u->data[0] == 0xffffffff);
     ASSERT_TRUE(v->size == 2 && v->data[1] == 0xffffffff && v->data[0] == 0xffffffff);
     xint_adda(w, u, v);
@@ -85,7 +85,7 @@ TEST(abs_arith, adda_suba)
     ASSERT_TRUE(w->size == 1 && w->data[0] == 2);
 
     // One of the terms is 0
-    xint_assign_uint32(u, 0);
+    xint_assign_ulong(u, 0);
     xint_suba(w, u, v);
     ASSERT_TRUE(w->size == 2 && w->data[1] == 0xffffffff && w->data[0] == 0xffffffff);
     xint_suba(w, v, u);
