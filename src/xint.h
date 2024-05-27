@@ -9,8 +9,10 @@
 #define XINT_INIT_VAL { 0, 0, NULL };
 
 typedef unsigned xword_t;
+#define XWORD_BITS (sizeof(xword_t) * 8)
+#define XWORD_MAX 0xffffffffU
+
 typedef unsigned long xdword_t;
-static const int bits_per_xword = sizeof(xword_t) * 8;
 
 struct xint_s
 {
@@ -37,8 +39,6 @@ int xint_copy(xint_t u, const xint_t v);
 void xint_swap(xint_t u, xint_t v);
 
 // Assignment functions
-void xint_assign_1(xint_t u, xword_t val);
-void xint_assign_2(xint_t u, xdword_t val);
 void xint_assign_ulong(xint_t u, unsigned long val);
 void xint_assign_long(xint_t u, long val);
 
@@ -47,6 +47,7 @@ static inline int xint_is_neg(const xint_t u) { return u->size < 0; }
 static inline int xint_is_zero(const xint_t u) { return u->size == 0; }
 static inline int xint_is_pos(const xint_t u) { return u->size > 0; }
 static inline void xint_chs(xint_t u) { u->size = -u->size; }
+static inline void xint_set_sign(xint_t u, int s) { u->size *= s; }
 static inline void xint_set_pos(xint_t u) { u->size = abs(u->size); }
 static inline void xint_set_neg(xint_t u) { u->size = -abs(u->size); }
 static inline void xint_abs(xint_t u) { u->size = abs(u->size); }
@@ -56,35 +57,37 @@ static inline void xint_set_zero(xint_t u) { u->size = 0; }
 // Absolute arithmetic
 int xint_cmpa_1(const xint_t u, xword_t v);
 int xint_cmpa(const xint_t u, const xint_t v);
-int xint_cmpa_long(const xint_t u, const unsigned long v);
+int xint_cmpa_ulong(const xint_t u, const unsigned long v);
+int xint_cmp_ulong(const xint_t u, const unsigned long v);
+int xint_cmp_long(const xint_t u, const long v);
 int xint_adda(xint_t w, const xint_t u, const xint_t v);
 int xint_adda_1(xint_t w, const xint_t u, xword_t v);
 int xint_suba(xint_t w, const xint_t u, const xint_t v);
 int xint_suba_1(xint_t w, const xint_t u, xword_t v);
-uint32_t xint_sqr(xint_t w, const xint_t u);
-uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v);
-uint32_t xint_mul_1(xint_t w, const xint_t x, xword_t n);
-uint32_t xint_mul_2(xint_t w, const xint_t x, uint64_t n);
-uint32_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
-int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v);
-uint32_t xint_mod(xint_t r, const xint_t u, const xint_t v);
-int xint_mod_1(xword_t *r, const xint_t u, uint32_t v);
+xword_t xint_sqr(xint_t w, const xint_t u);
+xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
+xword_t xint_mul_1(xint_t w, const xint_t x, xword_t n);
+xword_t xint_mul_2(xint_t w, const xint_t x, xdword_t n);
+xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
+int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
+xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);
+int xint_mod_1(xword_t *r, const xint_t u, xword_t v);
 int xint_add_1(xint_t w, xint_t u, xword_t v);
 int add(xint_t W, xint_t U, xint_t V);
 int sub(xint_t W, xint_t U, xint_t V);
 int addsub(xint_t W, xint_t U, xint_t V, int Upos, int Vpos);
-uint32_t xint_mul_1_add_1(xint_t w, xint_t u, unsigned m, unsigned a);
+xword_t xint_mul_1_add_1(xint_t w, xint_t u, unsigned m, unsigned a);
 
 // Signed arithmetic
 int xint_add(xint_t w, const xint_t u, const xint_t v);
 int xint_sub(xint_t w, const xint_t u, const xint_t v);
-uint32_t xint_mul(xint_t w, const xint_t u, const xint_t v);
-int xint_div_1(xint_t q, xword_t *r, const xint_t u, uint32_t v);
+xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
+int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 
 // Bit manipulation
 int xint_highest_bit(xint_t x);
-uint32_t xint_lshift(xint_t y, const xint_t x, int numbits);
-uint32_t xint_rshift(xint_t y, const xint_t x, int numbits);
+xword_t xint_lshift(xint_t y, const xint_t x, int numbits);
+xword_t xint_rshift(xint_t y, const xint_t x, int numbits);
 
 #ifdef __cplusplus
 }

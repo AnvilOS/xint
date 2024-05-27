@@ -20,18 +20,23 @@ TEST(signed_arith, simple)
     xint_assign_long(c, -600);
     
     xint_adds(z, a, b); // 1100
-    ASSERT_TRUE(xint_cmpa_long(z, 1100) == 0 && xint_is_pos(z));
+    ASSERT_TRUE(xint_cmp_long(z, 1100) == 0);
     xint_adds(z, a, c); // -100
-    ASSERT_TRUE(xint_cmpa_long(z, 100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmp_long(z, -100) == 0);
     xint_adds(z, c, a); // -100
-    ASSERT_TRUE(xint_cmpa_long(z, 100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmp_long(z, -100) == 0);
     xint_subs(z, a, b); // -100
-    ASSERT_TRUE(xint_cmpa_long(z, 100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmp_long(z, -100) == 0);
     xint_subs(z, a, c); // 1100
-    ASSERT_TRUE(xint_cmpa_long(z, 1100) == 0 && xint_is_pos(z));
+    ASSERT_TRUE(xint_cmp_long(z, 1100) == 0);
     xint_subs(z, c, a); // -1100
-    ASSERT_TRUE(xint_cmpa_long(z, 1100) == 0 && xint_is_neg(z));
+    ASSERT_TRUE(xint_cmp_long(z, -1100) == 0);
     
+    xint_assign_ulong(z, 0xfffffffffffffffeUL);
+    ASSERT_EQ(1, xint_cmp_ulong(z, 0xfffffffffffffffdUL));
+    ASSERT_EQ(0, xint_cmp_ulong(z, 0xfffffffffffffffeUL));
+    ASSERT_EQ(-1, xint_cmp_ulong(z, 0xffffffffffffffffUL));
+
     END_TEST(signed_arith);
 }
 

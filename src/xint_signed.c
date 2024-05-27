@@ -3,6 +3,16 @@
 
 static int add_signed(xint_t w, xint_t u, xint_t v, int Upos, int Vpos);
 
+int xint_cmp_ulong(const xint_t u, const unsigned long val)
+{
+    return u->size < 0 ? -1 : xint_cmpa_ulong(u, val);
+}
+
+int xint_cmp_long(const xint_t u, const long val)
+{
+    return val >= 0 ? xint_cmp_ulong(u, val) : -xint_cmpa_ulong(u, -val);
+}
+
 int xint_adds(xint_t w, xint_t u, xint_t v)
 {
     return add_signed(w, u, v, !xint_is_neg(u), !xint_is_neg(v));
