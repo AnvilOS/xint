@@ -9,8 +9,8 @@ extern "C"
 {
 #endif // __cplusplus
 
-int xint_adds(xint_t W, xint_t U, xint_t V);
-int xint_subs(xint_t W, xint_t U, xint_t V);
+int xint_add(xint_t w, const xint_t u, const xint_t v);
+int xint_sub(xint_t w, const xint_t u, const xint_t v);
 
 #ifdef __cplusplus
 }

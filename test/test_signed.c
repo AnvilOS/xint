@@ -19,17 +19,17 @@ TEST(signed_arith, simple)
     xint_assign_ulong(b, 600);
     xint_assign_long(c, -600);
     
-    xint_adds(z, a, b); // 1100
+    xint_add(z, a, b); // 1100
     ASSERT_TRUE(xint_cmp_long(z, 1100) == 0);
-    xint_adds(z, a, c); // -100
+    xint_add(z, a, c); // -100
     ASSERT_TRUE(xint_cmp_long(z, -100) == 0);
-    xint_adds(z, c, a); // -100
+    xint_add(z, c, a); // -100
     ASSERT_TRUE(xint_cmp_long(z, -100) == 0);
-    xint_subs(z, a, b); // -100
+    xint_sub(z, a, b); // -100
     ASSERT_TRUE(xint_cmp_long(z, -100) == 0);
-    xint_subs(z, a, c); // 1100
+    xint_sub(z, a, c); // 1100
     ASSERT_TRUE(xint_cmp_long(z, 1100) == 0);
-    xint_subs(z, c, a); // -1100
+    xint_sub(z, c, a); // -1100
     ASSERT_TRUE(xint_cmp_long(z, -1100) == 0);
     
     xint_assign_ulong(z, 0xfffffffffffffffeUL);
