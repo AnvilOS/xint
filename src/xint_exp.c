@@ -34,7 +34,7 @@ uint32_t xint_exp_1_lr(xint_t x, int a, int e)
         xint_sqr(x, x);
         if (e & mask)
         {
-            xint_mul_1(x, x, a);
+            xint_mul_ulong(x, x, a);
         }
         mask >>= 1;
     }

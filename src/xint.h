@@ -13,6 +13,8 @@ typedef unsigned xword_t;
 #define XWORD_MAX 0xffffffffU
 
 typedef unsigned long xdword_t;
+#define XDWORD_BITS (sizeof(xdword_t) * 8)
+#define XDWORD_MAX 0xffffffffffffffffULL
 
 struct xint_s
 {
@@ -70,8 +72,7 @@ int xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val);
 int xint_sub_long(xint_t w, const xint_t u, const long val);
 xword_t xint_sqr(xint_t w, const xint_t u);
 xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
-xword_t xint_mul_1(xint_t w, const xint_t x, xword_t n);
-xword_t xint_mul_2(xint_t w, const xint_t x, xdword_t n);
+xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v);
 xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);

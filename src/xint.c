@@ -19,7 +19,7 @@ static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
 static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
-
+static xword_t x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn);
 static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
@@ -31,6 +31,29 @@ static xword_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 static xdword_t x_squ_add_1(xword_t *W, xword_t *U, int sz);
+
+#define XINT_SWAP(__type, __a, __b) \
+do {                                \
+    __type t = (__a);               \
+    (__a) = (__b);                  \
+    (__b) = t;                      \
+} while (0)
+
+#define FAST_RESIZE(__x, __s)       \
+do                                  \
+{                                   \
+    if ((__s) <= (__x)->capacity)   \
+    {                               \
+        (__x)->size = __s;          \
+    }                               \
+    else                            \
+    {                               \
+        _fast_resize((__x), (__s)); \
+    }                               \
+} while (0);
+
+void _fast_resize(xint_t x, int new_size);
+
 
 // Initialisation functions
 int xint_init(xint_t u)
@@ -129,22 +152,6 @@ int xint_cmpa_ulong(const xint_t u, const unsigned long v)
 }
 
 // Absolute arithmetic
-static xword_t x_cmp(const xword_t *U, int Un, const xword_t *V,int Vn)
-{
-    if (Un != Vn)
-    {
-        return Un < Vn ? -1 : 1;
-    }
-    for (int j=Un-1; j>=0; --j)
-    {
-        if (U[j] != V[j])
-        {
-            return U[j] < V[j] ? -1 : 1;
-        }
-    }
-    return 0;
-}
-
 int xint_cmpa_1(const xint_t u, xword_t v)
 {
     return x_cmp(u->data, abs(u->size), &v, 1);
@@ -335,6 +342,13 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
     int Vn = abs(v->size);
+    int Ws = (u->size * v->size) > 0;
+    
+    if (Un < Vn)
+    {
+        XINT_SWAP(const struct xint_s *, u, v);
+        XINT_SWAP(int, Un, Vn);
+    }
 
     if (Vn <= 2)
     {
@@ -345,28 +359,31 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         }
         else if (Vn == 1)
         {
-            return xint_mul_1(w, u, v->data[0]);
-        }
-        else
-        {
-            return xint_mul_2(w, u, ((xdword_t)v->data[1] << 32) | v->data[0]);
-        }
-    }
-    
-    if (Un <= 2)
-    {
-        if (Un == 0)
-        {
-            w->size = 0;
+            resize(w, Un);
+            xword_t k = x_mul_1(w->data, u->data, Un, v->data[0], 0);
+            if (k)
+            {
+                resize(w, Un + 1);
+                w->data[Un] = k;
+            }
             return 0;
         }
-        else if (Un == 1)
-        {
-            return xint_mul_1(w, v, u->data[0]);
-        }
         else
         {
-            return xint_mul_2(w, v, ((xdword_t)u->data[1] << 32) | u->data[0]);
+            resize(w, Un);
+            xdword_t k = x_mul_2(w->data, u->data, Un, (xdword_t)v->data[1] << 32 | v->data[0]);
+            if (k > 0xffffffff)
+            {
+                resize(w, Un + 2);
+                w->data[Un] = (xword_t)k;
+                w->data[Un + 1] = k >> 32;
+            }
+            else if (k)
+            {
+                resize(w, Un + 1);
+                w->data[Un] = (xword_t)k;
+            }
+            return 0;
         }
     }
     
@@ -403,39 +420,66 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
     {
         x_mul(W, U, Un, V, Vn);
     }
-    
     trim_zeroes(w);
+    xint_set_sign(w, Ws);
     return 0;
 }
 
-xword_t xint_mul_1(xint_t w, const xint_t x, xword_t n)
+xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
 {
-    int Xn = abs(x->size);
-    resize(w, Xn);
-    xword_t k = x_mul_1(w->data, x->data, Xn, n, 0);
-    if (k)
+    int Uneg = xint_is_neg(u);
+    if (v <= XDWORD_MAX)
     {
-        resize(w, Xn + 1);
-        w->data[Xn] = k;
+        int Un = abs(u->size);
+        FAST_RESIZE(w, Un + 1);
+        if (v <= XWORD_MAX)
+        {
+            xword_t k = x_mul_1(w->data, u->data, Un, (xword_t)v, 0);
+            if (k)
+            {
+                w->data[Un] = k;
+            }
+            else
+            {
+                --w->size;
+            }
+        }
+        else
+        {
+            xdword_t k = x_mul_2(w->data, u->data, Un, v);
+            if (k > XWORD_MAX)
+            {
+                FAST_RESIZE(w, Un + 2);
+                w->data[Un] = (xword_t)k;
+                w->data[Un + 1] = k >> 32;
+            }
+            else if (k)
+            {
+                w->data[Un] = (xword_t)k;
+            }
+            else
+            {
+                --w->size;
+            }
+        }
+        if (Uneg)
+        {
+            xint_set_neg(w);
+        }
+        return 0;
     }
-    return 0;
+    xword_t vvv[4];
+    xint_t vv = { 4, 0, vvv };
+    xint_assign_ulong(vv, v);
+    return xint_mul(w, u, vv);
 }
 
-xword_t xint_mul_2(xint_t w, const xint_t x, xdword_t n)
+xword_t xint_mul_long(xint_t w, const xint_t u, long v)
 {
-    int Xn = abs(x->size);
-    resize(w, Xn);
-    xdword_t k = x_mul_2(w->data, x->data, Xn, n);
-    if (k > 0xffffffff)
+    xint_mul_ulong(w, u, labs(v));
+    if (v < 0)
     {
-        resize(w, Xn + 2);
-        w->data[Xn] = (xword_t)k;
-        w->data[Xn + 1] = k >> 32;
-    }
-    else if (k)
-    {
-        resize(w, Xn + 1);
-        w->data[Xn] = (xword_t)k;
+        xint_chs(w);
     }
     return 0;
 }
@@ -684,6 +728,21 @@ static int resize(xint_t x, int new_size)
     return 0;
 }
 
+void _fast_resize(xint_t x, int new_size)
+{
+    if (new_size > x->capacity)
+    {
+        void *new_mem = realloc(x->data, sizeof(xword_t) * new_size);
+        if (new_mem == NULL)
+        {
+            return;
+        }
+        x->capacity = new_size;
+        x->data = new_mem;
+    }
+    x->size = new_size;
+}
+
 static void x_zero(xword_t *Y, size_t sz)
 {
     memset(Y, 0, sz * sizeof(xword_t));
@@ -712,6 +771,22 @@ static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
         Y[j] = (X[j] >> shift_bits) | (X[j + 1] << (32 - shift_bits));
     }
     Y[sz - 1] = X[sz - 1] >> shift_bits;
+    return 0;
+}
+
+static xword_t x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn)
+{
+    if (Un != Vn)
+    {
+        return Un < Vn ? -1 : 1;
+    }
+    for (int j=Un-1; j>=0; --j)
+    {
+        if (U[j] != V[j])
+        {
+            return U[j] < V[j] ? -1 : 1;
+        }
+    }
     return 0;
 }
 

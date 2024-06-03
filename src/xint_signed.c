@@ -53,7 +53,7 @@ int xint_sub(xint_t w, const xint_t u, const xint_t v)
     return add_signed(w, u, v, !xint_is_neg(u), xint_is_neg(v));
 }
 
-int add_signed(xint_t w, const xint_t u, const xint_t v, int upos, int vpos)
+static int add_signed(xint_t w, const xint_t u, const xint_t v, int upos, int vpos)
 {
     if (upos == vpos)
     {
