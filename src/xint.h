@@ -58,7 +58,8 @@ static inline void xint_set_zero(xint_t u) { u->size = 0; }
 
 // Absolute arithmetic
 int xint_cmpa_1(const xint_t u, xword_t v);
-int xint_cmpa(const xint_t u, const xint_t v);
+//int xint_cmpa(const xint_t u, const xint_t v);
+int xint_cmp(const xint_t u, const xint_t v);
 int xint_cmpa_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_long(const xint_t u, const long v);

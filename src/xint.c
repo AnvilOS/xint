@@ -14,7 +14,8 @@ static void trim_zeroes(xint_t u);
 static int get_highest_word(xint_t x);
 static int get_highest_bit(xword_t word);
 static int resize(xint_t x, int new_size);
-static int add_signed(xint_t w, const xint_t u, const xint_t v, int Upos, int Vpos);
+static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int Upos, int Vpos);
+static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int Upos, int Vpos);
 
 static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
@@ -139,6 +140,21 @@ void xint_assign_long(xint_t u, long val)
     }
 }
 
+// Compare functions
+int xint_cmpa_ulong(const xint_t u, const unsigned long v)
+{
+    if (v <= XWORD_MAX)
+    {
+        // fits in a single xword
+        xword_t vv = (xword_t)v;
+        return x_cmp(u->data, abs(u->size), &vv, 1);
+    }
+    xword_t vvv[4];
+    xint_t vv = { 4, 0, vvv };
+    xint_assign_ulong(vv, v);
+    return xint_cmp(u, vv);
+}
+
 int xint_cmp_ulong(const xint_t u, const unsigned long val)
 {
     return u->size < 0 ? -1 : xint_cmpa_ulong(u, val);
@@ -159,44 +175,92 @@ int xint_cmp_long(const xint_t u, const long val)
     return -xint_cmpa_ulong(u, -val);
 }
 
-int xint_cmpa_ulong(const xint_t u, const unsigned long v)
-{
-    if (v <= XWORD_MAX)
-    {
-        // fits in a single xword
-        return xint_cmpa_1(u, (xword_t)v);
-    }
-    xword_t vvv[4];
-    xint_t vv = { 4, 0, vvv };
-    xint_assign_ulong(vv, v);
-    return xint_cmpa(u, vv);
-}
-
-// Absolute arithmetic
-int xint_cmpa_1(const xint_t u, xword_t v)
-{
-    return x_cmp(u->data, abs(u->size), &v, 1);
-}
-
-int xint_cmpa(const xint_t u, const xint_t v)
-{
-    if (u == v)
-    {
-        return 0;
-    }
-    return x_cmp(u->data, abs(u->size), v->data, abs(v->size));
-}
-
 int xint_cmp(const xint_t u, const xint_t v)
 {
-    if (u == v)
+    if (u->size != v->size)
     {
-        return 0;
+        return u->size < v->size ? -1 : 1;
     }
-    return u->size > 0 ? x_cmp(u->data, abs(u->size), v->data, abs(v->size)) : x_cmp(v->data, abs(v->size), u->data, abs(u->size));
+    return u->size > 0 ? x_cmp(u->data, abs(u->size), v->data, abs(v->size)) : -x_cmp(v->data, abs(v->size), u->data, abs(u->size));
 }
 
-// Utility functions
+// Addition and Subtraction functions
+int xint_add_ulong(xint_t w, const xint_t u, const unsigned long val)
+{
+    //return xint_adda_ulong(w, u, val);
+    return add_or_sub_long(w, u, val, u->size >= 0, 1);
+}
+
+int xint_add_long(xint_t w, const xint_t u, const long val)
+{
+//    return val >= 0 ? xint_add_ulong(w, u, val) : xint_sub_ulong(w, u, -val);
+    return add_or_sub_long(w, u, labs(val), u->size >= 0, val >= 0);
+}
+
+int xint_add(xint_t w, const xint_t u, const xint_t v)
+{
+    return add_or_sub(w, u, v, !xint_is_neg(u), !xint_is_neg(v));
+}
+
+int xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val)
+{
+    //return xint_suba_ulong(w, u, val);
+    return add_or_sub_long(w, u, val, u->size >= 0, 0);
+}
+
+int xint_sub_long(xint_t w, const xint_t u, const long val)
+{
+    //return val >= 0 ? xint_sub_ulong(w, u, val) : xint_add_ulong(w, u, val);
+    return add_or_sub_long(w, u, labs(val), u->size >= 0, val < 0);
+}
+
+int xint_sub(xint_t w, const xint_t u, const xint_t v)
+{
+    return add_or_sub(w, u, v, !xint_is_neg(u), xint_is_neg(v));
+}
+
+static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int upos, int vpos)
+{
+    if (upos == vpos)
+    {
+        xint_adda_ulong(w, u, v);
+        upos ? xint_set_pos(w) : xint_set_neg(w);
+    }
+    else
+    {
+        if (xint_suba_ulong(w, u, v) < 0)
+        {
+            upos ? xint_set_neg(w) : xint_set_pos(w);
+        }
+        else
+        {
+            upos ? xint_set_pos(w) : xint_set_neg(w);
+        }
+    }
+    return -1;
+}
+
+static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int upos, int vpos)
+{
+    if (upos == vpos)
+    {
+        xint_adda(w, u, v);
+        upos ? xint_set_pos(w) : xint_set_neg(w);
+    }
+    else
+    {
+        if (xint_suba(w, u, v) < 0)
+        {
+            upos ? xint_set_neg(w) : xint_set_pos(w);
+        }
+        else
+        {
+            upos ? xint_set_pos(w) : xint_set_neg(w);
+        }
+    }
+    return -1;
+}
+
 int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
@@ -251,56 +315,6 @@ int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
     return xint_adda(w, u, vv);
 }
 
-int xint_add_ulong(xint_t w, const xint_t u, const unsigned long val)
-{
-    return xint_adda_ulong(w, u, val);
-}
-
-int xint_add_long(xint_t w, const xint_t u, const long val)
-{
-    return val >= 0 ? xint_add_ulong(w, u, val) : xint_sub_ulong(w, u, -val);
-}
-
-int xint_add(xint_t w, const xint_t u, const xint_t v)
-{
-    return add_signed(w, u, v, !xint_is_neg(u), !xint_is_neg(v));
-}
-
-int xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val)
-{
-    return xint_suba_ulong(w, u, val);
-}
-
-int xint_sub_long(xint_t w, const xint_t u, const long val)
-{
-    return val >= 0 ? xint_sub_ulong(w, u, val) : xint_add_ulong(w, u, val);
-}
-
-int xint_sub(xint_t w, const xint_t u, const xint_t v)
-{
-    return add_signed(w, u, v, !xint_is_neg(u), xint_is_neg(v));
-}
-
-static int add_signed(xint_t w, const xint_t u, const xint_t v, int upos, int vpos)
-{
-    if (upos == vpos)
-    {
-        xint_adda(w, u, v);
-        upos ? xint_set_pos(w) : xint_set_neg(w);
-    }
-    else
-    {
-        if (xint_suba(w, u, v) < 0)
-        {
-            upos ? xint_set_neg(w) : xint_set_pos(w);
-        }
-        else
-        {
-            upos ? xint_set_pos(w) : xint_set_neg(w);
-        }
-    }
-    return -1;
-}
 int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
     // XXX: what about if u or v is 0
@@ -308,7 +322,7 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
     int Vn = abs(v->size);
     xword_t b = 0;
 
-    int cmp = xint_cmpa(u, v);
+    int cmp = x_cmp(u->data, Un, v->data, Vn);
     switch (cmp)
     {
         case 0: // U == V
@@ -337,7 +351,7 @@ int xint_suba_1(xint_t w, const xint_t u, xword_t v)
     int Un = abs(u->size);
     xword_t b = 0;
 
-    int cmp = xint_cmpa_1(u, v);
+    int cmp = x_cmp(u->data, abs(u->size), &v, 1);
     switch (cmp)
     {
         case 0: // U == V
@@ -373,6 +387,7 @@ int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
     return xint_suba(w, u, vv);
 }
 
+// Multiplication functions
 xword_t xint_sqr(xint_t w, const xint_t u)
 {
     if (u->size == 0)
@@ -568,6 +583,7 @@ xword_t xint_mul_1_add_1(xint_t w, xint_t u, xword_t m, xword_t a)
     return k;
 }
 
+// Division functions
 int xint_highest_bit(xint_t x)
 {
     // Find the highest bit in the highest word in v that contains data
@@ -601,7 +617,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         r->data[0] = rem;
         return 0;
     }
-    int cmp = xint_cmpa(u, v);
+    int cmp = x_cmp(u->data, Un, v->data, Vn);
     if (cmp <= 0)
     {
         if (cmp == 0)
@@ -681,6 +697,7 @@ int xint_mod_1(xword_t *r, const xint_t u, xword_t v)
     return 0;
 }
 
+// Bitwise functions
 xword_t xint_lshift(xint_t y, const xint_t x, int numbits)
 {
     // Calculate the shift

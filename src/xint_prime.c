@@ -98,11 +98,11 @@ int xint_miller_rabin(xint_t n, int t)
         xint_mod_exp(y, a, r, n);
 
         // 2.3 If y̸ != 1 and y̸ != n−1 then do the following:
-        if (xint_cmp_long(y, 1) != 0 && xint_cmpa(y, nm1) != 0)
+        if (xint_cmp_long(y, 1) != 0 && xint_cmp(y, nm1) != 0)
         {
             // j = 1.
             // While j <= s − 1 and y != n − 1 do the following:
-            for (int j=0; (j<s) && (xint_cmpa(y, nm1) != 0); ++j)
+            for (int j=0; (j<s) && (xint_cmp(y, nm1) != 0); ++j)
             {
                 // Compute y = y^2 mod n.
                 xint_sqr(y, y);
@@ -116,7 +116,7 @@ int xint_miller_rabin(xint_t n, int t)
                 // j = j + 1.
             }
             // If y != n − 1 then return (“composite”).
-            if (xint_cmpa(y, nm1) != 0)
+            if (xint_cmp(y, nm1) != 0)
             {
                 ret = 0;
                 goto cleanup;

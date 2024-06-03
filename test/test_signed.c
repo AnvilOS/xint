@@ -3,7 +3,7 @@
 
 #include "test_harness.h"
 
-#include "xint_signed.h"
+#include "xint.h"
 #include "xint_io.h"
 
 TEST_GROUP(signed_arith);
