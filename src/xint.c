@@ -17,6 +17,11 @@ static int resize(xint_t x, int new_size);
 static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int Upos, int Vpos);
 static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int Upos, int Vpos);
 
+static int xint_adda(xint_t w, const xint_t u, const xint_t v);
+static int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v);
+static int xint_suba(xint_t w, const xint_t u, const xint_t v);
+static int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v);
+
 static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
 static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
@@ -94,20 +99,17 @@ void xint_delete(xint_t u)
 }
 
 // Copy functions
-int xint_copy(xint_t u, const xint_t v)
+void xint_copy(xint_t u, const xint_t v)
 {
     // Copy v to u
     if (u == v)
     {
-        return 0;
+        return;
     }
     int Vn = abs(v->size);
-    if (resize(u, Vn) == -1)
-    {
-        return -1;
-    }
+    FAST_RESIZE(u, Vn);
     x_move(u->data, v->data, Vn);
-    return 0;
+    u->size = v->size;
 }
 
 void xint_swap(xint_t u, xint_t v)
@@ -125,7 +127,7 @@ void xint_assign_ulong(xint_t u, unsigned long val)
     u->size = 0;
     while (val)
     {
-        resize(u, u->size + 1);
+        FAST_RESIZE(u, u->size + 1);
         u->data[u->size - 1] = (xword_t)val;
         val >>= XWORD_BITS;
     }
@@ -185,38 +187,34 @@ int xint_cmp(const xint_t u, const xint_t v)
 }
 
 // Addition and Subtraction functions
-int xint_add_ulong(xint_t w, const xint_t u, const unsigned long val)
+void xint_add_ulong(xint_t w, const xint_t u, const unsigned long val)
 {
-    //return xint_adda_ulong(w, u, val);
-    return add_or_sub_long(w, u, val, u->size >= 0, 1);
+    add_or_sub_long(w, u, val, u->size >= 0, 1);
 }
 
-int xint_add_long(xint_t w, const xint_t u, const long val)
+void xint_add_long(xint_t w, const xint_t u, const long val)
 {
-//    return val >= 0 ? xint_add_ulong(w, u, val) : xint_sub_ulong(w, u, -val);
-    return add_or_sub_long(w, u, labs(val), u->size >= 0, val >= 0);
+    add_or_sub_long(w, u, labs(val), u->size >= 0, val >= 0);
 }
 
-int xint_add(xint_t w, const xint_t u, const xint_t v)
+void xint_add(xint_t w, const xint_t u, const xint_t v)
 {
-    return add_or_sub(w, u, v, !xint_is_neg(u), !xint_is_neg(v));
+    add_or_sub(w, u, v, !xint_is_neg(u), !xint_is_neg(v));
 }
 
-int xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val)
+void xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val)
 {
-    //return xint_suba_ulong(w, u, val);
-    return add_or_sub_long(w, u, val, u->size >= 0, 0);
+    add_or_sub_long(w, u, val, u->size >= 0, 0);
 }
 
-int xint_sub_long(xint_t w, const xint_t u, const long val)
+void xint_sub_long(xint_t w, const xint_t u, const long val)
 {
-    //return val >= 0 ? xint_sub_ulong(w, u, val) : xint_add_ulong(w, u, val);
-    return add_or_sub_long(w, u, labs(val), u->size >= 0, val < 0);
+    add_or_sub_long(w, u, labs(val), u->size >= 0, val < 0);
 }
 
-int xint_sub(xint_t w, const xint_t u, const xint_t v)
+void xint_sub(xint_t w, const xint_t u, const xint_t v)
 {
-    return add_or_sub(w, u, v, !xint_is_neg(u), xint_is_neg(v));
+    add_or_sub(w, u, v, !xint_is_neg(u), xint_is_neg(v));
 }
 
 static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int upos, int vpos)
@@ -226,16 +224,13 @@ static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int upos, 
         xint_adda_ulong(w, u, v);
         upos ? xint_set_pos(w) : xint_set_neg(w);
     }
+    else if (xint_suba_ulong(w, u, v) < 0)
+    {
+        upos ? xint_set_neg(w) : xint_set_pos(w);
+    }
     else
     {
-        if (xint_suba_ulong(w, u, v) < 0)
-        {
-            upos ? xint_set_neg(w) : xint_set_pos(w);
-        }
-        else
-        {
-            upos ? xint_set_pos(w) : xint_set_neg(w);
-        }
+        upos ? xint_set_pos(w) : xint_set_neg(w);
     }
     return -1;
 }
@@ -247,21 +242,18 @@ static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int upos, int vp
         xint_adda(w, u, v);
         upos ? xint_set_pos(w) : xint_set_neg(w);
     }
+    else if (xint_suba(w, u, v) < 0)
+    {
+        upos ? xint_set_neg(w) : xint_set_pos(w);
+    }
     else
     {
-        if (xint_suba(w, u, v) < 0)
-        {
-            upos ? xint_set_neg(w) : xint_set_pos(w);
-        }
-        else
-        {
-            upos ? xint_set_pos(w) : xint_set_neg(w);
-        }
+        upos ? xint_set_pos(w) : xint_set_neg(w);
     }
     return -1;
 }
 
-int xint_adda(xint_t w, const xint_t u, const xint_t v)
+static int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
     int Vn = abs(v->size);
@@ -285,29 +277,24 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     return 0;
 }
 
-int xint_adda_1(xint_t w, const xint_t u, xword_t v)
-{
-    int Un = abs(u->size);
-    // This is the only failure point
-    if (resize(w, Un) == -1)
-    {
-        return -1;
-    }
-    xword_t k = x_add_1(w->data, u->data, v, Un);
-    if (k)
-    {
-        resize(w, Un + 1);
-        w->data[Un] = k;
-    }
-    return 0;
-}
-
-int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
+static int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
 {
     if (v <= XWORD_MAX)
     {
         // fits in a single xword
-        return xint_adda_1(w, u, (xword_t)v);
+        int Un = abs(u->size);
+        // This is the only failure point
+        if (resize(w, Un) == -1)
+        {
+            return -1;
+        }
+        xword_t k = x_add_1(w->data, u->data, (xword_t)v, Un);
+        if (k)
+        {
+            resize(w, Un + 1);
+            w->data[Un] = k;
+        }
+        return 0;
     }
     xword_t vvv[4];
     xint_t vv = { 4, 0, vvv };
@@ -315,7 +302,7 @@ int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
     return xint_adda(w, u, vv);
 }
 
-int xint_suba(xint_t w, const xint_t u, const xint_t v)
+static int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
     // XXX: what about if u or v is 0
     int Un = abs(u->size);
@@ -346,40 +333,36 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
     return cmp;
 }
 
-int xint_suba_1(xint_t w, const xint_t u, xword_t v)
-{
-    int Un = abs(u->size);
-    xword_t b = 0;
-
-    int cmp = x_cmp(u->data, abs(u->size), &v, 1);
-    switch (cmp)
-    {
-        case 0: // U == V
-            w->size = 0;
-            return 0;
-            
-        case -1: // U < V
-            // XXX: what about if u is 0
-            resize(w, 1);
-            b = x_sub_1(w->data, &v, u->data[0], 1);
-            break;
-
-        case 1: // U > V
-            resize(w, Un);
-            b = x_sub_1(w->data, u->data, v, Un);
-            break;
-    }
-    assert(b == 0);
-    trim_zeroes(w);
-    return cmp;
-}
-
-int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
+static int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
 {
     if (v <= XWORD_MAX)
     {
         // fits in a single xword
-        return xint_suba_1(w, u, (xword_t)v);
+        int Un = abs(u->size);
+        xword_t b = 0;
+
+        xword_t vv = (xword_t)v;
+        int cmp = x_cmp(u->data, abs(u->size), &vv, 1);
+        switch (cmp)
+        {
+            case 0: // U == V
+                w->size = 0;
+                return 0;
+                
+            case -1: // U < V
+                // XXX: what about if u is 0
+                resize(w, 1);
+                b = x_sub_1(w->data, &vv, u->data[0], 1);
+                break;
+
+            case 1: // U > V
+                resize(w, Un);
+                b = x_sub_1(w->data, u->data, vv, Un);
+                break;
+        }
+        assert(b == 0);
+        trim_zeroes(w);
+        return 0;
     }
     xword_t vvv[4];
     xint_t vv = { 4, 0, vvv };

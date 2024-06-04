@@ -75,7 +75,7 @@ int xint_miller_rabin(xint_t n, int t)
     // 1. Write n − 1 = 2^s * r such that r is odd.
     int ret = 0;
     xint_t nm1 = XINT_INIT_VAL;
-    xint_suba_1(nm1, n, 1);
+    xint_sub_ulong(nm1, n, 1);
     // Remove as many factors of 2 as possible
     int s = 0;
     xint_t r = XINT_INIT_VAL;

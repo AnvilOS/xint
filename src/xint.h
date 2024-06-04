@@ -37,7 +37,7 @@ int xint_init2(xint_t u, int reserve);
 void xint_delete(xint_t u);
 
 // Copy functions
-int xint_copy(xint_t u, const xint_t v);
+void xint_copy(xint_t u, const xint_t v);
 void xint_swap(xint_t u, xint_t v);
 
 // Assignment functions
@@ -56,21 +56,21 @@ static inline void xint_abs(xint_t u) { u->size = abs(u->size); }
 static inline int xint_size(const xint_t u) { return abs(u->size); }
 static inline void xint_set_zero(xint_t u) { u->size = 0; }
 
-// Absolute arithmetic
-int xint_cmpa_1(const xint_t u, xword_t v);
-//int xint_cmpa(const xint_t u, const xint_t v);
+// Compare arithmetic
 int xint_cmp(const xint_t u, const xint_t v);
 int xint_cmpa_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_long(const xint_t u, const long v);
-int xint_adda(xint_t w, const xint_t u, const xint_t v);
-int xint_adda_1(xint_t w, const xint_t u, xword_t v);
-int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v);
-int xint_suba(xint_t w, const xint_t u, const xint_t v);
-int xint_suba_1(xint_t w, const xint_t u, xword_t v);
-int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v);
-int xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val);
-int xint_sub_long(xint_t w, const xint_t u, const long val);
+
+// Addition and Subtraction functions
+void xint_add_ulong(xint_t w, const xint_t u, const unsigned long val);
+void xint_add_long(xint_t w, const xint_t u, const long val);
+void xint_add(xint_t w, const xint_t u, const xint_t v);
+void xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val);
+void xint_sub_long(xint_t w, const xint_t u, const long val);
+void xint_sub(xint_t w, const xint_t u, const xint_t v);
+
+
 xword_t xint_sqr(xint_t w, const xint_t u);
 xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
 xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v);
@@ -78,15 +78,8 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);
 int xint_mod_1(xword_t *r, const xint_t u, xword_t v);
-int xint_add_1(xint_t w, xint_t u, xword_t v);
-int add(xint_t W, xint_t U, xint_t V);
-int sub(xint_t W, xint_t U, xint_t V);
-int addsub(xint_t W, xint_t U, xint_t V, int Upos, int Vpos);
 xword_t xint_mul_1_add_1(xint_t w, xint_t u, unsigned m, unsigned a);
 
-// Signed arithmetic
-int xint_add(xint_t w, const xint_t u, const xint_t v);
-int xint_sub(xint_t w, const xint_t u, const xint_t v);
 xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 

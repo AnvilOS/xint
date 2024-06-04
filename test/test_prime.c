@@ -23,7 +23,7 @@ TEST(prime, simple)
         {
             break;
         }
-        xint_adda_1(candidate, candidate, 1);
+        xint_add_ulong(candidate, candidate, 1);
     }
 
     xint_t expected = XINT_INIT_VAL;
