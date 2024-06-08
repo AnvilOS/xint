@@ -62,6 +62,12 @@ int xint_cmpa_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_long(const xint_t u, const long v);
 
+// Absolute addition and subtraction
+int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long val);
+int xint_adda(xint_t w, const xint_t u, const xint_t v);
+int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long val);
+int xint_suba(xint_t w, const xint_t u, const xint_t v);
+
 // Addition and Subtraction functions
 void xint_add_ulong(xint_t w, const xint_t u, const unsigned long val);
 void xint_add_long(xint_t w, const xint_t u, const long val);
@@ -70,7 +76,6 @@ void xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val);
 void xint_sub_long(xint_t w, const xint_t u, const long val);
 void xint_sub(xint_t w, const xint_t u, const xint_t v);
 
-
 xword_t xint_sqr(xint_t w, const xint_t u);
 xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
 xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v);
@@ -78,7 +83,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);
 int xint_mod_1(xword_t *r, const xint_t u, xword_t v);
-xword_t xint_mul_1_add_1(xint_t w, xint_t u, unsigned m, unsigned a);
+xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
 
 xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);

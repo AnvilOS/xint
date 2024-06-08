@@ -17,11 +17,6 @@ static int resize(xint_t x, int new_size);
 static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int Upos, int Vpos);
 static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int Upos, int Vpos);
 
-static int xint_adda(xint_t w, const xint_t u, const xint_t v);
-static int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v);
-static int xint_suba(xint_t w, const xint_t u, const xint_t v);
-static int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v);
-
 static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
 static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
@@ -219,6 +214,14 @@ void xint_sub(xint_t w, const xint_t u, const xint_t v)
 
 static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int upos, int vpos)
 {
+    if (v > XWORD_MAX)
+    {
+        xword_t vvv[4];
+        xint_t vv = { 4, 0, vvv };
+        xint_assign_ulong(vv, v);
+        add_or_sub(w, u, vv, upos, vpos);
+        return 0;
+    }
     if (upos == vpos)
     {
         xint_adda_ulong(w, u, v);
@@ -253,17 +256,13 @@ static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int upos, int vp
     return -1;
 }
 
-static int xint_adda(xint_t w, const xint_t u, const xint_t v)
+int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
     int Vn = abs(v->size);
     int Wn = MAX(Un, Vn);
 
-    // This is the only failure point
-    if (resize(w, Wn) == -1)
-    {
-        return -1;
-    }
+    resize(w, Wn);
     int part1_len = MIN(Un, Vn);
     int part2_len = abs(Un - Vn);
     xword_t *bigger = Un>Vn ? u->data : v->data;
@@ -277,7 +276,7 @@ static int xint_adda(xint_t w, const xint_t u, const xint_t v)
     return 0;
 }
 
-static int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
+int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
 {
     if (v <= XWORD_MAX)
     {
@@ -302,7 +301,7 @@ static int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
     return xint_adda(w, u, vv);
 }
 
-static int xint_suba(xint_t w, const xint_t u, const xint_t v)
+int xint_suba(xint_t w, const xint_t u, const xint_t v)
 {
     // XXX: what about if u or v is 0
     int Un = abs(u->size);
@@ -333,7 +332,7 @@ static int xint_suba(xint_t w, const xint_t u, const xint_t v)
     return cmp;
 }
 
-static int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
+int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
 {
     if (v <= XWORD_MAX)
     {
@@ -350,9 +349,15 @@ static int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
                 return 0;
                 
             case -1: // U < V
-                // XXX: what about if u is 0
-                resize(w, 1);
-                b = x_sub_1(w->data, &vv, u->data[0], 1);
+                if (u->size == 0)
+                {
+                    xint_assign_ulong(w, v);
+                }
+                else
+                {
+                    resize(w, 1);
+                    b = x_sub_1(w->data, &vv, u->data[0], Un);
+                }
                 break;
 
             case 1: // U > V
@@ -428,29 +433,36 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         }
         else if (Vn == 1)
         {
-            resize(w, Un);
+            FAST_RESIZE(w, Un + 1);
             xword_t k = x_mul_1(w->data, u->data, Un, v->data[0], 0);
             if (k)
             {
-                resize(w, Un + 1);
                 w->data[Un] = k;
+            }
+            else
+            {
+                --w->size;
             }
             return 0;
         }
         else
         {
-            resize(w, Un);
+            FAST_RESIZE(w, Un + 2);
             xdword_t k = x_mul_2(w->data, u->data, Un, (xdword_t)v->data[1] << 32 | v->data[0]);
-            if (k > 0xffffffff)
+            if (k > XWORD_MAX)
             {
-                resize(w, Un + 2);
+                //FAST_RESIZE(w, Un + 2);
                 w->data[Un] = (xword_t)k;
                 w->data[Un + 1] = k >> 32;
             }
             else if (k)
             {
-                resize(w, Un + 1);
                 w->data[Un] = (xword_t)k;
+                --w->size;
+            }
+            else
+            {
+                w->size -= 2;
             }
             return 0;
         }
@@ -461,7 +473,7 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         return xint_sqr(w, u);
     }
 
-    resize(w, Un + Vn);
+    FAST_RESIZE(w, Un + Vn);
 
     xword_t *U = u->data;
     xword_t *V = v->data;
@@ -496,51 +508,54 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
 
 xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
 {
-    int Uneg = xint_is_neg(u);
-    if (v <= XDWORD_MAX)
+    if (v > XDWORD_MAX)
     {
-        int Un = abs(u->size);
+        xword_t vvv[4];
+        xint_t vv = { 4, 0, vvv };
+        xint_assign_ulong(vv, v);
+        return xint_mul(w, u, vv);
+    }
+
+    int Uneg = xint_is_neg(u);
+    int Un = abs(u->size);
+    if (v <= XWORD_MAX)
+    {
         FAST_RESIZE(w, Un + 1);
-        if (v <= XWORD_MAX)
+        xword_t k = x_mul_1(w->data, u->data, Un, (xword_t)v, 0);
+        if (k)
         {
-            xword_t k = x_mul_1(w->data, u->data, Un, (xword_t)v, 0);
-            if (k)
-            {
-                w->data[Un] = k;
-            }
-            else
-            {
-                --w->size;
-            }
+            w->data[Un] = k;
         }
         else
         {
-            xdword_t k = x_mul_2(w->data, u->data, Un, v);
-            if (k > XWORD_MAX)
-            {
-                FAST_RESIZE(w, Un + 2);
-                w->data[Un] = (xword_t)k;
-                w->data[Un + 1] = k >> 32;
-            }
-            else if (k)
-            {
-                w->data[Un] = (xword_t)k;
-            }
-            else
-            {
-                --w->size;
-            }
+            --w->size;
         }
-        if (Uneg)
-        {
-            xint_set_neg(w);
-        }
-        return 0;
     }
-    xword_t vvv[4];
-    xint_t vv = { 4, 0, vvv };
-    xint_assign_ulong(vv, v);
-    return xint_mul(w, u, vv);
+    else if (v <= XDWORD_MAX)
+    {
+        FAST_RESIZE(w, Un + 2);
+        xdword_t k = x_mul_2(w->data, u->data, Un, v);
+        if (k > XWORD_MAX)
+        {
+            //FAST_RESIZE(w, Un + 2);
+            w->data[Un] = (xword_t)k;
+            w->data[Un + 1] = k >> 32;
+        }
+        else if (k)
+        {
+            w->data[Un] = (xword_t)k;
+            --w->size;
+        }
+        else
+        {
+            w->size -= 2;
+        }
+    }
+    if (Uneg)
+    {
+        xint_set_neg(w);
+    }
+    return 0;
 }
 
 xword_t xint_mul_long(xint_t w, const xint_t u, long v)
@@ -553,17 +568,24 @@ xword_t xint_mul_long(xint_t w, const xint_t u, long v)
     return 0;
 }
 
-xword_t xint_mul_1_add_1(xint_t w, xint_t u, xword_t m, xword_t a)
+xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a)
 {
-    int Un = abs(u->size);
-    resize(w, Un);
-    xword_t k = x_mul_1(w->data, u->data, Un, m, a);
-    if (k)
+    if (m <= XWORD_MAX && a <= XWORD_MAX)
     {
-        resize(w, Un + 1);
-        w->data[Un] = k;
+        int Un = abs(u->size);
+        FAST_RESIZE(w, Un+1);
+        xword_t k = x_mul_1(w->data, u->data, Un, (xword_t)m, (xword_t)a);
+        if (k)
+        {
+            w->data[Un] = k;
+        }
+        else
+        {
+            --w->size;
+        }
+        return k;
     }
-    return k;
+    return 0;
 }
 
 // Division functions

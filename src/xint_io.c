@@ -144,7 +144,7 @@ void xint_from_string(xint_t x, const char *s)
         {
             val = tolower(*s) - 'a' + 10;
         }
-        xint_mul_1_add_1(x, x, 16, val);
+        xint_muladd_ulong(x, x, 16, val);
         ++s;
     }
 }
@@ -158,7 +158,7 @@ void xint_from_dec_string(xint_t x, const char *s)
         {
             val = *s - '0';
         }
-        xint_mul_1_add_1(x, x, 10, val);
+        xint_muladd_ulong(x, x, 10, val);
         ++s;
     }
 }
@@ -167,7 +167,7 @@ void xint_from_bin(xint_t x, const uint8_t *p, size_t len)
 {
     while (len--)
     {
-        xint_mul_1_add_1(x, x, 256, *p);
+        xint_muladd_ulong(x, x, 256, *p);
         ++p;
     }
 }

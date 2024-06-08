@@ -10,19 +10,19 @@ TEST_GROUP(abs_arith);
 TEST(abs_arith, adda_suba_1)
 {
     xint_t u = XINT_INIT_VAL;
-    xint_adda_1(u, u, 1);
+    xint_adda_ulong(u, u, 1);
     ASSERT_TRUE(u->size == 1 && u->data[0] == 1);
-    xint_adda_1(u, u, 0xfffffffe);
+    xint_adda_ulong(u, u, 0xfffffffe);
     ASSERT_TRUE(u->size == 1 && u->data[0] == 0xffffffff);
-    xint_adda_1(u, u, 1);
+    xint_adda_ulong(u, u, 1);
     ASSERT_TRUE(u->size == 2 && u->data[1] == 1 && u->data[0] == 0);
-    xint_adda_1(u, u, 1);
+    xint_adda_ulong(u, u, 1);
     ASSERT_TRUE(u->size == 2 && u->data[1] == 1 && u->data[0] == 1);
-    xint_suba_1(u, u, 0xfffffffe);
+    xint_suba_ulong(u, u, 0xfffffffe);
     ASSERT_TRUE(u->size == 1 && u->data[0] == 3);
-    xint_suba_1(u, u, 1);
+    xint_suba_ulong(u, u, 1);
     ASSERT_TRUE(u->size == 1 && u->data[0] == 2);
-    xint_suba_1(u, u, 2);
+    xint_suba_ulong(u, u, 2);
     ASSERT_TRUE(u->size == 0);
     xint_delete(u);
 
@@ -32,23 +32,23 @@ TEST(abs_arith, adda_suba_1)
 TEST(abs_arith, adda_suba_1_neg)
 {
     xint_t u = XINT_INIT_VAL;
-    xint_adda_1(u, u, 1);
+    xint_adda_ulong(u, u, 1);
     xint_chs(u);
     ASSERT_TRUE(u->size == -1 && u->data[0] == 1);
-    xint_adda_1(u, u, 0xfffffffe);
+    xint_adda_ulong(u, u, 0xfffffffe);
     ASSERT_TRUE(u->size == -1 && u->data[0] == 0xffffffff);
-    xint_adda_1(u, u, 1);
+    xint_adda_ulong(u, u, 1);
     ASSERT_TRUE(u->size == -2 && u->data[1] == 1 && u->data[0] == 0);
-    xint_adda_1(u, u, 1);
+    xint_adda_ulong(u, u, 1);
     ASSERT_TRUE(u->size == -2 && u->data[1] == 1 && u->data[0] == 1);
-    xint_suba_1(u, u, 0xfffffffe);
+    xint_suba_ulong(u, u, 0xfffffffe);
     ASSERT_TRUE(u->size == -1 && u->data[0] == 3);
-    xint_suba_1(u, u, 1);
+    xint_suba_ulong(u, u, 1);
     ASSERT_TRUE(u->size == -1 && u->data[0] == 2);
-    xint_suba_1(u, u, 2);
+    xint_suba_ulong(u, u, 2);
     ASSERT_TRUE(u->size == 0);
-    xint_suba_1(u, u, 5);
-    ASSERT_TRUE(u->size == -1 && u->data[0] == 5);
+    xint_suba_ulong(u, u, 5);
+    ASSERT_TRUE(u->size == 1 && u->data[0] == 5);
     xint_delete(u);
 
     END_TEST(abs_arith);
@@ -71,14 +71,14 @@ TEST(abs_arith, adda_suba)
     ASSERT_TRUE(w->size == 0);
 
     // Same sized terms
-    xint_suba_1(u, u, 2);
+    xint_suba_ulong(u, u, 2);
     xint_suba(w, u, v);
     ASSERT_TRUE(w->size == 1 && w->data[0] == 2);
     xint_suba(w, v, u);
     ASSERT_TRUE(w->size == 1 && w->data[0] == 2);
 
     // Different sized terms
-    xint_adda_1(u, u, 2);
+    xint_adda_ulong(u, u, 4);
     xint_suba(w, u, v);
     ASSERT_TRUE(w->size == 1 && w->data[0] == 2);
     xint_suba(w, v, u);
