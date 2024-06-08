@@ -7,7 +7,7 @@
 
 TEST_GROUP(abs_arith);
 
-TEST(abs_arith, adda_suba_1)
+TEST(abs_arith, adda_suba_ulong)
 {
     xint_t u = XINT_INIT_VAL;
     xint_adda_ulong(u, u, 1);
@@ -29,7 +29,7 @@ TEST(abs_arith, adda_suba_1)
     END_TEST(abs_arith);
 }
 
-TEST(abs_arith, adda_suba_1_neg)
+TEST(abs_arith, adda_suba_ulong_neg)
 {
     xint_t u = XINT_INIT_VAL;
     xint_adda_ulong(u, u, 1);
@@ -96,8 +96,8 @@ TEST(abs_arith, adda_suba)
 
 int test_abs_arith(void)
 {
-    CALL_TEST(abs_arith, adda_suba_1);
-    CALL_TEST(abs_arith, adda_suba_1_neg);
+    CALL_TEST(abs_arith, adda_suba_ulong);
+    CALL_TEST(abs_arith, adda_suba_ulong_neg);
     CALL_TEST(abs_arith, adda_suba);
 
     END_TEST_GROUP(abs_arith);

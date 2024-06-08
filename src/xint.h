@@ -76,17 +76,18 @@ void xint_sub_ulong(xint_t w, const xint_t u, const unsigned long val);
 void xint_sub_long(xint_t w, const xint_t u, const long val);
 void xint_sub(xint_t w, const xint_t u, const xint_t v);
 
+// Multiplication functions
 xword_t xint_sqr(xint_t w, const xint_t u);
 xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
 xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v);
+xword_t xint_mul_long(xint_t w, const xint_t u, long v);
+xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
+
+// Division and modulus functions
 xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);
 int xint_mod_1(xword_t *r, const xint_t u, xword_t v);
-xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
-
-xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
-int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 
 // Bit manipulation
 int xint_highest_bit(xint_t x);
