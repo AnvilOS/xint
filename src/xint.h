@@ -84,6 +84,9 @@ xword_t xint_mul_long(xint_t w, const xint_t u, long v);
 xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
 
 // Division and modulus functions
+void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v);
+void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v);
+void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v);
 xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
 xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);

@@ -597,6 +597,48 @@ int xint_highest_bit(xint_t x)
     return highest_word * 32 + highest_bit;
 }
 
+void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v)
+{
+    int Us = u->size >= 0;
+    int Vs = v->size >= 0;
+    xint_div(q, r, u, v);
+    if (Us != Vs)
+    {
+        xint_set_neg(q);
+    }
+    int Qs = q->size >= 0;
+    if (Qs != Vs)
+    {
+        xint_set_neg(r);
+    }
+}
+
+void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v)
+{
+    int Vs = v->size >= 0;
+    xint_div_trunc(q, r, u, v);
+    int Rs = r->size >= 0;
+    if (Rs != Vs)
+    {
+        // floor =  u/v - (u%v!=0 && (u^v)<0);
+        xint_sub_ulong(q, q, 1);
+        xint_add(r, r, v);
+    }
+}
+
+void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v)
+{
+    int Vs = v->size >= 0;
+    xint_div_trunc(q, r, u, v);
+    int Rs = r->size >= 0;
+    if (Rs != Vs)
+    {
+        //ceil u/v + (u%v!=0 && (u^v)>0);
+        xint_add_ulong(q, q, 1);
+        xint_sub(r, r, v);
+    }
+}
+
 xword_t xint_mod(xint_t r, const xint_t u, const xint_t v)
 {
     return xint_div(0, r, u, v);
