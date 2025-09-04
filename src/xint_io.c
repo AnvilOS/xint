@@ -171,3 +171,13 @@ void xint_from_bin(xint_t x, const uint8_t *p, size_t len)
         ++p;
     }
 }
+
+void xint_from_words(xint_t x, const xword_t *p, size_t len)
+{
+    while (len--)
+    {
+        xint_lshift(x, x, 32);
+        xint_add_ulong(x, x, *p);
+        ++p;
+    }
+}

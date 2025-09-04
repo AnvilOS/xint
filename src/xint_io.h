@@ -16,6 +16,7 @@ char *xint_to_string(const xint_t u, int base);
 void xint_from_dec_string(xint_t x, const char *s);
 void xint_from_string(xint_t x, const char *s);
 void xint_from_bin(xint_t x, const uint8_t *s, size_t len);
+void xint_from_words(xint_t x, const xword_t *s, size_t len);
 
 #ifdef __cplusplus
 }
