@@ -28,11 +28,11 @@ static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
 static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
-static xdword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xdword_t v);
+static xword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xword_t v1, xword_t v0);
 static xword_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
 static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
-static xdword_t x_squ_add_1(xword_t *W, xword_t *U, int sz);
+static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz);
 
 #define XINT_SWAP(__type, __a, __b) \
 do {                                \
@@ -55,7 +55,6 @@ do                                  \
 } while (0);
 
 void _fast_resize(xint_t x, int new_size);
-
 
 // Initialisation functions
 int xint_init(xint_t u)
@@ -398,15 +397,14 @@ xword_t xint_sqr(xint_t w, const xint_t u)
 
     // Clear the bottom words
     x_zero(w->data, Un);
-    xword_t prev_k = 0;
+    xword_t k = 0;
     for (int j=0; j<Un; ++j)
     {
-        xdword_t k = x_squ_add_1(W+j+j, U+j, Un-j);
-        W[Un + j] = (xword_t)k;
-        W[Un + j] += prev_k;
-        prev_k = k >> 32;
+        xword_t tmp = x_squ_add_1(W+j+j, U+j, Un-j+1);
+        W[Un + j] += k;
+        k = tmp;
     }
-    assert(prev_k == 0);
+    assert(k == 0);
 
     trim_zeroes(w);
     return 0;
@@ -448,21 +446,14 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         else
         {
             FAST_RESIZE(w, Un + 2);
-            xdword_t k = x_mul_2(w->data, u->data, Un, (xdword_t)v->data[1] << 32 | v->data[0]);
-            if (k > XWORD_MAX)
+            xword_t k = x_mul_2(w->data, u->data, Un + 1, v->data[1], v->data[0]);
+            if (k)
             {
-                //FAST_RESIZE(w, Un + 2);
-                w->data[Un] = (xword_t)k;
-                w->data[Un + 1] = k >> 32;
-            }
-            else if (k)
-            {
-                w->data[Un] = (xword_t)k;
-                --w->size;
+                w->data[Un+1] = k;
             }
             else
             {
-                w->size -= 2;
+                --w->size;
             }
             return 0;
         }
@@ -515,6 +506,12 @@ xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
         xint_assign_ulong(vv, v);
         return xint_mul(w, u, vv);
     }
+    
+    if (u->size == 0)
+    {
+        w->size = 0;
+        return 0;
+    }
 
     int Uneg = xint_is_neg(u);
     int Un = abs(u->size);
@@ -534,21 +531,14 @@ xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
     else if (v <= XDWORD_MAX)
     {
         FAST_RESIZE(w, Un + 2);
-        xdword_t k = x_mul_2(w->data, u->data, Un, v);
-        if (k > XWORD_MAX)
+        xword_t k = x_mul_2(w->data, u->data, Un + 1, v>>(XWORD_BITS), (xword_t)v);
+        if (k)
         {
-            //FAST_RESIZE(w, Un + 2);
-            w->data[Un] = (xword_t)k;
-            w->data[Un + 1] = k >> 32;
-        }
-        else if (k)
-        {
-            w->data[Un] = (xword_t)k;
-            --w->size;
+            w->data[Un+1] = k;
         }
         else
         {
-            w->size -= 2;
+            --w->size;
         }
     }
     if (Uneg)
@@ -690,22 +680,20 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 
     xint_copy(r, u); // r may sometimes grow
 
-    if (q)
-    {
-        resize(q, m + 1);
-    }
+    // Increase the size of R by one
     resize(r, m + n + 1);
     r->data[m + n] = 0;
 
     if (q)
     {
+        resize(q, m + 1);
         assert(abs(q->size) == m + 1);
     }
+
     assert(abs(r->size) == m + n + 1);
     assert(abs(v->size) == n);
     
     x_div(q?q->data:r->data + n, r->data, v->data, m, n);
-    //x_div(q->data, r->data, v->data, m, n);
 
     resize(r, n);
 
@@ -726,9 +714,15 @@ int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v)
         return -1;
     }
     int Un = abs(u->size);
-    resize(q, Un);
-    *r = x_div_1(q->data, u->data, v, Un);
-    trim_zeroes(q);
+    if (q)
+    {
+        resize(q, Un);
+    }
+    *r = x_div_1(q?q->data:0, u->data, v, Un);
+    if (q)
+    {
+        trim_zeroes(q);
+    }
     return 0;
 }
 
@@ -878,6 +872,22 @@ void _fast_resize(xint_t x, int new_size)
     x->size = new_size;
 }
 
+static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
+{
+    uint64_t x = (uint64_t)u * v;
+    *w = (xword_t)x;
+    *k = (xword_t)(x >> (XWORD_BITS));
+}
+
+static inline int div_2_1(xword_t *q, xword_t *r, xword_t n1, xword_t n0, xword_t d)
+{
+    xdword_t n = (xdword_t)n1 << XWORD_BITS | n0;
+    xdword_t full_q = n / d;
+    *q = (xword_t)full_q;
+    *r = n % d;
+    return full_q >> XWORD_BITS;
+}
+
 static void x_zero(xword_t *Y, size_t sz)
 {
     memset(Y, 0, sz * sizeof(xword_t));
@@ -977,9 +987,8 @@ static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n)
         // We check for underflow by comparing the minuend and subtrahend
         xword_t tmp1 = U[i] - b;
         b = b > U[i] ? 1 : 0;
-        xword_t tmp2 = tmp1 - V[i];
         b += V[i] > tmp1 ? 1 : 0;
-        W[i] = tmp2;
+        W[i] = tmp1 - V[i];
         // S3. [Loop on j]
     }
     return b;
@@ -1024,9 +1033,13 @@ static xword_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
     for (size_t i=0; i<m; ++i)
     {
         // M4. [Multiply and add]
-        xdword_t t = (xdword_t)U[i] * v + W[i] + k;
-        W[i] = (xword_t)t;
-        k = t >> 32;
+        xword_t hi, lo;
+        mul_1_1(&hi, &lo, U[i], v);
+        lo += k;
+        hi += lo < k;
+        W[i] += lo;
+        hi += W[i] < lo;
+        k = hi;
         // M5. [Loop on i]
     }
     return k;
@@ -1038,12 +1051,13 @@ static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
     xword_t b = 0;
     for (int i=0; i<n; ++i)
     {
-        xdword_t prod = (xdword_t)v * U[i];
+        xword_t hi, lo;
+        mul_1_1(&hi, &lo, U[i], v);
         xword_t tmp = W[i] - b;
-        b = tmp > W[i] ? 1 : 0;
-        W[i] = tmp - (xword_t)prod;
-        b += W[i] > tmp ? 1 : 0;
-        b += prod >> 32;
+        b = tmp > W[i];
+        W[i] = tmp - lo;
+        b += W[i] > tmp;
+        b += hi;
     }
     return b;
 }
@@ -1057,26 +1071,38 @@ static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k)
     for (size_t j=0; j<m; ++j)
     {
         // M4. [Multiply and add]
-        xdword_t t = (xdword_t)U[j] * v + k;
-        W[j] = (xword_t)t;
-        k = t >> 32;
+        xword_t hi;
+        mul_1_1(&hi, &W[j], U[j], v);
+        W[j] += k;
+        k = (W[j] < k) + hi;
         // M5. [Loop on i]
     }
     return k;
 }
 
-static xdword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xdword_t v)
+static xword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xword_t v1, xword_t v0)
 {
-    xword_t v0 = (xword_t)v;
-    xword_t v1 = v >> 32;
-    xdword_t k = 0;
-    for (int j=0; j<m; ++j)
+    xword_t k0 = 0;
+    xword_t k1 = 0;
+    for (int j=0; j<m-1; ++j)
     {
-        xdword_t p = (xdword_t)U[j] * v0 + (k & 0xffffffff);
-        k = (xdword_t)U[j] * v1 + (k >> 32) + (p >> 32);
-        W[j] = (xword_t)p;
+        xword_t p1, p0;
+        mul_1_1(&p1, &p0, U[j], v0);
+        p0 += k0;
+        p1 += p0 < k0;
+        xword_t t1, t0;
+        mul_1_1(&t1, &t0, U[j], v1);
+        t0 += k1;
+        t1 += t0 < k1;
+        t0 += p1;
+        t1 += t0 < p1;
+        k0 = t0;
+        k1 = t1;
+        W[j] = p0;
     }
-    return k;
+    assert(k0 || k1);
+    W[m-1] = k0;
+    return k1;
 }
 
 static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
@@ -1104,29 +1130,36 @@ static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
     for (int j=m; j>=0; --j)
     {
         // D3. [Calculate q^]
-        xdword_t numer = (xdword_t)R[j+n] * B + R[j+n-1];
+        xword_t n1 = R[j+n];
+        xword_t n0 = R[j+n-1];
         xword_t R_jnm2 = R[j+n-2];;
         if (bit_shift)
         {
-            numer <<= bit_shift;
-            numer |= R[j+n-2] >> (32 - bit_shift);
+            n1 <<= bit_shift;
+            n1 |= n0 >> (32 - bit_shift);
+            n0 <<= bit_shift;
+            n0 |= R[j+n-2] >> (32 - bit_shift);
             R_jnm2 <<= bit_shift;
             if (j+n-3 >= 0)
             {
                 R_jnm2 |= R[j+n-3] >> (32 - bit_shift);
             }
         }
-        xword_t denom = V_nm1;
-        xdword_t qhat = numer / denom;
-        xdword_t rhat = numer % denom;
-        while (qhat >= B || (qhat * V_nm2 > B * rhat + R_jnm2))
+        xword_t qhat;
+        xword_t rhat;
+        div_2_1(&qhat, &rhat, n1, n0, V_nm1);
+        xword_t p1, p0;
+        mul_1_1(&p1, &p0, qhat, V_nm2);
+
+        while ((qhat >= B) || (p1 > rhat) || ((p1 == rhat) && (p0 > R_jnm2)) )
         {
             --qhat;
-            rhat += denom;
-            if (rhat >= B)
+            rhat += V_nm1;
+            if (rhat < V_nm1)
             {
                 break;
             }
+            mul_1_1(&p1, &p0, qhat, V_nm2);
         }
 
         // D4. [Multiply and subtract.]
@@ -1174,29 +1207,44 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     return R;
 }
 
-static xdword_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
+static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
 {
-    xdword_t k = 0;
-
-    xdword_t t = (xdword_t)U[0] * U[0] + W[0];
-    W[0] = t & 0xffffffff;
-    k = t >> 32;
-
-    for (int i=1; i<sz; ++i)
+    xword_t k1 = 0;
+    xword_t k0 = 0;
+    xword_t tmp;
+    // k, W[0] = W[0] + U[0] * U[0]
+    mul_1_1(&k0, &tmp, U[0], U[0]);
+    W[0] += tmp;
+    k0 += W[0] < tmp;
+    
+    for (int i=1; i<sz-1; ++i)
     {
-        int of = 0;
-        xdword_t t = (xdword_t)U[i] * U[0];
-        of = ((t & 0x8000000000000000ULL) != 0);
-        t <<= 1;
-        t += W[i];
-        of += t < W[i];
-        // Max was fffffffe3d43b851 at b504f333
-        t += k;
-        // 1C2BC47AE
-        of += t < k;
-        W[i] = t & 0xffffffff;
-        k = t >> 32;
-        k |= (xdword_t)of << 32;
+        xword_t t2, t1, t0;
+        // t2, t1, t0 = U[i] * U[0]
+        mul_1_1(&t1, &t0, U[i], U[0]);
+
+        // t2, t1, t0 = 2 * [ t2, t1, t0 ]
+        t2 = t1 >> 31;
+        t1 <<= 1;
+        t1 |= t0 >> 31;
+        t0 <<= 1;
+
+        // t2, t1, t0 += k1, k0
+        t0 += k0;
+        t1 += t0 < k0;
+        t1 += k1;
+        t1 += t1 < k1;
+        t2 += t1 < (t1 < k1);
+
+        // t2, t1, t0 += W[i]
+        t0 += W[i];
+        t1 += t0 < W[i];
+        t2 += t1 < (t0 < W[i]);
+
+        W[i] = t0;
+        k0 = t1;
+        k1 = t2;
     }
-    return k;
+    W[sz-1] = k0;
+    return k1;
 }
