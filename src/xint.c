@@ -874,7 +874,7 @@ void _fast_resize(xint_t x, int new_size)
 
 static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
 {
-    uint64_t x = (uint64_t)u * v;
+    xdword_t x = (uint64_t)u * v;
     *w = (xword_t)x;
     *k = (xword_t)(x >> (XWORD_BITS));
 }
@@ -1196,12 +1196,12 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     for (int j=n-1; j>=0; --j)
     {
         // S2. [Set wj = (r * B + uj) / v , r = (r * B + uj) % v
-        xdword_t tmp = (xdword_t)R * B + U[j];
+        xword_t q;
+        div_2_1(&q, &R, R, U[j], V);
         if (Q)
         {
-            Q[j] = (xword_t)(tmp / V);
+            Q[j] = q;
         }
-        R = tmp % V;
         // S3. [Decrease j by 1, and return to S2]
     }
     return R;
@@ -1232,9 +1232,9 @@ static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
         // t2, t1, t0 += k1, k0
         t0 += k0;
         t1 += t0 < k0;
+        t2 += t1 < (t0 < k1);
         t1 += k1;
-        t1 += t1 < k1;
-        t2 += t1 < (t1 < k1);
+        t2 += t1 < k1;
 
         // t2, t1, t0 += W[i]
         t0 += W[i];
