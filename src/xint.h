@@ -5,16 +5,22 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <limits.h>
 
-#define XINT_INIT_VAL { 0, 0, NULL };
-
+// Definitions for xword_t size
+#if 1
 typedef unsigned xword_t;
-#define XWORD_BITS (sizeof(xword_t) * 8)
 #define XWORD_MAX 0xffffffffU
-
 typedef unsigned long xdword_t;
-#define XDWORD_BITS (sizeof(xdword_t) * 8)
-#define XDWORD_MAX 0xffffffffffffffffULL
+#define XDWORD_MAX 0xffffffffffffffffUL
+#define XWORD_HALF_MASK 0xffff
+#else
+typedef unsigned long xword_t;
+#define XWORD_MAX 0xffffffffffffffffUL
+#define XWORD_HALF_MASK 0xffffffffUL
+#endif
+
+#define XWORD_BITS (sizeof(xword_t) * 8)
 
 struct xint_s
 {
@@ -24,6 +30,8 @@ struct xint_s
     // growing and shrinking the array
     xword_t *data;
 };
+#define XINT_INIT_VAL { 0, 0, NULL };
+
 typedef struct xint_s xint_t[1];
 
 #ifdef __cplusplus

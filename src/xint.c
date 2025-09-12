@@ -8,8 +8,6 @@
 #define MIN(a, b) ((a)<(b)?(a):(b))
 #define MAX(a, b) ((a)>(b)?(a):(b))
 
-#define B 0x100000000ULL
-
 static void trim_zeroes(xint_t u);
 static int get_highest_word(xint_t x);
 static int get_highest_bit(xword_t word);
@@ -499,6 +497,7 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
 
 xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
 {
+#if defined XDWORD_MAX
     if (v > XDWORD_MAX)
     {
         xword_t vvv[4];
@@ -506,7 +505,7 @@ xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
         xint_assign_ulong(vv, v);
         return xint_mul(w, u, vv);
     }
-    
+#endif
     if (u->size == 0)
     {
         w->size = 0;
@@ -528,6 +527,7 @@ xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
             --w->size;
         }
     }
+#if defined XDWORD_MAX
     else if (v <= XDWORD_MAX)
     {
         FAST_RESIZE(w, Un + 2);
@@ -541,6 +541,7 @@ xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
             --w->size;
         }
     }
+#endif
     if (Uneg)
     {
         xint_set_neg(w);
@@ -872,13 +873,20 @@ void _fast_resize(xint_t x, int new_size)
     x->size = new_size;
 }
 
+#if defined XDWORD_MAX
 static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
 {
-    xdword_t x = (uint64_t)u * v;
+    xdword_t x = (xdword_t)u * v;
     *w = (xword_t)x;
     *k = (xword_t)(x >> (XWORD_BITS));
 }
+#else
+static inline void mul_1_1(xword_t *__k, xword_t *__w, xword_t __u, xword_t __v)
+{
+}
+#endif
 
+#if defined XDWORD_MAX
 static inline int div_2_1(xword_t *q, xword_t *r, xword_t n1, xword_t n0, xword_t d)
 {
     xdword_t n = (xdword_t)n1 << XWORD_BITS | n0;
@@ -887,6 +895,12 @@ static inline int div_2_1(xword_t *q, xword_t *r, xword_t n1, xword_t n0, xword_
     *r = n % d;
     return full_q >> XWORD_BITS;
 }
+#else
+static inline int div_2_1(xword_t *q, xword_t *r, xword_t n1, xword_t n0, xword_t d)
+{
+    return 0;
+}
+#endif
 
 static void x_zero(xword_t *Y, size_t sz)
 {
@@ -1150,8 +1164,8 @@ static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
         div_2_1(&qhat, &rhat, n1, n0, V_nm1);
         xword_t p1, p0;
         mul_1_1(&p1, &p0, qhat, V_nm2);
-
-        while ((qhat >= B) || (p1 > rhat) || ((p1 == rhat) && (p0 > R_jnm2)) )
+        
+        while (/*(qhat >= B) ||*/ (p1 > rhat) || ((p1 == rhat) && (p0 > R_jnm2)) )
         {
             --qhat;
             rhat += V_nm1;
