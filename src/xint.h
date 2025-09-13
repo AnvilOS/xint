@@ -8,19 +8,18 @@
 #include <limits.h>
 
 // Definitions for xword_t size
+#define XWORD_BITS (sizeof(xword_t) * 8)
+#define XWORD_MAX ((xword_t)-1)
+#define XWORD_HALF_MASK (XWORD_MAX>>(XWORD_BITS/2))
+
 #if 1
 typedef unsigned xword_t;
-#define XWORD_MAX 0xffffffffU
 typedef unsigned long xdword_t;
-#define XDWORD_MAX 0xffffffffffffffffUL
-#define XWORD_HALF_MASK 0xffff
+#define XDWORD_MAX ((xdword_t)-1)
 #else
 typedef unsigned long xword_t;
-#define XWORD_MAX 0xffffffffffffffffUL
-#define XWORD_HALF_MASK 0xffffffffUL
 #endif
 
-#define XWORD_BITS (sizeof(xword_t) * 8)
 
 struct xint_s
 {

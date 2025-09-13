@@ -881,8 +881,24 @@ static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
     *k = (xword_t)(x >> (XWORD_BITS));
 }
 #else
-static inline void mul_1_1(xword_t *__k, xword_t *__w, xword_t __u, xword_t __v)
+static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
 {
+    xword_t uh = u >> (XWORD_BITS/2);
+    xword_t ul = u & XWORD_HALF_MASK;
+    xword_t vh = v >> (XWORD_BITS/2);
+    xword_t vl = v & XWORD_HALF_MASK;
+    xword_t lo = ul * vl;
+    xword_t hi = uh * vh;
+    xword_t mid = uh * vl;
+    xword_t tmp;
+    tmp = ul * vh;
+    mid += tmp;
+    hi += (mid < tmp) << (XWORD_BITS/2);
+    tmp = lo >> (XWORD_BITS/2);
+    mid += tmp;
+    hi += (mid < tmp) << (XWORD_BITS/2);
+    *w = (lo & XWORD_HALF_MASK) | (mid << (XWORD_BITS/2));
+    *k = hi + (mid >> (XWORD_BITS/2));
 }
 #endif
 
