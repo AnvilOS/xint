@@ -903,18 +903,86 @@ static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
 #endif
 
 #if defined XDWORD_MAX
-static inline int div_2_1(xword_t *q, xword_t *r, xword_t n1, xword_t n0, xword_t d)
+static inline int div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_t v)
 {
-    xdword_t n = (xdword_t)n1 << XWORD_BITS | n0;
-    xdword_t full_q = n / d;
+    xdword_t u = (xdword_t)u1 << XWORD_BITS | u0;
+    xdword_t full_q = u / v;
     *q = (xword_t)full_q;
-    *r = n % d;
+    *r = u % v;
     return full_q >> XWORD_BITS;
 }
 #else
-static inline int div_2_1(xword_t *q, xword_t *r, xword_t n1, xword_t n0, xword_t d)
+static inline int div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_t v)
 {
-    return 0;
+    // We don't have a native 2 by 1 divide so we need to do a 4 by 2 divide,
+    // thus m=2 and n=2
+    xword_t qq[4], rr[2];
+
+    // These are 1/2 word size
+    xword_t vv[2], uu[4];
+    
+    vv[1] = v >> (XWORD_BITS/2);
+    vv[0] = v & XWORD_HALF_MASK;
+
+    uu[3] = u1 >> (XWORD_BITS/2);
+    uu[2] = u1 & XWORD_HALF_MASK;
+    uu[1] = u0 >> (XWORD_BITS/2);
+    uu[0] = u0 & XWORD_HALF_MASK;
+
+    if (vv[1] == 0)
+    {
+        // It's a 4 by 1 divide
+        rr[1] = rr[0] = 0;
+        for (int j=3; j>=0; --j)
+        {
+            // S2. [Set wj = (r * B + uj) / v , r = (r * B + uj) % v
+            xword_t tmp = rr[0] << (XWORD_BITS/2) | uu[j];
+            qq[j] = tmp / vv[0];
+            rr[0] = tmp % vv[0];
+            // S3. [Decrease j by 1, and return to S2]
+        }
+        *r = rr[1] << (XWORD_BITS/2) | rr[0];
+        *q = qq[1] << (XWORD_BITS/2) | qq[0];
+        return qq[3] << (XWORD_BITS/2) | qq[2];
+    }
+    else
+    {
+        xword_t qhat = u1 / vv[1];
+        xword_t rhat = u1 % vv[1];
+        
+        while (qhat >= 0x10000 || qhat * vv[0] > (rhat << (XWORD_BITS/2) | uu[1]))
+        {
+            --qhat;
+            rhat += vv[1];
+            if (rhat >= 0x10000)
+            {
+                break;
+            }
+        }
+        xword_t numer = (u1 << (XWORD_BITS/2)) + uu[1] - qhat * v;
+        qq[1] = qhat;
+        
+        qhat = numer / vv[1];
+        rhat = numer % vv[1];
+
+        while (qhat >= 0x10000 || qhat * vv[0] > (rhat << (XWORD_BITS/2) | uu[0]))
+        {
+            --qhat;
+            rhat += vv[1];
+            if (rhat >= 0x10000)
+            {
+                break;
+            }
+        }
+        
+        numer = (numer << (XWORD_BITS/2)) + uu[0] - qhat * v;
+        qq[0] = qhat;
+        
+        *r = numer;
+        *q = qq[1] << (XWORD_BITS/2) | qq[0];
+        
+        return 0;
+    }
 }
 #endif
 
