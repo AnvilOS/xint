@@ -585,7 +585,7 @@ int xint_highest_bit(xint_t x)
     // Find the highest bit in the highest word in v that contains data
     int highest_word = get_highest_word(x);
     int highest_bit = get_highest_bit(x->data[highest_word]);
-    return highest_word * 32 + highest_bit;
+    return highest_word * XWORD_BITS + highest_bit;
 }
 
 void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v)
@@ -743,8 +743,8 @@ int xint_mod_1(xword_t *r, const xint_t u, xword_t v)
 xword_t xint_lshift(xint_t y, const xint_t x, int numbits)
 {
     // Calculate the shift
-    int shift_words = numbits / 32;
-    int shift_bits = numbits % 32;
+    int shift_words = numbits / XWORD_BITS;
+    int shift_bits = numbits % XWORD_BITS;
 
     int Xn = abs(x->size);
 
@@ -775,8 +775,8 @@ xword_t xint_lshift(xint_t y, const xint_t x, int numbits)
 xword_t xint_rshift(xint_t y, const xint_t x, int numbits)
 {
     // Calculate the shift
-    int shift_words = numbits / 32;
-    int shift_bits = numbits % 32;
+    int shift_words = numbits / XWORD_BITS;
+    int shift_bits = numbits % XWORD_BITS;
 
     int Xn = abs(x->size);
 
@@ -837,7 +837,10 @@ static int get_highest_bit(xword_t word)
 {
     if (word)
     {
-        return 31 - __builtin_clz(word);
+        if (sizeof(word) == 8)
+            return (XWORD_BITS - 1) - __builtin_clzl(word);
+        else
+            return (XWORD_BITS - 1) - __builtin_clz(word);
     }
     return -1;
 }
@@ -998,10 +1001,10 @@ static void x_move(xword_t *Y, xword_t *X, size_t sz)
 
 static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
 {
-    xword_t ret = X[sz - 1] >> (32 - shift_bits);
+    xword_t ret = X[sz - 1] >> (XWORD_BITS - shift_bits);
     for (int j=sz-1; j>=1; --j)
     {
-        Y[j] = (X[j] << shift_bits) | (X[j - 1] >> (32 - shift_bits));
+        Y[j] = (X[j] << shift_bits) | (X[j - 1] >> (XWORD_BITS - shift_bits));
     }
     Y[0] = X[0] << shift_bits;
     return ret;
@@ -1011,7 +1014,7 @@ static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
 {
     for (int j=0; j<sz - 1; ++j)
     {
-        Y[j] = (X[j] >> shift_bits) | (X[j + 1] << (32 - shift_bits));
+        Y[j] = (X[j] >> shift_bits) | (X[j + 1] << (XWORD_BITS - shift_bits));
     }
     Y[sz - 1] = X[sz - 1] >> shift_bits;
     return 0;
@@ -1220,9 +1223,9 @@ static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
     // we need v1 to have its top bit set
     // Instead of shifting both U and V to the left we follow Knuth's suggestion
     // in problem 37 in 4.3.1
-    int bit_shift = 31 - get_highest_bit(V[n-1]);
-    xword_t V_nm1 = bit_shift ? V[n-1] << bit_shift | V[n-2] >> (32 - bit_shift) : V[n-1];
-    xword_t V_nm2 = bit_shift ? V[n-2] << bit_shift | V[n-3] >> (32 - bit_shift) : V[n-2];
+    int bit_shift = (XWORD_BITS-1) - get_highest_bit(V[n-1]);
+    xword_t V_nm1 = bit_shift ? V[n-1] << bit_shift | V[n-2] >> (XWORD_BITS - bit_shift) : V[n-1];
+    xword_t V_nm2 = bit_shift ? V[n-2] << bit_shift | V[n-3] >> (XWORD_BITS - bit_shift) : V[n-2];
 
     // D2. [Initialise j.]
     for (int j=m; j>=0; --j)
@@ -1234,13 +1237,13 @@ static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
         if (bit_shift)
         {
             n1 <<= bit_shift;
-            n1 |= n0 >> (32 - bit_shift);
+            n1 |= n0 >> (XWORD_BITS - bit_shift);
             n0 <<= bit_shift;
-            n0 |= R[j+n-2] >> (32 - bit_shift);
+            n0 |= R[j+n-2] >> (XWORD_BITS - bit_shift);
             R_jnm2 <<= bit_shift;
             if (j+n-3 >= 0)
             {
-                R_jnm2 |= R[j+n-3] >> (32 - bit_shift);
+                R_jnm2 |= R[j+n-3] >> (XWORD_BITS - bit_shift);
             }
         }
         xword_t qhat;
@@ -1322,9 +1325,9 @@ static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
         mul_1_1(&t1, &t0, U[i], U[0]);
 
         // t2, t1, t0 = 2 * [ t2, t1, t0 ]
-        t2 = t1 >> 31;
+        t2 = t1 >> (XWORD_BITS-1);
         t1 <<= 1;
-        t1 |= t0 >> 31;
+        t1 |= t0 >> (XWORD_BITS-1);
         t0 <<= 1;
 
         // t2, t1, t0 += k1, k0
