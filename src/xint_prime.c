@@ -54,7 +54,7 @@ int xint_is_prime(xint_t n)
         {
             return 1;
         }
-        uint32_t r;
+        xword_t r;
         xint_mod_1(&r, n, primes[i]);
         if (r == 0)
         {
@@ -137,7 +137,11 @@ cleanup:
 void xint_rand(xint_t u, xint_t max)
 {
     // Return a rand less than max
-    int x = rand() * 50 / 32676;
-    if (x == 0) ++x;
-    xint_assign_long(u, x);
+    long x = random();
+    xint_copy(u, max);
+    xint_mul_ulong(u, u, x);
+    while (xint_cmp(u, max) > 0)
+    {
+        xint_rshift(u, u, 1);
+    }
 }
