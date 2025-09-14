@@ -44,12 +44,12 @@ uint32_t xint_exp_1_lr(xint_t x, int a, int e)
 uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
 {
     int max_win_sz = 6;
-    uint32_t window_mask = ((uint32_t)-1) >> (32 - max_win_sz);
+    xword_t window_mask = ((xword_t)-1) >> (XWORD_BITS - max_win_sz);
     int wordnum = xint_size(exp) - 1;
     
     // Figure out where the msb is
     xword_t curr_word = exp->data[wordnum--];
-    uint32_t mask = 1 << 31;
+    xword_t mask = (xword_t)1 << (XWORD_BITS - 1);
     while (!(curr_word & mask))
     {
         mask >>= 1;
@@ -80,7 +80,7 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
     while (1)
     {
         // Get the current bit
-        int bit = (curr_word & mask) != 0;
+        xword_t bit = (curr_word & mask) != 0;
         mask >>= 1;
 
         if (!window && (bit == 0))
@@ -128,7 +128,7 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
                 break;
             }
             curr_word = exp->data[wordnum--];
-            mask = 1 << 31;
+            mask = (xword_t)1 << (XWORD_BITS - 1);
         }
     }
     xint_delete(g[1]);
@@ -172,7 +172,7 @@ uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const 
     while (1)
     {
         // Get win_sz bits
-        uint32_t window;
+        xword_t window;
         if (remaining_in_word >= win_sz)
         {
             window = curr_word >> (remaining_in_word - win_sz);

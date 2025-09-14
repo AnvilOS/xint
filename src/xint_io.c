@@ -11,7 +11,7 @@ void xint_print_raw(const char *label, xint_t u)
     printf("%s = [ ", label);
     for (long j=xint_size(u)-1; j>=0; --j)
     {
-        printf("0x%08x", u->data[j]);
+        printf(XWORD_BITS==32?"%08x":"%016lx", u->data[j]);
         if (j)
         {
             printf(", ");
@@ -72,14 +72,14 @@ char *xint_to_string(const xint_t u, int base)
         // needed = size * log10(2^32)
         //        = size * 32 * log10(2)
         //        = size * 9.633
-        needed = xint_size(TEMP) * 9633 / 1000;
+        needed = xint_size(TEMP) * XWORD_BITS / 32 * 9633 / 1000;
     }
     else if (base == 16)
     {
         // needed = size * log16(2^32)
         //        = size * 32 * log16(2)
         //        = size * 32 * 0.25
-        needed = xint_size(TEMP) * 8;
+        needed = xint_size(TEMP) * XWORD_BITS / 32 * 8;
     }
     else
     {
@@ -176,7 +176,7 @@ void xint_from_words(xint_t x, const xword_t *p, size_t len)
 {
     while (len--)
     {
-        xint_lshift(x, x, 32);
+        xint_lshift(x, x, XWORD_BITS);
         xint_add_ulong(x, x, *p);
         ++p;
     }

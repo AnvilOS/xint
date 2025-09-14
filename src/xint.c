@@ -19,7 +19,7 @@ static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
 static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
-static xword_t x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn);
+static int x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn);
 static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
@@ -116,12 +116,17 @@ void xint_swap(xint_t u, xint_t v)
 // Assignment functions
 void xint_assign_ulong(xint_t u, unsigned long val)
 {
+    xword_t v = val;
     u->size = 0;
     while (val)
     {
         FAST_RESIZE(u, u->size + 1);
-        u->data[u->size - 1] = (xword_t)val;
-        val >>= XWORD_BITS;
+        u->data[u->size - 1] = v;
+        if (sizeof(val) < XWORD_BITS)
+        {
+            break;
+        }
+        v >>= XWORD_BITS;
     }
 }
 
@@ -896,18 +901,19 @@ static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
     xword_t tmp;
     tmp = ul * vh;
     mid += tmp;
-    hi += (mid < tmp) << (XWORD_BITS/2);
+    hi += ((xword_t)(mid < tmp)) << (XWORD_BITS/2);
     tmp = lo >> (XWORD_BITS/2);
     mid += tmp;
-    hi += (mid < tmp) << (XWORD_BITS/2);
+    hi += ((xword_t)(mid < tmp)) << (XWORD_BITS/2);
     *w = (lo & XWORD_HALF_MASK) | (mid << (XWORD_BITS/2));
     *k = hi + (mid >> (XWORD_BITS/2));
 }
 #endif
 
 #if defined XDWORD_MAX
-static inline int div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_t v)
+static inline xword_t div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_t v)
 {
+    ++divcnt;
     xdword_t u = (xdword_t)u1 << XWORD_BITS | u0;
     xdword_t full_q = u / v;
     *q = (xword_t)full_q;
@@ -915,7 +921,7 @@ static inline int div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_
     return full_q >> XWORD_BITS;
 }
 #else
-static inline int div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_t v)
+static inline xword_t div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_t v)
 {
     // We don't have a native 2 by 1 divide so we need to do a 4 by 2 divide,
     // thus m=2 and n=2
@@ -953,11 +959,11 @@ static inline int div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_
         xword_t qhat = u1 / vv[1];
         xword_t rhat = u1 % vv[1];
         
-        while (qhat >= 0x10000 || qhat * vv[0] > (rhat << (XWORD_BITS/2) | uu[1]))
+        while (qhat >= XWORD_HALF_MASK + 1 || qhat * vv[0] > (rhat << (XWORD_BITS/2) | uu[1]))
         {
             --qhat;
             rhat += vv[1];
-            if (rhat >= 0x10000)
+            if (rhat >= XWORD_HALF_MASK + 1)
             {
                 break;
             }
@@ -968,11 +974,11 @@ static inline int div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_
         qhat = numer / vv[1];
         rhat = numer % vv[1];
 
-        while (qhat >= 0x10000 || qhat * vv[0] > (rhat << (XWORD_BITS/2) | uu[0]))
+        while (qhat >= XWORD_HALF_MASK + 1 || qhat * vv[0] > (rhat << (XWORD_BITS/2) | uu[0]))
         {
             --qhat;
             rhat += vv[1];
-            if (rhat >= 0x10000)
+            if (rhat >= XWORD_HALF_MASK + 1)
             {
                 break;
             }
@@ -1020,7 +1026,7 @@ static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
     return 0;
 }
 
-static xword_t x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn)
+static int x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn)
 {
     if (Un != Vn)
     {
