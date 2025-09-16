@@ -1,4 +1,5 @@
 
+#include "test_low_level.h"
 #include "test_init_ass.h"
 #include "test_cmp.h"
 #include "test_abs_arith.h"
@@ -9,6 +10,7 @@
 
 int main(int argc, const char * argv[])
 {
+    test_low_level();
     test_init_ass();
     test_cmp();
     test_abs_arith();

@@ -20,15 +20,12 @@ static void x_move(xword_t *Y, xword_t *X, size_t sz);
 static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 static int x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn);
-static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
-static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
 static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
 static xword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xword_t v1, xword_t v0);
 static xword_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
-static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz);
 
@@ -268,7 +265,7 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     int part1_len = MIN(Un, Vn);
     int part2_len = abs(Un - Vn);
     xword_t *bigger = Un>Vn ? u->data : v->data;
-    xword_t k = x_add(w->data, u->data, v->data, part1_len);
+    xword_t k = xll_add(w->data, u->data, v->data, part1_len);
     k = x_add_1(w->data+part1_len, bigger+part1_len, k, part2_len);
     if (k)
     {
@@ -481,7 +478,7 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         // Move V to the top of W - in reverse because there may be overlap
         x_move(W+Un, V, Vn);
         V = W + Un;
-        x_mul(W, U, Un, V, Vn);
+        xll_mul(W, U, Un, V, Vn);
     }
     else if (w == u)
     {
@@ -489,11 +486,11 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         x_move(W+Vn, U, Un);
         // Adjust the V pointer
         U = W + Vn;
-        x_mul(W, V, Vn, U, Un);
+        xll_mul(W, V, Vn, U, Un);
     }
     else
     {
-        x_mul(W, U, Un, V, Vn);
+        xll_mul(W, U, Un, V, Vn);
     }
     trim_zeroes(w);
     xint_set_sign(w, Ws);
@@ -690,7 +687,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     assert(abs(r->size) == m + n + 1);
     assert(abs(v->size) == n);
     
-    x_div(q?q->data:r->data + n, r->data, v->data, m, n);
+    xll_div(q?q->data:r->data + n, r->data, v->data, m, n);
 
     resize(r, n);
 
@@ -1020,7 +1017,7 @@ static int x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn)
     return 0;
 }
 
-static xword_t x_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
+xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
     // W[] = U[] + V[]
     // This function will work if any or all of the xints are
@@ -1091,7 +1088,7 @@ static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n)
     return b;
 }
 
-static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
+void xll_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
 {
     // Based on Knuth's algorithm M.
     // As pointed out by Knuth, algorithm M can cope with V[j] being co-located
@@ -1107,7 +1104,6 @@ static xword_t x_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
         W[j + m] = x_mul_add_1(W+j, U, m, V[j]);
         // M6. [Loop on j]
     }
-    return 0;
 }
 
 static xword_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
@@ -1191,7 +1187,7 @@ static xword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xword_t v1, xword_t v0)
     return k1;
 }
 
-static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
+void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
 {
     // As per Knuth's algorithm D
     // Assumptions
@@ -1265,14 +1261,13 @@ static xword_t x_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
             // Decrease Qj by one
             --Q[j];
             // Add V(Vn-1 to 0) to U(Vn+j to j)
-            xword_t k = x_add(R+j, R+j, V, n);
+            xword_t k = xll_add(R+j, R+j, V, n);
             assert(b - k == 0);
         }
         // D7. Loop on j
     }
     // D8. Un-normalise
     // Not needed
-    return 0;
 }
 
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
