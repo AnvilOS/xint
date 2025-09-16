@@ -15,8 +15,43 @@ TEST_GROUP(low_level);
 #define Ox8000__0000    ((xword_t)1<<(XWORD_BITS-1))
 #define Ox8000__0001    (((xword_t)1<<(XWORD_BITS-1))+1)
 #define Ox8000__0002    (((xword_t)1<<(XWORD_BITS-1))+2)
+#define OxFFFF__FFFB    ((xword_t)-5)
+#define OxFFFF__FFFC    ((xword_t)-4)
 #define OxFFFF__FFFD    ((xword_t)-3)
+#define OxFFFF__FFFE    ((xword_t)-2)
 #define OxFFFF__FFFF    ((xword_t)-1)
+
+// REMEMBER: xword_r arrays are LEAST significant first
+
+TEST(low_level, xll_add_sub)
+{
+    xword_t A[] = { OxFFFF__FFFF, OxFFFF__FFFE, OxFFFF__FFFD };
+    xword_t B[] = { OxFFFF__FFFF, 0, 0 };
+    xword_t k, b;
+    
+    // Check that in-place add works
+    k = xll_add(A, A, A, 3);
+    ASSERT_EQ(OxFFFF__FFFB, A[2]);
+    ASSERT_EQ(OxFFFF__FFFD, A[1]);
+    ASSERT_EQ(OxFFFF__FFFE, A[0]);
+    ASSERT_EQ(1, k);
+
+    // Check that sub works
+    b = xll_sub(A, A, B, 3);
+    ASSERT_EQ(OxFFFF__FFFB, A[2]);
+    ASSERT_EQ(OxFFFF__FFFC, A[1]);
+    ASSERT_EQ(OxFFFF__FFFF, A[0]);
+    ASSERT_EQ(0, b);
+
+    // Check that in-place sub works
+    b = xll_sub(A, A, A, 3);
+    ASSERT_EQ(0, A[2]);
+    ASSERT_EQ(0, A[1]);
+    ASSERT_EQ(0, A[0]);
+    ASSERT_EQ(0, b);
+
+    END_TEST(low_level);
+}
 
 TEST(low_level, xll_div_normalise)
 {
@@ -80,6 +115,7 @@ TEST(low_level, xll_div_addback)
 
 int test_low_level(void)
 {
+    CALL_TEST(low_level, xll_add_sub);
     CALL_TEST(low_level, xll_div_normalise);
     CALL_TEST(low_level, xll_div_addback);
     END_TEST_GROUP(low_level);

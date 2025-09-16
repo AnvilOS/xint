@@ -21,7 +21,6 @@ static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 static int x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
-static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
 static xword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xword_t v1, xword_t v0);
@@ -111,15 +110,14 @@ void xint_swap(xint_t u, xint_t v)
 }
 
 // Assignment functions
-void xint_assign_ulong(xint_t u, unsigned long val)
+void xint_assign_ulong(xint_t u, unsigned long v)
 {
-    xword_t v = val;
     u->size = 0;
-    while (val)
+    while (v)
     {
         FAST_RESIZE(u, u->size + 1);
-        u->data[u->size - 1] = v;
-        if (sizeof(val) < XWORD_BITS)
+        u->data[u->size - 1] = (xword_t)v;
+        if (sizeof(v) <= sizeof(xword_t))
         {
             break;
         }
@@ -127,10 +125,10 @@ void xint_assign_ulong(xint_t u, unsigned long val)
     }
 }
 
-void xint_assign_long(xint_t u, long val)
+void xint_assign_long(xint_t u, long v)
 {
-    xint_assign_ulong(u, labs(val));
-    if (val < 0)
+    xint_assign_ulong(u, labs(v));
+    if (v < 0)
     {
         xint_chs(u);
     }
@@ -316,13 +314,13 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
             
         case -1: // U < V
             resize(w, Vn);
-            b = x_sub(w->data, v->data, u->data, Un);
+            b = xll_sub(w->data, v->data, u->data, Un);
             b = x_sub_1(w->data+Un, v->data+Un, b, Vn-Un);
             break;
 
         case 1: // U > V
             resize(w, Un);
-            b = x_sub(w->data, u->data, v->data, Vn);
+            b = xll_sub(w->data, u->data, v->data, Vn);
             b = x_sub_1(w->data+Vn, u->data+Vn, b, Un-Vn);
             break;
     }
@@ -1054,7 +1052,7 @@ static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
     return k;
 }
 
-static xword_t x_sub(xword_t *W, xword_t *U, xword_t *V, size_t n)
+xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
     // This function will work if any or all of the xints are
     // in the same place in memory. e.g. a = a - a will work

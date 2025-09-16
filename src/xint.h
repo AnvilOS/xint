@@ -40,6 +40,7 @@ extern "C"
 
 // Low level functions
 xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
+xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 void xll_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
 void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 
