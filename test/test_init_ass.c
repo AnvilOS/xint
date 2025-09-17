@@ -42,7 +42,7 @@ TEST(init_ass, init)
     ASSERT_EQ(0, C->size);
     ASSERT_EQ(0, C->capacity);
     ASSERT_PTR_EQ(NULL, C->data);
-
+    
     END_TEST(init_ass);
 }
 
@@ -95,6 +95,8 @@ TEST(init_ass, assign)
         ASSERT_EQ((xword_t)-1, A->data[0]);
         ASSERT_EQ(((xword_t)-1)>>10, A->data[1]);
     }
+    
+    xint_delete(A);
     
     END_TEST(init_ass);
 }

@@ -60,6 +60,8 @@ TEST(cmp, cmpa_ulong)
     xint_add(A, A, A);
     ASSERT_EQ(1, xint_cmpa_ulong(A, Ox7FFFFFFFFFFFFFF1));
 
+    xint_delete(A);
+
     END_TEST(cmp);
 }
 
