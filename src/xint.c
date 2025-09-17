@@ -187,7 +187,7 @@ int xint_cmp_long(const xint_t u, const long val)
     {
         return xint_cmp_ulong(u, val);
     }
-    // val is neg
+    // else val is neg
     if (u->size >= 0)
     {
         // clearly u is bigger

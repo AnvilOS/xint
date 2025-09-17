@@ -101,10 +101,47 @@ TEST(init_ass, assign)
     END_TEST(init_ass);
 }
 
-TEST(init_ass, copy)
+#define Ox8000__0002    (((xword_t)1<<(XWORD_BITS-1))+2)
+#define OxFFFF__FFFD    ((xword_t)-3)
+
+TEST(init_ass, copy_swap)
 {
+    xint_t A = XINT_INIT_VAL;
+    xint_t B = XINT_INIT_VAL;
+
+    xint_assign_ulong(A, Ox8000__0002);
+    xint_add(A, A, A);
+    ASSERT_EQ(2, A->size);
     
+    xint_copy(B, A);
+    ASSERT_EQ(B->size, A->size);
+    ASSERT_PTR_NE(B->data, A->data);
+    ASSERT_EQ(B->data[0], A->data[0]);
+    ASSERT_EQ(B->data[1], A->data[1]);
     
+    xint_t C = XINT_INIT_VAL;
+    xint_t D = XINT_INIT_VAL;
+
+    xint_assign_ulong(C, OxFFFF__FFFD);
+    ASSERT_EQ(1, C->size);
+
+    xint_copy(D, C);
+    ASSERT_EQ(D->size, C->size);
+    ASSERT_PTR_NE(D->data, C->data);
+    ASSERT_EQ(D->data[0], C->data[0]);
+    
+    // Now swap B and D
+    xint_swap(B, D);
+    
+    ASSERT_EQ(D->size, A->size);
+    ASSERT_PTR_NE(D->data, A->data);
+    ASSERT_EQ(D->data[0], A->data[0]);
+    ASSERT_EQ(D->data[1], A->data[1]);
+
+    ASSERT_EQ(B->size, C->size);
+    ASSERT_PTR_NE(B->data, C->data);
+    ASSERT_EQ(B->data[0], C->data[0]);
+
     END_TEST(init_ass);
 }
 
@@ -112,7 +149,7 @@ int test_init_ass(void)
 {
     CALL_TEST(init_ass, init);
     CALL_TEST(init_ass, assign);
-    CALL_TEST(init_ass, copy);
+    CALL_TEST(init_ass, copy_swap);
 
     END_TEST_GROUP(init_ass);
 }
