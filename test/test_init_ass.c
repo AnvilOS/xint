@@ -46,13 +46,71 @@ TEST(init_ass, init)
     END_TEST(init_ass);
 }
 
+TEST(init_ass, assign)
+{
+    // Load the biggest unsigned log
+    xint_t A = XINT_INIT_VAL;
+    xint_assign_ulong(A, (unsigned long)-1);
+    if (sizeof(unsigned long) == sizeof(xword_t))
+    {
+        ASSERT_EQ(1, A->size);
+        ASSERT_EQ((xword_t)-1, A->data[0]);
+    }
+    else
+    {
+        ASSERT_EQ(2, A->size);
+        ASSERT_EQ((xword_t)-1, A->data[0]);
+        ASSERT_EQ((xword_t)-1, A->data[1]);
+    }
+    
+    // Load some unsigned longs
+    xint_assign_ulong(A, 0);
+    ASSERT_EQ(0, A->size);
 
+    xint_assign_ulong(A, 3);
+    ASSERT_EQ(1, A->size);
+    ASSERT_EQ(3, A->data[0]);
 
+    xint_assign_long(A, 0);
+    ASSERT_EQ(0, A->size);
 
+    xint_assign_long(A, 3);
+    ASSERT_EQ(1, A->size);
+    ASSERT_EQ(3, A->data[0]);
 
+    xint_assign_long(A, -3);
+    ASSERT_EQ(-1, A->size);
+    ASSERT_EQ(3, A->data[0]);
+
+    unsigned long x = ((unsigned long)-1) >> 10;
+    xint_assign_long(A, -x);
+    if (sizeof(unsigned long) == sizeof(xword_t))
+    {
+        ASSERT_EQ(-1, A->size);
+        ASSERT_EQ(x, A->data[0]);
+    }
+    else
+    {
+        ASSERT_EQ(-2, A->size);
+        ASSERT_EQ((xword_t)-1, A->data[0]);
+        ASSERT_EQ(((xword_t)-1)>>10, A->data[1]);
+    }
+    
+    END_TEST(init_ass);
+}
+
+TEST(init_ass, copy)
+{
+    
+    
+    END_TEST(init_ass);
+}
 
 int test_init_ass(void)
 {
     CALL_TEST(init_ass, init);
+    CALL_TEST(init_ass, assign);
+    CALL_TEST(init_ass, copy);
+
     END_TEST_GROUP(init_ass);
 }

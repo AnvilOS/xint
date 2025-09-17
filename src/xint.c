@@ -137,21 +137,48 @@ void xint_assign_long(xint_t u, long v)
 // Compare functions
 int xint_cmpa_ulong(const xint_t u, const unsigned long v)
 {
-    if (v <= XWORD_MAX)
+    int Un = abs(u->size);
+    
+    if (Un == 0)
     {
-        // fits in a single xword
-        xword_t vv = (xword_t)v;
-        return x_cmp(u->data, abs(u->size), &vv, 1);
+        return v == 0 ? 0 : -1;
     }
-    xword_t vvv[4];
-    xint_t vv = { 4, 0, vvv };
-    xint_assign_ulong(vv, v);
-    return xint_cmp(u, vv);
+    unsigned long uu = 0;
+    if (sizeof(v) <= sizeof(xword_t))
+    {
+        if (Un > 1)
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        if (Un > 2)
+        {
+            return 1;
+        }
+        if (Un == 2)
+        {
+            uu = u->data[1];
+            uu <<= XWORD_BITS;
+        }
+    }
+    uu |= u->data[0];
+    if (uu == v)
+    {
+        return 0;
+    }
+    return uu < v ? -1 : 1;
 }
 
 int xint_cmp_ulong(const xint_t u, const unsigned long val)
 {
-    return u->size < 0 ? -1 : xint_cmpa_ulong(u, val);
+    if (u->size < 0)
+    {
+        return -1;
+    }
+    // Both are positive
+    return xint_cmpa_ulong(u, val);
 }
 
 int xint_cmp_long(const xint_t u, const long val)
@@ -163,9 +190,10 @@ int xint_cmp_long(const xint_t u, const long val)
     // val is neg
     if (u->size >= 0)
     {
+        // clearly u is bigger
         return 1;
     }
-    // Both are neg
+    // Both are negative
     return -xint_cmpa_ulong(u, -val);
 }
 
