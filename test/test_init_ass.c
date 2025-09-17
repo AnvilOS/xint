@@ -142,6 +142,11 @@ TEST(init_ass, copy_swap)
     ASSERT_PTR_NE(B->data, C->data);
     ASSERT_EQ(B->data[0], C->data[0]);
 
+    xint_delete(A);
+    xint_delete(B);
+    xint_delete(C);
+    xint_delete(D);
+
     END_TEST(init_ass);
 }
 
