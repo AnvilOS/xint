@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <assert.h>
 
 #define MIN(a, b) ((a)<(b)?(a):(b))
@@ -19,7 +20,7 @@ static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
 static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
-static int x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn);
+static int x_cmp(const xword_t *U, const xword_t *V, int n);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
 static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
@@ -134,6 +135,43 @@ void xint_assign_long(xint_t u, long v)
     }
 }
 
+void xint_assign_str(xint_t x, const char *s, int base)
+{
+    if (base == 0)
+    {
+        base = 10;
+        if (*s == '0')
+        {
+            base = 8;
+            ++s;
+            if (tolower(*s) == 'x')
+            {
+                base = 16;
+                ++s;
+            }
+        }
+    }
+    else if (base < 1 || base > 36)
+    {
+        return;
+    }
+    
+    while (*s)
+    {
+        int val;
+        if (*s >= '0' && *s <= '9')
+        {
+            val = *s - '0';
+        }
+        else
+        {
+            val = tolower(*s) - 'a' + 10;
+        }
+        xint_muladd_ulong(x, x, base, val);
+        ++s;
+    }
+}
+
 // Compare functions
 int xint_cmpa_ulong(const xint_t u, const unsigned long v)
 {
@@ -197,13 +235,26 @@ int xint_cmp_long(const xint_t u, const long val)
     return -xint_cmpa_ulong(u, -val);
 }
 
+int xint_cmpa(const xint_t u, const xint_t v)
+{
+    int un = abs(u->size);
+    int vn = abs(v->size);
+    if (un != vn)
+    {
+        return un < vn ? -1 : 1;
+    }
+    return un > 0 ? x_cmp(u->data, v->data, un) : -x_cmp(v->data, u->data, un);
+}
+
 int xint_cmp(const xint_t u, const xint_t v)
 {
-    if (u->size != v->size)
+    int un = u->size;
+    int vn = v->size;
+    if (un != vn)
     {
-        return u->size < v->size ? -1 : 1;
+        return un < vn ? -1 : 1;
     }
-    return u->size > 0 ? x_cmp(u->data, abs(u->size), v->data, abs(v->size)) : -x_cmp(v->data, abs(v->size), u->data, abs(u->size));
+    return un > 0 ? x_cmp(u->data, v->data, abs(un)) : -x_cmp(v->data, u->data, abs(un));
 }
 
 // Addition and Subtraction functions
@@ -333,7 +384,7 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
     int Vn = abs(v->size);
     xword_t b = 0;
 
-    int cmp = x_cmp(u->data, Un, v->data, Vn);
+    int cmp = xint_cmpa(u, v);
     switch (cmp)
     {
         case 0: // U == V
@@ -366,7 +417,7 @@ int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
         xword_t b = 0;
 
         xword_t vv = (xword_t)v;
-        int cmp = x_cmp(u->data, abs(u->size), &vv, 1);
+        int cmp = xint_cmpa_ulong(u, v);
         switch (cmp)
         {
             case 0: // U == V
@@ -674,7 +725,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         r->data[0] = rem;
         return 0;
     }
-    int cmp = x_cmp(u->data, Un, v->data, Vn);
+    int cmp = xint_cmpa(u, v);
     if (cmp <= 0)
     {
         if (cmp == 0)
@@ -1027,13 +1078,9 @@ static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
     return 0;
 }
 
-static int x_cmp(const xword_t *U, int Un, const xword_t *V, int Vn)
+static int x_cmp(const xword_t *U, const xword_t *V, int n)
 {
-    if (Un != Vn)
-    {
-        return Un < Vn ? -1 : 1;
-    }
-    for (int j=Un-1; j>=0; --j)
+    for (int j=n-1; j>=0; --j)
     {
         if (U[j] != V[j])
         {

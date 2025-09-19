@@ -56,6 +56,7 @@ void xint_swap(xint_t u, xint_t v);
 // Assignment functions
 void xint_assign_ulong(xint_t u, unsigned long val);
 void xint_assign_long(xint_t u, long val);
+void xint_assign_str(xint_t x, const char *s, int base);
 
 // Utility functions
 static inline int xint_is_neg(const xint_t u) { return u->size < 0; }

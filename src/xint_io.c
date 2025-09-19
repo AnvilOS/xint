@@ -131,38 +131,6 @@ char *xint_to_string(const xint_t u, int base)
     return str;
 }
 
-void xint_from_string(xint_t x, const char *s)
-{
-    while (*s)
-    {
-        int val;
-        if (*s >= '0' && *s <= '9')
-        {
-            val = *s - '0';
-        }
-        else
-        {
-            val = tolower(*s) - 'a' + 10;
-        }
-        xint_muladd_ulong(x, x, 16, val);
-        ++s;
-    }
-}
-
-void xint_from_dec_string(xint_t x, const char *s)
-{
-    while (*s)
-    {
-        int val = 0;
-        if (*s >= '0' && *s <= '9')
-        {
-            val = *s - '0';
-        }
-        xint_muladd_ulong(x, x, 10, val);
-        ++s;
-    }
-}
-
 void xint_from_bin(xint_t x, const uint8_t *p, size_t len)
 {
     while (len--)
