@@ -18,8 +18,8 @@ static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int Upos, 
 
 static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
-static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
-static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits);
+static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
+static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 static int x_cmp(const xword_t *U, const xword_t *V, int n);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
@@ -1057,7 +1057,7 @@ static void x_move(xword_t *Y, xword_t *X, size_t sz)
     memmove(Y, X, sz * sizeof(xword_t));
 }
 
-static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
+static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
 {
     xword_t ret = X[sz - 1] >> (XWORD_BITS - shift_bits);
     for (int j=sz-1; j>=1; --j)
@@ -1068,7 +1068,7 @@ static xword_t x_lshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
     return ret;
 }
 
-static xword_t x_rshift(xword_t *Y, xword_t *X, int sz, int shift_bits)
+static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
 {
     for (int j=0; j<sz - 1; ++j)
     {
