@@ -963,11 +963,12 @@ static inline void mul_1_1(xword_t *k, xword_t *w, xword_t u, xword_t v)
     xword_t lo = ul * vl;
     xword_t hi = uh * vh;
     xword_t mid = uh * vl;
-    xword_t tmp;
-    tmp = ul * vh;
-    mid += tmp;
-    hi += ((xword_t)(mid < tmp)) << (XWORD_BITS/2);
-    tmp = lo >> (XWORD_BITS/2);
+    xword_t tmp = ul * vh;
+    // Max mid is fffe0001
+    // Max lo >> 16 is fffe
+    // Therefore the next line cannot overflow
+    mid += lo >> (XWORD_BITS/2);
+    // This one can overflow
     mid += tmp;
     hi += ((xword_t)(mid < tmp)) << (XWORD_BITS/2);
     *w = (lo & XWORD_HALF_MASK) | (mid << (XWORD_BITS/2));
@@ -1377,19 +1378,22 @@ static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
         xword_t t2, t1, t0;
         // t2, t1, t0 = U[i] * U[0]
         mul_1_1(&t1, &t0, U[i], U[0]);
-
+        
         // t2, t1, t0 = 2 * [ t2, t1, t0 ]
         t2 = t1 >> (XWORD_BITS-1);
         t1 <<= 1;
         t1 |= t0 >> (XWORD_BITS-1);
         t0 <<= 1;
-
+        
         // t2, t1, t0 += k1, k0
+        // Max t0 is almost ffffffff
+        // Max k0 is almost ffffffff
+        // Max t1 is fffffffd at b504f333
+        // Max k1 is 1
+        // Therefore t0 += k0 can overflow into t1
+        // but t1 += k1 + (t0 < k0) can never overflow into t2
         t0 += k0;
-        t1 += t0 < k0;
-        t2 += t1 < (t0 < k1);
-        t1 += k1;
-        t2 += t1 < k1;
+        t1 += k1 + (t0 < k0);
 
         // t2, t1, t0 += W[i]
         t0 += W[i];
