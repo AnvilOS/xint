@@ -70,11 +70,12 @@ static inline void xint_abs(xint_t u) { u->size = abs(u->size); }
 static inline int xint_size(const xint_t u) { return abs(u->size); }
 static inline void xint_set_zero(xint_t u) { u->size = 0; }
 
-// Compare arithmetic
-int xint_cmp(const xint_t u, const xint_t v);
+// Compare functions
 int xint_cmpa_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_ulong(const xint_t u, const unsigned long v);
 int xint_cmp_long(const xint_t u, const long v);
+int xint_cmpa(const xint_t u, const xint_t v);
+int xint_cmp(const xint_t u, const xint_t v);
 
 // Absolute addition and subtraction
 int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long val);

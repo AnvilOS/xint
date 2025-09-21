@@ -101,6 +101,69 @@ TEST(init_ass, assign)
     END_TEST(init_ass);
 }
 
+TEST(init_ass, assign_str)
+{
+    xint_t A = XINT_INIT_VAL;
+    xint_assign_str(A, "123456789012345678901234567890", 10);
+    if (sizeof(unsigned long) == sizeof(xword_t))
+    {
+        // 1 8ee90ff6 c373e0ee 4e3f0ad2
+        ASSERT_EQ(2, A->size);
+        ASSERT_EQ(0x000000018ee90ff6UL, A->data[1]);
+        ASSERT_EQ(0xc373e0ee4e3f0ad2UL, A->data[0]);
+    }
+    else
+    {
+        // 1 8ee90ff6 c373e0ee 4e3f0ad2
+        ASSERT_EQ(4, A->size);
+        ASSERT_EQ(0x00000001, A->data[3]);
+        ASSERT_EQ(0x8ee90ff6, A->data[2]);
+        ASSERT_EQ(0xc373e0ee, A->data[1]);
+        ASSERT_EQ(0x4e3f0ad2, A->data[0]);
+    }
+    xint_delete(A);
+    
+    xint_assign_str(A, "+123456789012345678901234567890", 10);
+    if (sizeof(unsigned long) == sizeof(xword_t))
+    {
+        // 1 8ee90ff6 c373e0ee 4e3f0ad2
+        ASSERT_EQ(2, A->size);
+        ASSERT_EQ(0x000000018ee90ff6UL, A->data[1]);
+        ASSERT_EQ(0xc373e0ee4e3f0ad2UL, A->data[0]);
+    }
+    else
+    {
+        // 1 8ee90ff6 c373e0ee 4e3f0ad2
+        ASSERT_EQ(4, A->size);
+        ASSERT_EQ(0x00000001, A->data[3]);
+        ASSERT_EQ(0x8ee90ff6, A->data[2]);
+        ASSERT_EQ(0xc373e0ee, A->data[1]);
+        ASSERT_EQ(0x4e3f0ad2, A->data[0]);
+    }
+    xint_delete(A);
+    
+    xint_assign_str(A, "-123456789012345678901234567890", 10);
+    if (sizeof(unsigned long) == sizeof(xword_t))
+    {
+        // 1 8ee90ff6 c373e0ee 4e3f0ad2
+        ASSERT_EQ(-2, A->size);
+        ASSERT_EQ(0x000000018ee90ff6UL, A->data[1]);
+        ASSERT_EQ(0xc373e0ee4e3f0ad2UL, A->data[0]);
+    }
+    else
+    {
+        // 1 8ee90ff6 c373e0ee 4e3f0ad2
+        ASSERT_EQ(-4, A->size);
+        ASSERT_EQ(0x00000001, A->data[3]);
+        ASSERT_EQ(0x8ee90ff6, A->data[2]);
+        ASSERT_EQ(0xc373e0ee, A->data[1]);
+        ASSERT_EQ(0x4e3f0ad2, A->data[0]);
+    }
+    xint_delete(A);
+
+    END_TEST(init_ass);
+}
+
 #define Ox8000__0002    (((xword_t)1<<(XWORD_BITS-1))+2)
 #define OxFFFF__FFFD    ((xword_t)-3)
 
@@ -154,6 +217,7 @@ int test_init_ass(void)
 {
     CALL_TEST(init_ass, init);
     CALL_TEST(init_ass, assign);
+    CALL_TEST(init_ass, assign_str);
     CALL_TEST(init_ass, copy_swap);
 
     END_TEST_GROUP(init_ass);
