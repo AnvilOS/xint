@@ -988,23 +988,11 @@ static inline xword_t div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xw
 #else
 static inline xword_t div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xword_t v)
 {
-    assert(u1 < v);
-    int shift = 0;
-    if ((v & ((xword_t)1 << (XWORD_BITS-1))) == 0)
-    {
-        // Need to normalise
-        if (sizeof(xword_t) == 8)
-            shift = __builtin_clzl(v);
-        else
-            shift = __builtin_clz(v);
-        v <<= shift;
-        u1 <<= shift;
-        u1 |= u0 >> (XWORD_BITS - shift);
-        u0 <<= shift;
-    }
-
     // We don't have a native 2 by 1 divide so we need to do a 4 by 2 divide,
     // thus m=2 and n=2
+
+    assert(u1 < v);
+
     xword_t qq[2];
 
     // These are 1/2 word size
@@ -1042,7 +1030,7 @@ static inline xword_t div_2_1(xword_t *q, xword_t *r, xword_t u1, xword_t u0, xw
     numer = (numer << (XWORD_BITS/2)) + uu[0] - qhat * v;
     qq[0] = qhat;
     
-    *r = numer >> shift;
+    *r = numer;
     *q = qq[1] << (XWORD_BITS/2) | qq[0];
     return 0;
 }
@@ -1349,18 +1337,33 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     // Renamed Knuth's W to Q
     // S1. [Set r = 0, j = n - 1]
     xword_t R = 0;
+    int bit_shift = (XWORD_BITS-1) - get_highest_bit(V);
+    if (bit_shift)
+    {
+        V <<= bit_shift;
+    }
     for (int j=n-1; j>=0; --j)
     {
         // S2. [Set wj = (r * B + uj) / v , r = (r * B + uj) % v
         xword_t q;
-        div_2_1(&q, &R, R, U[j], V);
+        xword_t uu = U[j];
+        if (bit_shift)
+        {
+            R |= uu >> (XWORD_BITS - bit_shift);
+            uu <<= bit_shift;
+            if (j>1)
+            {
+                uu |= U[j-1] >> (XWORD_BITS - bit_shift);
+            }
+        }
+        div_2_1(&q, &R, R, uu, V);
         if (Q)
         {
             Q[j] = q;
         }
         // S3. [Decrease j by 1, and return to S2]
     }
-    return R;
+    return R >> bit_shift;
 }
 
 static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
