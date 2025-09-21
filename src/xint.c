@@ -137,6 +137,16 @@ void xint_assign_long(xint_t u, long v)
 
 void xint_assign_str(xint_t x, const char *s, int base)
 {
+    int neg = 0;
+    if (s && (*s == '-' || *s == '+'))
+    {
+        if (*s == '-')
+        {
+            neg = 1;
+        }
+        ++s;
+    }
+        
     if (base == 0)
     {
         base = 10;
@@ -169,6 +179,10 @@ void xint_assign_str(xint_t x, const char *s, int base)
         }
         xint_muladd_ulong(x, x, base, val);
         ++s;
+    }
+    if (neg)
+    {
+        x->size = -x->size;
     }
 }
 
