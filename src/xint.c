@@ -243,7 +243,7 @@ int xint_cmpa(const xint_t u, const xint_t v)
     {
         return un < vn ? -1 : 1;
     }
-    return un > 0 ? x_cmp(u->data, v->data, un) : -x_cmp(v->data, u->data, un);
+    return x_cmp(u->data, v->data, un);
 }
 
 int xint_cmp(const xint_t u, const xint_t v)
