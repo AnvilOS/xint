@@ -166,6 +166,7 @@ void xint_assign_str(xint_t x, const char *s, int base)
         return;
     }
     
+    x->size = 0;
     while (*s)
     {
         int val;
@@ -268,7 +269,7 @@ int xint_cmp(const xint_t u, const xint_t v)
     {
         return un < vn ? -1 : 1;
     }
-    return un > 0 ? x_cmp(u->data, v->data, abs(un)) : -x_cmp(v->data, u->data, abs(un));
+    return un > 0 ? x_cmp(u->data, v->data, abs(un)) : x_cmp(v->data, u->data, abs(un));
 }
 
 // Addition and Subtraction functions
