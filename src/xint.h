@@ -7,19 +7,20 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#if __arm__
+typedef unsigned xword_t;
+typedef unsigned long long xdword_t;
+#define XDWORD_MAX ((xdword_t)-1)
+#define XDWORD_MUL
+//#define XDWORD_DIV
+#elif __x86_64__
+typedef unsigned long xword_t;
+#endif
+
 // Definitions for xword_t size
 #define XWORD_BITS (sizeof(xword_t) * 8)
 #define XWORD_MAX ((xword_t)-1)
 #define XWORD_HALF_MASK (XWORD_MAX>>(XWORD_BITS/2))
-
-#if 1
-typedef unsigned xword_t;
-typedef unsigned long xdword_t;
-#define XDWORD_MAX ((xdword_t)-1)
-#else
-typedef unsigned long xword_t;
-#endif
-
 
 struct xint_s
 {
@@ -29,7 +30,7 @@ struct xint_s
     // growing and shrinking the array
     xword_t *data;
 };
-#define XINT_INIT_VAL { 0, 0, NULL };
+#define XINT_INIT_VAL {{ 0, 0, NULL }};
 
 typedef struct xint_s xint_t[1];
 
