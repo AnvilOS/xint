@@ -9,12 +9,12 @@ extern "C"
 {
 #endif // __cplusplus
 
-uint32_t xint_exp_1_rl(xint_t x, int a, int e);
-uint32_t xint_exp_1_lr(xint_t x, int a, int e);
+void xint_exp_1_rl(xint_t x, int a, int e);
+void xint_exp_1_lr(xint_t x, int a, int e);
 
-uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mod);
-uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const xint_t mod);
-uint32_t xint_mod_exp_old(xint_t x, const xint_t base, const xint_t exp, const xint_t mod);
+void xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mod);
+void xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const xint_t mod);
+void xint_mod_exp_old(xint_t x, const xint_t base, const xint_t exp, const xint_t mod);
 
 #ifdef __cplusplus
 }

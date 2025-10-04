@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-uint32_t xint_exp_1_rl(xint_t x, int a, int e)
+void xint_exp_1_rl(xint_t x, int a, int e)
 {
     // x = x . a ^ b
     xint_t tmp;
@@ -21,10 +21,9 @@ uint32_t xint_exp_1_rl(xint_t x, int a, int e)
         e >>= 1;
         xint_sqr(tmp, tmp);
     }
-    return 0;
 }
 
-uint32_t xint_exp_1_lr(xint_t x, int a, int e)
+void xint_exp_1_lr(xint_t x, int a, int e)
 {
     xint_assign_ulong(x, 1);
     int highest_bit = 31 - __builtin_clz(e);
@@ -38,10 +37,9 @@ uint32_t xint_exp_1_lr(xint_t x, int a, int e)
         }
         mask >>= 1;
     }
-    return 0;
 }
 
-uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
+void xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
 {
     int max_win_sz = 6;
     xword_t window_mask = ((xword_t)-1) >> (XWORD_BITS - max_win_sz);
@@ -137,13 +135,12 @@ uint32_t xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_
     {
         xint_delete(g[2*i+1]);
     }
-    return 0;
 }
 
-uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
+void xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
 {
     int win_sz = 1;
-    uint32_t window_mask = ((uint32_t)-1) >> (32 - win_sz);
+    xword_t window_mask = ((xword_t)-1) >> (XWORD_BITS - win_sz);
     
     int nwords = xint_size(exp);
     int wordnum = nwords - 1;
@@ -151,8 +148,8 @@ uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const 
     // Figure out where the msb is
     xword_t curr_word = exp->data[wordnum];
     --wordnum;
-    uint32_t mask = 1 << 31;
-    int remaining_in_word = 32;
+    xword_t mask = (xword_t)1 << (XWORD_BITS - 1);
+    int remaining_in_word = XWORD_BITS;
     while (!(curr_word & mask))
     {
         mask >>= 1;
@@ -187,19 +184,19 @@ uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const 
                 window <<= bits_needed;
                 curr_word = exp->data[wordnum];
                 --wordnum;
-                remaining_in_word = 32 - bits_needed;
+                remaining_in_word = XWORD_BITS - bits_needed;
                 window |= curr_word >> remaining_in_word;
             }
             else if (remaining_in_word)
             {
-                window <<= 32 - remaining_in_word;
-                window >>= 32 - remaining_in_word;
+                window <<= XWORD_BITS - remaining_in_word;
+                window >>= XWORD_BITS - remaining_in_word;
                 win_sz = remaining_in_word;
                 remaining_in_word = 0;
             }
             else
             {
-                return 0;
+                return;
             }
         }
         window &= window_mask;
@@ -215,17 +212,16 @@ uint32_t xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const 
             xint_mod(x, x, mod);
         }
     }
-    return 0;
 }
 
-uint32_t xint_mod_exp_old(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
+void xint_mod_exp_old(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
 {
     // This is the vanilla wikipedia algorithm
     xint_assign_ulong(x, 1);
     for (int j=xint_size(exp)-1; j>=0; --j)
     {
         xword_t word = exp->data[j];
-        uint32_t mask = 1 << 31;
+        xword_t mask = (xword_t)1 << (XWORD_BITS - 1);
         while (mask)
         {
             xint_sqr(x, x);
@@ -238,5 +234,4 @@ uint32_t xint_mod_exp_old(xint_t x, const xint_t base, const xint_t exp, const x
             mask >>= 1;
         }
     }
-    return 0;
 }

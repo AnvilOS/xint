@@ -308,7 +308,7 @@ static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int upos, 
     if (v > XWORD_MAX)
     {
         xword_t vvv[4];
-        xint_t vv = { 4, 0, vvv };
+        xint_t vv = {{ 4, 0, vvv }};
         xint_assign_ulong(vv, v);
         add_or_sub(w, u, vv, upos, vpos);
         return 0;
