@@ -54,7 +54,7 @@ void xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mo
     }
 
     xint_assign_ulong(x, 1);
-    xint_t g[window_mask + 2];
+    xint_t *g = malloc(sizeof(xint_t) * (window_mask + 2));
 
     xint_init(g[1]);
     xint_copy(g[1], base);
@@ -135,6 +135,7 @@ void xint_mod_exp(xint_t x, const xint_t base, const xint_t exp, const xint_t mo
     {
         xint_delete(g[2*i+1]);
     }
+    free(g);
 }
 
 void xint_mod_exp_kary(xint_t x, const xint_t base, const xint_t exp, const xint_t mod)
