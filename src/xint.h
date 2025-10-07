@@ -109,7 +109,7 @@ xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);
 int xint_mod_1(xword_t *r, const xint_t u, xword_t v);
 
 // Bit manipulation
-int xint_highest_bit(xint_t x);
+int xint_highest_bit_num(const xint_t x);
 xword_t xint_lshift(xint_t y, const xint_t x, int numbits);
 xword_t xint_rshift(xint_t y, const xint_t x, int numbits);
 

@@ -10,8 +10,8 @@
 #define MAX(a, b) ((a)>(b)?(a):(b))
 
 static void trim_zeroes(xint_t u);
-static int get_highest_word(xint_t x);
-static int get_highest_bit(xword_t word);
+static int get_highest_word(const xint_t x);
+static int get_highest_bit(const xword_t word);
 static int resize(xint_t x, int new_size);
 static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int Upos, int Vpos);
 static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int Upos, int Vpos);
@@ -665,7 +665,7 @@ xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a)
 }
 
 // Division functions
-int xint_highest_bit(xint_t x)
+int xint_highest_bit_num(const xint_t x)
 {
     // Find the highest bit in the highest word in v that contains data
     int highest_word = get_highest_word(x);
@@ -905,7 +905,7 @@ static void trim_zeroes(xint_t u)
     u->size = 0;
 }
 
-static int get_highest_word(xint_t x)
+static int get_highest_word(const xint_t x)
 {
     int Xn = abs(x->size);
     for (int j=Xn-1; j>=0; --j)
@@ -918,7 +918,7 @@ static int get_highest_word(xint_t x)
     return -1;
 }
 
-static int get_highest_bit(xword_t word)
+static int get_highest_bit(const xword_t word)
 {
     if (word)
     {
