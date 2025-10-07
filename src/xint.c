@@ -1263,8 +1263,18 @@ void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
     // Instead of shifting both U and V to the left we follow Knuth's suggestion
     // in problem 37 in 4.3.1
     int bit_shift = (XWORD_BITS-1) - get_highest_bit(V[n-1]);
-    xword_t V_nm1 = bit_shift ? V[n-1] << bit_shift | V[n-2] >> (XWORD_BITS - bit_shift) : V[n-1];
-    xword_t V_nm2 = bit_shift ? V[n-2] << bit_shift | V[n-3] >> (XWORD_BITS - bit_shift) : V[n-2];
+    xword_t V_nm1 = V[n-1];
+    xword_t V_nm2 = V[n-2];
+    if (bit_shift)
+    {
+        // Normalise V
+        V_nm1 = V_nm1 << bit_shift | V_nm2 >> (XWORD_BITS - bit_shift);
+        V_nm2 = V_nm2 << bit_shift;
+        if (n > 2)
+        {
+            V_nm2 |= V[n-3] >> (XWORD_BITS - bit_shift);
+        }
+    }
 
     // D2. [Initialise j.]
     for (int j=m; j>=0; --j)
@@ -1275,11 +1285,9 @@ void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
         xword_t R_jnm2 = R[j+n-2];;
         if (bit_shift)
         {
-            // This is where we normalise
-            n1 <<= bit_shift;
-            n1 |= n0 >> (XWORD_BITS - bit_shift);
-            n0 <<= bit_shift;
-            n0 |= R[j+n-2] >> (XWORD_BITS - bit_shift);
+            // This is where we normalise U (or R)
+            n1 = n1 << bit_shift | n0 >> (XWORD_BITS - bit_shift);
+            n0 = n0 << bit_shift | R[j+n-2] >> (XWORD_BITS - bit_shift);
             R_jnm2 <<= bit_shift;
             if (j+n-3 >= 0)
             {
