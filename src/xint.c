@@ -736,10 +736,18 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         // Use the algorithm from exercise 16
         xword_t rem;
         xint_div_1(q, &rem, u, v->data[0]);
+        if (rem)
+        {
         resize(r, 1);
         r->data[0] = rem;
+        }
+        else
+        {
+            r->size = 0;
+        }
         return 0;
     }
+
     int cmp = xint_cmpa(u, v);
     if (cmp <= 0)
     {
