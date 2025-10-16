@@ -2,6 +2,8 @@
 #ifndef HMAC_H
 #define HMAC_H
 
+#include "sha256.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -9,21 +11,20 @@
 class Hmac
 {
 public:
-    Hmac() { reset(); }
+    Hmac(const uint8_t *key, size_t keylen) { reset(key, keylen); }
     virtual ~Hmac() {}
     
-    void reset();
+    void reset(const uint8_t *key, size_t keylen);
     void append(const uint8_t *msg, size_t n);
     void append(uint8_t ch);
     void finalise(uint8_t digest[32]);
 
 private:
-    void process_chunk();
-
-    uint32_t hv[8];
-    uint8_t buf[64];
-    uint8_t *pbuf;
-    size_t msg_len;
+    Sha256 sha256;
+    uint8_t blk_len_key[64];
+    uint8_t o_key_pad[64];
+    uint8_t i_key_pad[64];
+    uint8_t int_digest[32];
 };
 
 extern "C"

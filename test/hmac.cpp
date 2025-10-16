@@ -1,37 +1,10 @@
 
 #include "hmac.h"
 
-#include "sha256.h"
-
 #include <string.h>
 
-void Hmac::reset()
+void Hmac::reset(const uint8_t *key, size_t keylen)
 {
-}
-
-void Hmac::process_chunk()
-{
-}
-
-void Hmac::append(const uint8_t *msg, size_t n)
-{
-}
-
-void Hmac::append(uint8_t ch)
-{
-}
-
-void Hmac::finalise(uint8_t digest[32])
-{
-}
-
-void hmac_calc(uint8_t digest[32], const uint8_t *key, size_t keylen, const uint8_t *msg, size_t msglen)
-{
-    Sha256 sha256;
-    uint8_t blk_len_key[64];
-    uint8_t o_key_pad[64];
-    uint8_t i_key_pad[64];
-
     memset(blk_len_key, 0, 64);
     
     if (keylen > 64)
@@ -54,11 +27,30 @@ void hmac_calc(uint8_t digest[32], const uint8_t *key, size_t keylen, const uint
     
     sha256.reset();
     sha256.append(i_key_pad, 64);
-    sha256.append(msg, msglen);
-    sha256.finalise(digest);
+}
 
+void Hmac::append(const uint8_t *msg, size_t n)
+{
+    sha256.append(msg, n);
+}
+
+void Hmac::append(uint8_t ch)
+{
+    append(&ch, 1);
+}
+
+void Hmac::finalise(uint8_t digest[32])
+{
+    sha256.finalise(int_digest);
     sha256.reset();
     sha256.append(o_key_pad, 64);
-    sha256.append(digest, 32);
+    sha256.append(int_digest, 32);
     sha256.finalise(digest);
+}
+
+void hmac_calc(uint8_t digest[32], const uint8_t *key, size_t keylen, const uint8_t *msg, size_t msglen)
+{
+    Hmac hmac(key, keylen);
+    hmac.append(msg, msglen);
+    hmac.finalise(digest);
 }
