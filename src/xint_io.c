@@ -6,6 +6,23 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+void xint_to_buf(unsigned char *buf, int len, xint_t u)
+{
+    for (long j=0, n=len-1; j<xint_size(u); ++j)
+    {
+        xword_t w = u->data[j];
+        for (int i=0; i<sizeof(xword_t); ++i)
+        {
+            buf[n--] = w;
+            if (n < 0)
+            {
+                break;
+            }
+            w >>= 8;
+        }
+    }
+}
+
 void xint_print_raw(const char *label, xint_t u)
 {
     printf("%s = [ ", label);
