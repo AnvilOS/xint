@@ -16,6 +16,9 @@ void xint_gcd(xint_t w, const xint_t u, const xint_t v)
         if (xint_is_zero(tmp_v))
         {
             xint_copy(w, tmp_u);
+            xint_delete(tmp_u);
+            xint_delete(tmp_v);
+            xint_delete(r);
             return;
         }
         // A2.[Take u mod v.]
