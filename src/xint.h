@@ -64,12 +64,11 @@ static inline int xint_is_neg(const xint_t u) { return u->size < 0; }
 static inline int xint_is_zero(const xint_t u) { return u->size == 0; }
 static inline int xint_is_pos(const xint_t u) { return u->size > 0; }
 static inline void xint_chs(xint_t u) { u->size = -u->size; }
-static inline void xint_set_sign(xint_t u, int s) { u->size *= s; }
 static inline void xint_set_pos(xint_t u) { u->size = abs(u->size); }
 static inline void xint_set_neg(xint_t u) { u->size = -abs(u->size); }
 static inline void xint_abs(xint_t u) { u->size = abs(u->size); }
 static inline int xint_size(const xint_t u) { return abs(u->size); }
-static inline void xint_set_zero(xint_t u) { u->size = 0; }
+static inline void xint_assign_zero(xint_t u) { u->size = 0; }
 
 // Compare functions
 int xint_cmpa_ulong(const xint_t u, const unsigned long v);

@@ -506,7 +506,7 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
     int Vn = abs(v->size);
-    int Ws = (u->size * v->size) > 0;
+    int Wneg = (u->size * v->size) < 0;
     
     if (Un < Vn)
     {
@@ -533,6 +533,10 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
             {
                 --w->size;
             }
+            if (Wneg)
+            {
+                xint_set_neg(w);
+            }
             return 0;
         }
         else
@@ -546,6 +550,10 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
             else
             {
                 --w->size;
+            }
+            if (Wneg)
+            {
+                xint_set_neg(w);
             }
             return 0;
         }
@@ -585,7 +593,10 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         xll_mul(W, U, Un, V, Vn);
     }
     trim_zeroes(w);
-    xint_set_sign(w, Ws);
+    if (Wneg)
+    {
+        xint_set_neg(w);
+    }
     return 0;
 }
 
