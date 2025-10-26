@@ -202,84 +202,31 @@ TEST(ecc, simple_gcd_and_inverse)
 
 TEST(ecc, pcurve)
 {
-    xint_ecc_point_t R;
-    xint_ecc_point_t G;
-    xint_ecc_point_t TMP;
-
     xint_t p = XINT_INIT_VAL;
     xint_assign_str(p, "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 0);
 
     xint_t a = XINT_INIT_VAL;
     xint_assign_str(a, "0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 0);
+
     xint_t b = XINT_INIT_VAL;
     xint_assign_str(b, "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 0);
-    
-    xint_t x = XINT_INIT_VAL;
-    xint_assign_str(x,
-        //"1000000",
-        "0x7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE",
-    0);
-//    xint_t m = XINT_INIT_VAL;
-//    xint_assign_str(m, "0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551", 0);
 
     xint_t n = XINT_INIT_VAL;
     xint_assign_str(n, "0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 0);
-    
-   // 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296, //0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5)
-    xint_point_init(R);
+
+    xint_ecc_point_t G;
     xint_point_init(G);
     G->is_at_infinity = 0;
     xint_assign_str(G->x, "0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", 0);
     xint_assign_str(G->y, "0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5", 0);
-    
-    xint_point_init(TMP);
-    
-//    xint_print_hex("Gx", G->x);
-//    xint_print_hex("Gy", G->y);
-//    xint_point_double_p(TMP, G, a, p);
-//    xint_print_hex("2Gx", TMP->x);
-//    xint_print_hex("2Gy", TMP->y);
-//    xint_point_add_p(TMP, TMP, G, p);
-//    xint_print_hex("3Gx", TMP->x);
-//    xint_print_hex("3Gy", TMP->y);
 
-    xint_point_copy(TMP, G);
+    xint_t x = XINT_INIT_VAL;
+    xint_assign_str(x, "0x7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE", 0);
 
+    xint_ecc_point_t R;
+    xint_point_init(R);
     
-//    xint_print_hex("TMPx", TMP->x);
-//    xint_print_hex("TMPy", TMP->y);
-
-#if 0
-    xint_t ik = XINT_INIT_VAL;
-    xint_t k = XINT_INIT_VAL;
-    xint_assign_str(k, "0x7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE", 0);
- 
-    xint_mod_inverse(ik, k, q);
-    xint_print_hex("k  ", k);
-    xint_print_hex("1/k", ik);
-#endif
-    
-    for (int i=0; i<256; ++i)
-    {
-        if (xint_get_bit(x, i) == 1)
-        {
-            xint_point_add_p(R, R, TMP, p);
-        }
-        xint_point_double_p(TMP, TMP, a, p);
-//        xint_print_hex("Rx", R->x);
-//        xint_print_hex("Ry", R->y);
-//        xint_print_hex("Tx", TMP->x);
-//        xint_print_hex("Ty", TMP->y);
-//        printf("i=%d\n", i);
-    }
-
-//    xint_print_hex("R", R->x);
-//    xint_print_hex("R", R->y);
-    
-    xint_t Rx = XINT_INIT_VAL;
-    xint_mod(Rx, R->x, p);
-    xint_t Ry = XINT_INIT_VAL;
-    xint_mod(Ry, R->y, p);
+    xint_ecc_mul_scalar(R, G, x, a, p);
     
     xint_t Rx_exp = XINT_INIT_VAL;
     xint_assign_str(Rx_exp, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F", 0);
@@ -287,8 +234,8 @@ TEST(ecc, pcurve)
     xint_t Ry_exp = XINT_INIT_VAL;
     xint_assign_str(Ry_exp, "0x3CE76603264661EA2F602DF7B4510BBC9ED939233C553EA5F42FB3F1338174B5", 0);
 
-    ASSERT_EQ(0, xint_cmp(Rx_exp, Rx));
-    ASSERT_EQ(0, xint_cmp(Ry_exp, Ry));
+    ASSERT_EQ(0, xint_cmp(Rx_exp, R->x));
+    ASSERT_EQ(0, xint_cmp(Ry_exp, R->y));
 
     END_TEST(ecc);
 }

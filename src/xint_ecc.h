@@ -18,11 +18,12 @@ int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v);
 
 void xint_point_init(xint_ecc_point_t p);
 void xint_point_delete(xint_ecc_point_t p);
-void xint_point_copy(xint_ecc_point_t r, xint_ecc_point_t p);
+void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p);
 void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
 void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t a, xint_t m);
 void xint_point_add_p(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m);
 void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t b, xint_t m);
 void xint_point_double_p(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m);
+void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_t a, xint_t p);
 
 #endif // XINT_ECC_H

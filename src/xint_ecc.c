@@ -1,6 +1,7 @@
 
 #include "xint_ecc.h"
 #include "xint_io.h"
+#include "xint_bitwise.h"
 
 void xint_gcd(xint_t w, const xint_t u, const xint_t v)
 {
@@ -148,7 +149,7 @@ void xint_point_delete(xint_ecc_point_t p)
     xint_delete(p->y);
 }
 
-void xint_point_copy(xint_ecc_point_t r, xint_ecc_point_t p)
+void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p)
 {
     r->is_at_infinity = p->is_at_infinity;
     xint_copy(r->x, p->x);
@@ -317,4 +318,20 @@ void xint_point_double_p(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
     r->is_at_infinity = 0;
+}
+
+void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_t a, xint_t p)
+{
+    xint_ecc_point_t TMP;
+    xint_point_init(TMP);
+    xint_point_copy(TMP, P);
+
+    for (int i=0; i<256; ++i)
+    {
+        if (xint_get_bit(k, i) == 1)
+        {
+            xint_point_add_p(R, R, TMP, p);
+        }
+        xint_point_double_p(TMP, TMP, a, p);
+    }
 }

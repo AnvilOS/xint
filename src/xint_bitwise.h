@@ -9,7 +9,7 @@ extern "C"
 {
 #endif // __cplusplus
 
-int xint_get_bit(xint_t u, int bit);
+int xint_get_bit(const xint_t u, int bit);
 int xint_set_bit(xint_t u, int bit);
 
 #ifdef __cplusplus

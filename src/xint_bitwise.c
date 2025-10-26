@@ -1,7 +1,7 @@
 
 #include "xint_bitwise.h"
 
-int xint_get_bit(xint_t u, int bit)
+int xint_get_bit(const xint_t u, int bit)
 {
     // Fistly find our bit
     int xword_no = bit / XWORD_BITS;
