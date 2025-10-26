@@ -728,7 +728,9 @@ void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v)
 
 xword_t xint_mod(xint_t r, const xint_t u, const xint_t v)
 {
-    return xint_div(0, r, u, v);
+    xint_t q = XINT_INIT_VAL;
+    xint_is_pos(v) ? xint_div_floor(q, r, u, v) : xint_div_ceil(q, r, u, v);
+    return 0;
 }
 
 xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
@@ -742,6 +744,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     // Algortihm D doesn't work for vn <= 1
     int Un = abs(u->size);
     int Vn = abs(v->size);
+    int Qneg = (u->size * v->size) < 0;
     if (Vn <= 1)
     {
         // Use the algorithm from exercise 16
@@ -749,12 +752,16 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         xint_div_1(q, &rem, u, v->data[0]);
         if (rem)
         {
-        resize(r, 1);
-        r->data[0] = rem;
+            resize(r, 1);
+            r->data[0] = rem;
         }
         else
         {
             r->size = 0;
+        }
+        if (Qneg)
+        {
+            xint_set_neg(q);
         }
         return 0;
     }
@@ -768,6 +775,10 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
             {
                 resize(q, 1);
                 q->data[0] = 1;
+                if (Qneg)
+                {
+                    xint_set_neg(q);
+                }
             }
             r->size = 0;
             return 0;
@@ -779,7 +790,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         xint_copy(r, u);
         return 0;
     }
-    
+
     int n = Vn;
     int m = Un - Vn;
 
@@ -805,6 +816,10 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     if (q)
     {
         trim_zeroes(q);
+        if (Qneg)
+        {
+            xint_set_neg(q);
+        }
     }
     trim_zeroes(r);
 
@@ -1316,7 +1331,7 @@ void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
         xword_t qhat;
         xword_t rhat;
         div_2_1(qhat, rhat, n1, n0, V_nm1);
-        
+
         xword_t p1, p0;
         mul_1_1(p1, p0, qhat, V_nm2);
         while (/*(qhat >= B) ||*/ (p1 > rhat) || ((p1 == rhat) && (p0 > R_jnm2)) )

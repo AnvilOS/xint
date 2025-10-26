@@ -113,3 +113,208 @@ void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t
     xint_delete(v2);
     xint_delete(v3);
 }
+
+int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
+{
+    xint_t gcd = XINT_INIT_VAL;
+    xint_t ud = XINT_INIT_VAL;
+    xint_t vd = XINT_INIT_VAL;
+    int ret = 0;
+
+    xint_gcd_ext(gcd, ud, vd, u, v);
+    if (xint_cmp_ulong(gcd, 1) == 0)
+    {
+        xint_copy(w, ud);
+        ret = 1;
+    }
+    else
+    {
+        ret = 0;
+    }
+    return ret;
+}
+
+void xint_point_init(xint_ecc_point_t p)
+{
+    p->is_at_infinity = 1;
+    xint_init(p->x);
+    xint_init(p->y);
+}
+
+void xint_point_delete(xint_ecc_point_t p)
+{
+    p->is_at_infinity = 1;
+    xint_delete(p->x);
+    xint_delete(p->y);
+}
+
+void xint_point_copy(xint_ecc_point_t r, xint_ecc_point_t p)
+{
+    r->is_at_infinity = p->is_at_infinity;
+    xint_copy(r->x, p->x);
+    xint_copy(r->y, p->y);
+}
+
+void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p)
+{
+    xint_point_copy(r, p);
+    xint_chs(r->y);
+}
+
+void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t a, xint_t m)
+{
+    xint_t sumy = XINT_INIT_VAL;
+    xint_t sumx = XINT_INIT_VAL;
+    xint_t lambda = XINT_INIT_VAL;
+    xint_t xr = XINT_INIT_VAL;
+    xint_t yr = XINT_INIT_VAL;
+    
+    if (p->is_at_infinity)
+    {
+        xint_point_copy(r, q);
+        return;
+    }
+
+    if (q->is_at_infinity)
+    {
+        xint_point_copy(r, p);
+        return;
+    }
+
+    xint_add(sumy, p->y, q->y);
+    xint_add(sumx, p->x, q->x);
+    xint_mod_inverse(sumx, sumx, m);
+    xint_mul(lambda, sumy, sumx);
+        
+    xint_sqr(xr, lambda);
+    xint_add(xr, xr, lambda);
+    xint_add(xr, xr, p->x);
+    xint_add(xr, xr, q->x);
+    xint_add(xr, xr, a);
+
+    xint_add(yr, p->x, xr);
+    xint_mul(yr, yr, lambda);
+    xint_add(yr, yr, xr);
+    xint_add(yr, yr, p->y);
+
+    xint_mod(r->x, xr, m);
+    xint_mod(r->y, yr, m);
+}
+
+void xint_point_add_p(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
+{
+    xint_t diffy = XINT_INIT_VAL;
+    xint_t diffx = XINT_INIT_VAL;
+    xint_t lambda = XINT_INIT_VAL;
+    xint_t xr = XINT_INIT_VAL;
+    xint_t yr = XINT_INIT_VAL;
+    
+    if (p->is_at_infinity)
+    {
+        xint_point_copy(r, q);
+        return;
+    }
+
+    if (q->is_at_infinity)
+    {
+        xint_point_copy(r, p);
+        return;
+    }
+
+    xint_sub(diffy, q->y, p->y);
+    xint_mod(diffy, diffy, m);
+    xint_sub(diffx, q->x, p->x);
+    xint_mod(diffx, diffx, m);
+    xint_mod_inverse(diffx, diffx, m);
+    xint_mul(lambda, diffy, diffx);
+    xint_mod(lambda, lambda, m);
+        
+    xint_sqr(xr, lambda);
+    xint_sub(xr, xr, p->x);
+    xint_mod(xr, xr, m);
+    xint_sub(xr, xr, q->x);
+    xint_mod(xr, xr, m);
+
+    xint_sub(yr, p->x, xr);
+    xint_mod(yr, yr, m);
+    xint_mul(yr, yr, lambda);
+    xint_mod(yr, yr, m);
+    xint_sub(yr, yr, p->y);
+    xint_mod(yr, yr, m);
+
+    xint_mod(r->x, xr, m);
+    xint_mod(r->y, yr, m);
+    r->is_at_infinity = 0;
+}
+
+void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t b, xint_t m)
+{
+    xint_t x1inv = XINT_INIT_VAL;
+    xint_t tmp2 = XINT_INIT_VAL;
+    xint_t x1sq = XINT_INIT_VAL;
+    xint_t xr = XINT_INIT_VAL;
+    xint_t yr = XINT_INIT_VAL;
+    
+    if (p->is_at_infinity)
+    {
+        xint_point_copy(r, p);
+        return;
+    }
+
+    xint_sqr(x1sq, p->x);
+    xint_mod_inverse(tmp2, x1sq, m);
+    xint_mul(tmp2, tmp2, b);
+    xint_add(xr, x1sq, tmp2);
+    
+    xint_mod_inverse(x1inv, p->x, m);
+    xint_mul(tmp2, p->y, x1inv);
+    xint_add(tmp2, tmp2, p->x);
+    xint_mul(tmp2, tmp2, xr);
+    xint_add(tmp2, tmp2, x1sq);
+    xint_add(yr, tmp2, xr);
+
+    xint_mod(r->x, xr, m);
+    xint_mod(r->y, yr, m);
+}
+
+void xint_point_double_p(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
+{
+    xint_t tmp1 = XINT_INIT_VAL;
+    xint_t tmp2 = XINT_INIT_VAL;
+    xint_t tmp3 = XINT_INIT_VAL;
+    xint_t lambda = XINT_INIT_VAL;
+    xint_t xr = XINT_INIT_VAL;
+    xint_t yr = XINT_INIT_VAL;
+
+    xint_sqr(tmp1, p->x);
+    xint_mod(tmp1, tmp1, m);
+    xint_mul_ulong(tmp1, tmp1, 3);
+    xint_mod(tmp1, tmp1, m);
+    xint_add(tmp1, tmp1, a);
+    xint_mod(tmp1, tmp1, m);
+
+    xint_mul_ulong(tmp2, p->y, 2);
+    xint_mod(tmp2, tmp2, m);
+    xint_mod_inverse(tmp2, tmp2, m);
+    xint_mod(tmp2, tmp2, m);
+    xint_mul(tmp3, tmp1, tmp2);
+    xint_mod(tmp3, tmp3, m);
+    xint_mod(lambda, tmp3, m);
+    
+    xint_sqr(xr, lambda);
+    xint_mod(xr, xr, m);
+    xint_sub(xr, xr, p->x);
+    xint_mod(xr, xr, m);
+    xint_sub(xr, xr, p->x);
+    xint_mod(xr, xr, m);
+
+    xint_sub(tmp3, p->x, xr);
+    xint_mod(tmp3, tmp3, m);
+    xint_mul(tmp3, tmp3, lambda);
+    xint_mod(yr, tmp3, m);
+    xint_sub(yr, yr, p->y);
+    
+    xint_mod(r->x, xr, m);
+    xint_mod(r->y, yr, m);
+    r->is_at_infinity = 0;
+}
