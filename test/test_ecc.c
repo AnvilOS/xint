@@ -200,25 +200,13 @@ TEST(ecc, simple_gcd_and_inverse)
     END_TEST(ecc)
 }
 
-TEST(ecc, pcurve)
+TEST(ecc, curve_p256)
 {
-    xint_t p = XINT_INIT_VAL;
-    xint_assign_str(p, "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 0);
-
-    xint_t a = XINT_INIT_VAL;
-    xint_assign_str(a, "0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 0);
-
-    xint_t b = XINT_INIT_VAL;
-    xint_assign_str(b, "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 0);
-
-    xint_t n = XINT_INIT_VAL;
-    xint_assign_str(n, "0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 0);
-
     xint_ecc_point_t G;
     xint_point_init(G);
     G->is_at_infinity = 0;
-    xint_assign_str(G->x, "0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296", 0);
-    xint_assign_str(G->y, "0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5", 0);
+    xint_assign_str(G->x, p256.Gx, 16);
+    xint_assign_str(G->y, p256.Gy, 16);
 
     xint_t x = XINT_INIT_VAL;
     xint_assign_str(x, "0x7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE", 0);
@@ -226,7 +214,7 @@ TEST(ecc, pcurve)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar(R, G, x, a, p);
+    xint_ecc_mul_scalar(R, G, x, p256);
     
     xint_t Rx_exp = XINT_INIT_VAL;
     xint_assign_str(Rx_exp, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F", 0);
@@ -246,7 +234,7 @@ int test_ecc(void)
     CALL_TEST(ecc, hmac2);
     CALL_TEST(ecc, k_generation);
     CALL_TEST(ecc, simple_gcd_and_inverse);
-    CALL_TEST(ecc, pcurve);
+    CALL_TEST(ecc, curve_p256);
 
     END_TEST_GROUP(ecc);
 }

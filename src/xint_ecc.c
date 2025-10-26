@@ -3,6 +3,18 @@
 #include "xint_io.h"
 #include "xint_bitwise.h"
 
+xint_ecc_curve_t p256 =
+{
+    256,
+    "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF",
+    "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC",
+    "5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B",
+    "6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296",
+    "4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5",
+    "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551",
+    "01"
+};
+
 void xint_gcd(xint_t w, const xint_t u, const xint_t v)
 {
     // Knuths Algorithm A (Modern Euclidean algorithm)
@@ -320,12 +332,17 @@ void xint_point_double_p(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_
     r->is_at_infinity = 0;
 }
 
-void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_t a, xint_t p)
+void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t c)
 {
     xint_ecc_point_t TMP;
     xint_point_init(TMP);
     xint_point_copy(TMP, P);
-
+    xint_t a = XINT_INIT_VAL;
+    xint_t p = XINT_INIT_VAL;
+    xint_init(a);
+    xint_init(p);
+    xint_assign_str(a, c.a, 16);
+    xint_assign_str(p, c.p, 16);
     for (int i=0; i<256; ++i)
     {
         if (xint_get_bit(k, i) == 1)
