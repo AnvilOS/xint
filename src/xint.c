@@ -170,7 +170,12 @@ void xint_assign_str(xint_t x, const char *s, int base)
     while (*s)
     {
         int val;
-        if (*s >= '0' && *s <= '9')
+        if (*s == ' ')
+        {
+            ++s;
+            continue;
+        }
+        else if (*s >= '0' && *s <= '9')
         {
             val = *s - '0';
         }
