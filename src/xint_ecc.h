@@ -25,7 +25,6 @@ struct xint_ecc_curve_s
 };
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;
 
-extern xint_ecc_curve_t p192;
 extern xint_ecc_curve_t p224;
 extern xint_ecc_curve_t p256;
 extern xint_ecc_curve_t p384;

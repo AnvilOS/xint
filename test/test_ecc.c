@@ -200,34 +200,6 @@ TEST(ecc, simple_gcd_and_inverse)
     END_TEST(ecc)
 }
 
-TEST(ecc, curve_p192)
-{
-    xint_ecc_point_t G;
-    xint_point_init(G);
-    G->is_at_infinity = 0;
-    xint_assign_str(G->x, p192.Gx, 16);
-    xint_assign_str(G->y, p192.Gy, 16);
-
-    xint_t x = XINT_INIT_VAL;
-    xint_assign_str(x, "0x7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE", 0);
-
-    xint_ecc_point_t R;
-    xint_point_init(R);
-    
-    xint_ecc_mul_scalar(R, G, x, p192);
-    
-    xint_t Rx_exp = XINT_INIT_VAL;
-    xint_assign_str(Rx_exp, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F", 0);
-    
-    xint_t Ry_exp = XINT_INIT_VAL;
-    xint_assign_str(Ry_exp, "0x3CE76603264661EA2F602DF7B4510BBC9ED939233C553EA5F42FB3F1338174B5", 0);
-
-    ASSERT_EQ(0, xint_cmp(Rx_exp, R->x));
-    ASSERT_EQ(0, xint_cmp(Ry_exp, R->y));
-
-    END_TEST(ecc);
-}
-
 TEST(ecc, curve_p224)
 {
     xint_ecc_point_t G;
@@ -346,7 +318,6 @@ int test_ecc(void)
     CALL_TEST(ecc, hmac2);
     CALL_TEST(ecc, k_generation);
     CALL_TEST(ecc, simple_gcd_and_inverse);
-    CALL_TEST(ecc, curve_p192);
     CALL_TEST(ecc, curve_p224);
     CALL_TEST(ecc, curve_p256);
     CALL_TEST(ecc, curve_p384);
