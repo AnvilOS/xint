@@ -200,13 +200,13 @@ TEST(ecc, simple_gcd_and_inverse)
     END_TEST(ecc)
 }
 
-TEST(ecc, curve_p256)
+TEST(ecc, curve_p192)
 {
     xint_ecc_point_t G;
     xint_point_init(G);
     G->is_at_infinity = 0;
-    xint_assign_str(G->x, p256.Gx, 16);
-    xint_assign_str(G->y, p256.Gy, 16);
+    xint_assign_str(G->x, p192.Gx, 16);
+    xint_assign_str(G->y, p192.Gy, 16);
 
     xint_t x = XINT_INIT_VAL;
     xint_assign_str(x, "0x7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE", 0);
@@ -214,7 +214,7 @@ TEST(ecc, curve_p256)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar(R, G, x, p256);
+    xint_ecc_mul_scalar(R, G, x, p192);
     
     xint_t Rx_exp = XINT_INIT_VAL;
     xint_assign_str(Rx_exp, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F", 0);
@@ -228,13 +228,129 @@ TEST(ecc, curve_p256)
     END_TEST(ecc);
 }
 
+TEST(ecc, curve_p224)
+{
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    G->is_at_infinity = 0;
+    xint_assign_str(G->x, p224.Gx, 16);
+    xint_assign_str(G->y, p224.Gy, 16);
+
+    xint_t x = XINT_INIT_VAL;
+    xint_assign_str(x, "A548803B79DF17C40CDE3FF0E36D025143BCBBA146EC32908EB84937", 16);
+
+    xint_ecc_point_t R;
+    xint_point_init(R);
+    
+    xint_ecc_mul_scalar(R, G, x, p224);
+    
+    xint_t Rx_exp = XINT_INIT_VAL;
+    xint_assign_str(Rx_exp, "C3A3F5B82712532004C6F6D1DB672F55D931C3409EA1216D0BE77380", 16);
+    
+    xint_t Ry_exp = XINT_INIT_VAL;
+    xint_assign_str(Ry_exp, "9BF4978CA8C8A8DF855A74C6905A5A3947ACFF772FCE436D48341D46", 16);
+
+    ASSERT_EQ(0, xint_cmp(Rx_exp, R->x));
+    ASSERT_EQ(0, xint_cmp(Ry_exp, R->y));
+
+    END_TEST(ecc);
+}
+
+TEST(ecc, curve_p256)
+{
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    G->is_at_infinity = 0;
+    xint_assign_str(G->x, p256.Gx, 16);
+    xint_assign_str(G->y, p256.Gy, 16);
+
+    xint_t x = XINT_INIT_VAL;
+    xint_assign_str(x, "7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE", 16);
+
+    xint_ecc_point_t R;
+    xint_point_init(R);
+    
+    xint_ecc_mul_scalar(R, G, x, p256);
+    
+    xint_t Rx_exp = XINT_INIT_VAL;
+    xint_assign_str(Rx_exp, "2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F", 16);
+    
+    xint_t Ry_exp = XINT_INIT_VAL;
+    xint_assign_str(Ry_exp, "3CE76603264661EA2F602DF7B4510BBC9ED939233C553EA5F42FB3F1338174B5", 16);
+
+    ASSERT_EQ(0, xint_cmp(Rx_exp, R->x));
+    ASSERT_EQ(0, xint_cmp(Ry_exp, R->y));
+
+    END_TEST(ecc);
+}
+
+TEST(ecc, curve_p384)
+{
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    G->is_at_infinity = 0;
+    xint_assign_str(G->x, p384.Gx, 16);
+    xint_assign_str(G->y, p384.Gy, 16);
+
+    xint_t x = XINT_INIT_VAL;
+    xint_assign_str(x, "2E44EF1F8C0BEA8394E3DDA81EC6A7842A459B534701749E2ED95F054F0137680878E0749FC43F85EDCAE06CC2F43FEF", 16);
+
+    xint_ecc_point_t R;
+    xint_point_init(R);
+    
+    xint_ecc_mul_scalar(R, G, x, p384);
+    
+    xint_t Rx_exp = XINT_INIT_VAL;
+    xint_assign_str(Rx_exp, "30EA514FC0D38D8208756F068113C7CADA9F66A3B40EA3B313D040D9B57DD41A332795D02CC7D507FCEF9FAF01A27088", 16);
+    
+    xint_t Ry_exp = XINT_INIT_VAL;
+    xint_assign_str(Ry_exp, "C04E32465D14C50CBC3BCB88EA20F95B10616663FC62A8DCDB48D3006327EA7CA104F6F9294C66EA2487BD50357010C6", 16);
+
+    ASSERT_EQ(0, xint_cmp(Rx_exp, R->x));
+    ASSERT_EQ(0, xint_cmp(Ry_exp, R->y));
+
+    END_TEST(ecc);
+}
+
+TEST(ecc, curve_p521)
+{
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    G->is_at_infinity = 0;
+    xint_assign_str(G->x, p521.Gx, 16);
+    xint_assign_str(G->y, p521.Gy, 16);
+
+    xint_t x = XINT_INIT_VAL;
+    xint_assign_str(x, "C91E2349EF6CA22D2DE39DD51819B6AAD922D3AECDEAB452BA172F7D63E370CECD70575F597C09A174BA76BED05A48E562BE0625336D16B8703147A6A231D6BF", 16);
+
+    xint_ecc_point_t R;
+    xint_point_init(R);
+    
+    xint_ecc_mul_scalar(R, G, x, p521);
+    
+    xint_t Rx_exp = XINT_INIT_VAL;
+    xint_assign_str(Rx_exp, "140C8EDCA57108CE3F7E7A240DDD3AD74D81E2DE62451FC1D558FDC79269ADACD1C2526EEEEF32F8C0432A9D56E2B4A8A732891C37C9B96641A9254CCFE5DC3E2BA", 16);
+    
+    xint_t Ry_exp = XINT_INIT_VAL;
+    xint_assign_str(Ry_exp, "CD42A03AD1EB93C532FC8A54683998FF86FEC61F85F8E15B4ACD5B696498F211506D340091019900C918BD8088E0352E9742EA9E2B55983ECAA343E424B8113428", 16);
+
+    ASSERT_EQ(0, xint_cmp(Rx_exp, R->x));
+    ASSERT_EQ(0, xint_cmp(Ry_exp, R->y));
+
+    END_TEST(ecc);
+}
+
 int test_ecc(void)
 {
     CALL_TEST(ecc, hmac1);
     CALL_TEST(ecc, hmac2);
     CALL_TEST(ecc, k_generation);
     CALL_TEST(ecc, simple_gcd_and_inverse);
+    CALL_TEST(ecc, curve_p192);
+    CALL_TEST(ecc, curve_p224);
     CALL_TEST(ecc, curve_p256);
+    CALL_TEST(ecc, curve_p384);
+    CALL_TEST(ecc, curve_p521);
 
     END_TEST_GROUP(ecc);
 }

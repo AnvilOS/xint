@@ -25,7 +25,11 @@ struct xint_ecc_curve_s
 };
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;
 
+extern xint_ecc_curve_t p192;
+extern xint_ecc_curve_t p224;
 extern xint_ecc_curve_t p256;
+extern xint_ecc_curve_t p384;
+extern xint_ecc_curve_t p521;
 
 void xint_gcd(xint_t w, const xint_t u, const xint_t v);
 void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t v);
