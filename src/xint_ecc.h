@@ -22,6 +22,8 @@ struct xint_ecc_curve_s
     char *Gy;
     char *n;
     char *h;
+    void (*point_add)(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m);
+    void (*point_double)(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m);
 };
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;
 
@@ -39,9 +41,9 @@ void xint_point_delete(xint_ecc_point_t p);
 void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p);
 void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
 void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t a, xint_t m);
-void xint_point_add_p(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m);
+void xint_point_add_pcurve(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m);
 void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t b, xint_t m);
-void xint_point_double_p(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m);
+void xint_point_double_pcurve(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m);
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t curve);
 
 #endif // XINT_ECC_H

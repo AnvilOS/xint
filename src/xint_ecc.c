@@ -12,7 +12,9 @@ xint_ecc_curve_t p224 =
     "B70E0CBD 6BB4BF7F 321390B9 4A03C1D3 56C21122 343280D6 115C1D21",
     "BD376388 B5F723FB 4C22DFE6 CD4375A0 5A074764 44D58199 85007E34",
     "FFFFFFFF FFFFFFFF FFFFFFFF FFFF16A2 E0B8F03E 13DD2945 5C5C2A3D",
-    "01"
+    "01",
+    xint_point_add_pcurve,
+    xint_point_double_pcurve
 };
 
 xint_ecc_curve_t p256 =
@@ -24,7 +26,9 @@ xint_ecc_curve_t p256 =
     "6B17D1F2 E12C4247 F8BCE6E5 63A440F2 77037D81 2DEB33A0 F4A13945 D898C296",
     "4FE342E2 FE1A7F9B 8EE7EB4A 7C0F9E16 2BCE3357 6B315ECE CBB64068 37BF51F5",
     "FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551",
-    "01"
+    "01",
+    xint_point_add_pcurve,
+    xint_point_double_pcurve
 };
 
 xint_ecc_curve_t p384 =
@@ -36,7 +40,9 @@ xint_ecc_curve_t p384 =
     "AA87CA22 BE8B0537 8EB1C71E F320AD74 6E1D3B62 8BA79B98 59F741E0 82542A38 5502F25D BF55296C 3A545E38 72760AB7",
     "3617DE4A 96262C6F 5D9E98BF 9292DC29 F8F41DBD 289A147C E9DA3113 B5F0B8C0 0A60B1CE 1D7E819D 7A431D7C 90EA0E5F",
     "FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF C7634D81 F4372DDF 581A0DB2 48B0A77A ECEC196A CCC52973",
-    "01"
+    "01",
+    xint_point_add_pcurve,
+    xint_point_double_pcurve
 };
 
 xint_ecc_curve_t p521 =
@@ -48,7 +54,9 @@ xint_ecc_curve_t p521 =
     "00C6 858E06B7 0404E9CD 9E3ECB66 2395B442 9C648139 053FB521 F828AF60 6B4D3DBA A14B5E77 EFE75928 FE1DC127 A2FFA8DE 3348B3C1 856A429B F97E7E31 C2E5BD66",
     "0118 39296A78 9A3BC004 5C8A5FB4 2C7D1BD9 98F54449 579B4468 17AFBD17 273E662C 97EE7299 5EF42640 C550B901 3FAD0761 353C7086 A272C240 88BE9476 9FD16650",
     "01FF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFA 51868783 BF2F966B 7FCC0148 F709A5D0 3BB5C9B8 899C47AE BB6FB71E 91386409",
-    "01"
+    "01",
+    xint_point_add_pcurve,
+    xint_point_double_pcurve
 };
 
 void xint_gcd(xint_t w, const xint_t u, const xint_t v)
@@ -131,21 +139,21 @@ void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t
         xint_sub(t3, u3, t3);
         
         // (u1, u2, u3) ← (v1, v2, v3)
-        xint_copy(u1, v1);
-        xint_copy(u2, v2);
-        xint_copy(u3, v3);
+        xint_swap(u1, v1);
+        xint_swap(u2, v2);
+        xint_swap(u3, v3);
         
         // (v1, v2, v3) ← (t1, t2, t3).
-        xint_copy(v1, t1);
-        xint_copy(v2, t2);
-        xint_copy(v3, t3);
+        xint_swap(v1, t1);
+        xint_swap(v2, t2);
+        xint_swap(v3, t3);
         
         // Return to step X2.
     }
     
-    xint_copy(ud, u1);
-    xint_copy(vd, u2);
-    xint_copy(gcd, u3);
+    xint_swap(ud, u1);
+    xint_swap(vd, u2);
+    xint_swap(gcd, u3);
     
     xint_delete(q);
     xint_delete(r);
@@ -176,10 +184,9 @@ int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
         xint_copy(w, ud);
         ret = 1;
     }
-    else
-    {
-        ret = 0;
-    }
+    xint_delete(gcd);
+    xint_delete(ud);
+    xint_delete(vd);
     return ret;
 }
 
@@ -250,7 +257,43 @@ void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, 
     xint_mod(r->y, yr, m);
 }
 
-void xint_point_add_p(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
+void xint_mod_add(xint_t w, xint_t u, xint_t v, xint_t m)
+{
+    xint_add(w, u, v);
+    if (xint_cmp(w, m) >= 0)
+    {
+        xint_sub(w, w, m);
+    }
+}
+
+void xint_mod_sub(xint_t w, xint_t u, xint_t v, xint_t m)
+{
+    xint_sub(w, u, v);
+    if (xint_is_neg(w))
+    {
+        xint_add(w, w, m);
+    }
+}
+
+void xint_mod_mul(xint_t w, xint_t u, xint_t v, xint_t m)
+{
+    xint_mul(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_mul_ulong(xint_t w, xint_t u, unsigned long v, xint_t m)
+{
+    xint_mul_ulong(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_sqr(xint_t w, xint_t u, xint_t m)
+{
+    xint_sqr(w, u);
+    xint_mod(w, w, m);
+}
+
+void xint_point_add_pcurve(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
 {
     xint_t diffy = XINT_INIT_VAL;
     xint_t diffx = XINT_INIT_VAL;
@@ -270,26 +313,18 @@ void xint_point_add_p(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p
         return;
     }
 
-    xint_sub(diffy, q->y, p->y);
-    xint_mod(diffy, diffy, m);
-    xint_sub(diffx, q->x, p->x);
-    xint_mod(diffx, diffx, m);
+    xint_mod_sub(diffy, q->y, p->y, m);
+    xint_mod_sub(diffx, q->x, p->x, m);
     xint_mod_inverse(diffx, diffx, m);
-    xint_mul(lambda, diffy, diffx);
-    xint_mod(lambda, lambda, m);
+    xint_mod_mul(lambda, diffy, diffx, m);
         
-    xint_sqr(xr, lambda);
-    xint_sub(xr, xr, p->x);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, q->x);
-    xint_mod(xr, xr, m);
+    xint_mod_sqr(xr, lambda, m);
+    xint_mod_sub(xr, xr, p->x, m);
+    xint_mod_sub(xr, xr, q->x, m);
 
-    xint_sub(yr, p->x, xr);
-    xint_mod(yr, yr, m);
-    xint_mul(yr, yr, lambda);
-    xint_mod(yr, yr, m);
-    xint_sub(yr, yr, p->y);
-    xint_mod(yr, yr, m);
+    xint_mod_sub(yr, p->x, xr, m);
+    xint_mod_mul(yr, yr, lambda, m);
+    xint_mod_sub(yr, yr, p->y, m);
 
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
@@ -326,46 +361,38 @@ void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t 
     xint_mod(r->y, yr, m);
 }
 
-void xint_point_double_p(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
+void xint_point_double_pcurve(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
 {
-    xint_t tmp1 = XINT_INIT_VAL;
-    xint_t tmp2 = XINT_INIT_VAL;
-    xint_t tmp3 = XINT_INIT_VAL;
+    xint_t tmp = XINT_INIT_VAL;
     xint_t lambda = XINT_INIT_VAL;
     xint_t xr = XINT_INIT_VAL;
     xint_t yr = XINT_INIT_VAL;
 
-    xint_sqr(tmp1, p->x);
-    xint_mod(tmp1, tmp1, m);
-    xint_mul_ulong(tmp1, tmp1, 3);
-    xint_mod(tmp1, tmp1, m);
-    xint_add(tmp1, tmp1, a);
-    xint_mod(tmp1, tmp1, m);
+    xint_mod_sqr(tmp, p->x, m);
+    xint_mod_mul_ulong(tmp, tmp, 3, m);
+    xint_mod_add(tmp, tmp, a, m);
 
-    xint_mul_ulong(tmp2, p->y, 2);
-    xint_mod(tmp2, tmp2, m);
-    xint_mod_inverse(tmp2, tmp2, m);
-    xint_mod(tmp2, tmp2, m);
-    xint_mul(tmp3, tmp1, tmp2);
-    xint_mod(tmp3, tmp3, m);
-    xint_mod(lambda, tmp3, m);
+    xint_lshift(lambda, p->y, 1);
+    xint_mod(lambda, lambda, m);
+    xint_mod_inverse(lambda, lambda, m);
+    xint_mod_mul(lambda, tmp, lambda, m);
     
-    xint_sqr(xr, lambda);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, p->x);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, p->x);
-    xint_mod(xr, xr, m);
+    xint_mod_sqr(xr, lambda, m);
+    xint_mod_sub(xr, xr, p->x, m);
+    xint_mod_sub(xr, xr, p->x, m);
 
-    xint_sub(tmp3, p->x, xr);
-    xint_mod(tmp3, tmp3, m);
-    xint_mul(tmp3, tmp3, lambda);
-    xint_mod(yr, tmp3, m);
-    xint_sub(yr, yr, p->y);
+    xint_mod_sub(tmp, p->x, xr, m);
+    xint_mod_mul(yr, tmp, lambda, m);
+    xint_mod_sub(yr, yr, p->y, m);
     
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
     r->is_at_infinity = 0;
+    
+    xint_delete(tmp);
+    xint_delete(lambda);
+    xint_delete(xr);
+    xint_delete(yr);
 }
 
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t c)
@@ -375,16 +402,14 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
     xint_point_copy(TMP, P);
     xint_t a = XINT_INIT_VAL;
     xint_t p = XINT_INIT_VAL;
-    xint_init(a);
-    xint_init(p);
     xint_assign_str(a, c.a, 16);
     xint_assign_str(p, c.p, 16);
     for (int i=0; i<c.nbits; ++i)
     {
         if (xint_get_bit(k, i) == 1)
         {
-            xint_point_add_p(R, R, TMP, p);
+            c.point_add(R, R, TMP, p);
         }
-        xint_point_double_p(TMP, TMP, a, p);
+        c.point_double(TMP, TMP, a, p);
     }
 }
