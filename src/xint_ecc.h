@@ -40,9 +40,7 @@ void xint_point_init(xint_ecc_point_t p);
 void xint_point_delete(xint_ecc_point_t p);
 void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p);
 void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
-void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t a, xint_t m);
 void xint_point_add_pcurve(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m);
-void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t b, xint_t m);
 void xint_point_double_pcurve(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m);
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t curve);
 

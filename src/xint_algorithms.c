@@ -1,5 +1,5 @@
 
-#include "xint_prime.h"
+#include "xint_algorithms.h"
 
 #include "xint_exp.h"
 

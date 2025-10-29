@@ -1,7 +1,7 @@
 
 #include "test_prime.h"
 
-#include "xint_prime.h"
+#include "xint_algorithms.h"
 #include "xint_io.h"
 
 #include "test_harness.h"

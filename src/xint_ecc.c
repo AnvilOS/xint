@@ -217,46 +217,6 @@ void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p)
     xint_chs(r->y);
 }
 
-void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t a, xint_t m)
-{
-    xint_t sumy = XINT_INIT_VAL;
-    xint_t sumx = XINT_INIT_VAL;
-    xint_t lambda = XINT_INIT_VAL;
-    xint_t xr = XINT_INIT_VAL;
-    xint_t yr = XINT_INIT_VAL;
-    
-    if (p->is_at_infinity)
-    {
-        xint_point_copy(r, q);
-        return;
-    }
-
-    if (q->is_at_infinity)
-    {
-        xint_point_copy(r, p);
-        return;
-    }
-
-    xint_add(sumy, p->y, q->y);
-    xint_add(sumx, p->x, q->x);
-    xint_mod_inverse(sumx, sumx, m);
-    xint_mul(lambda, sumy, sumx);
-        
-    xint_sqr(xr, lambda);
-    xint_add(xr, xr, lambda);
-    xint_add(xr, xr, p->x);
-    xint_add(xr, xr, q->x);
-    xint_add(xr, xr, a);
-
-    xint_add(yr, p->x, xr);
-    xint_mul(yr, yr, lambda);
-    xint_add(yr, yr, xr);
-    xint_add(yr, yr, p->y);
-
-    xint_mod(r->x, xr, m);
-    xint_mod(r->y, yr, m);
-}
-
 void xint_mod_add(xint_t w, xint_t u, xint_t v, xint_t m)
 {
     xint_add(w, u, v);
@@ -329,36 +289,6 @@ void xint_point_add_pcurve(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_poin
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
     r->is_at_infinity = 0;
-}
-
-void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t b, xint_t m)
-{
-    xint_t x1inv = XINT_INIT_VAL;
-    xint_t tmp2 = XINT_INIT_VAL;
-    xint_t x1sq = XINT_INIT_VAL;
-    xint_t xr = XINT_INIT_VAL;
-    xint_t yr = XINT_INIT_VAL;
-    
-    if (p->is_at_infinity)
-    {
-        xint_point_copy(r, p);
-        return;
-    }
-
-    xint_sqr(x1sq, p->x);
-    xint_mod_inverse(tmp2, x1sq, m);
-    xint_mul(tmp2, tmp2, b);
-    xint_add(xr, x1sq, tmp2);
-    
-    xint_mod_inverse(x1inv, p->x, m);
-    xint_mul(tmp2, p->y, x1inv);
-    xint_add(tmp2, tmp2, p->x);
-    xint_mul(tmp2, tmp2, xr);
-    xint_add(tmp2, tmp2, x1sq);
-    xint_add(yr, tmp2, xr);
-
-    xint_mod(r->x, xr, m);
-    xint_mod(r->y, yr, m);
 }
 
 void xint_point_double_pcurve(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
