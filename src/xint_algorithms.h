@@ -11,6 +11,8 @@ extern "C"
 
 int xint_is_prime(xint_t n);
 int xint_miller_rabin(xint_t n, int t);
+void xint_gcd(xint_t w, const xint_t u, const xint_t v);
+void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t v);
 
 #ifdef __cplusplus
 }

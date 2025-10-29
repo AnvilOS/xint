@@ -32,8 +32,6 @@ extern xint_ecc_curve_t p256;
 extern xint_ecc_curve_t p384;
 extern xint_ecc_curve_t p521;
 
-void xint_gcd(xint_t w, const xint_t u, const xint_t v);
-void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t v);
 int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v);
 
 void xint_point_init(xint_ecc_point_t p);
