@@ -12,6 +12,15 @@ struct ecc_point
 };
 typedef struct ecc_point xint_ecc_point_t[1];
 
+struct ecc_point_jacobian
+{
+    int is_at_infinity;
+    xint_t x;
+    xint_t y;
+    xint_t z;
+};
+typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
+
 struct xint_ecc_curve_s
 {
     unsigned nbits;

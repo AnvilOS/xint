@@ -128,13 +128,13 @@ void xint_mod_sub(xint_t w, xint_t u, xint_t v, xint_t m)
     }
 }
 
-void xint_mod_mul(xint_t w, xint_t u, xint_t v, xint_t m)
+void xint_mod_mul(xint_t w, const xint_t u, const xint_t v, xint_t m)
 {
     xint_mul(w, u, v);
     xint_mod(w, w, m);
 }
 
-void xint_mod_mul_ulong(xint_t w, xint_t u, unsigned long v, xint_t m)
+void xint_mod_mul_ulong(xint_t w, const xint_t u, unsigned long v, xint_t m)
 {
     xint_mul_ulong(w, u, v);
     xint_mod(w, w, m);
@@ -218,6 +218,36 @@ void xint_point_double_pcurve(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, 
     xint_delete(yr);
 }
 
+void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u)
+{
+    xint_copy(w->x, u->x);
+    xint_copy(w->y, u->y);
+    xint_assign_ulong(w->z, 1);
+    w->is_at_infinity = u->is_at_infinity;
+}
+
+void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, xint_t p)
+{
+    // Convert back to affine
+    xint_t X = XINT_INIT_VAL;
+    xint_t Y = XINT_INIT_VAL;
+    xint_t z_inv = XINT_INIT_VAL;
+    xint_mod_inverse(z_inv, u->z, p);
+    
+    xint_copy(X, z_inv);
+    xint_mod_sqr(X, X, p);
+    xint_mod_mul(X, X, u->x, p);
+    
+    xint_copy(Y, z_inv);
+    xint_mod_sqr(Y, Y, p);
+    xint_mod_mul(Y, Y, z_inv, p);
+    xint_mod_mul(Y, Y, u->y, p);
+    
+    xint_copy(w->x, X);
+    xint_copy(w->y, Y);
+    w->is_at_infinity = 0;
+}
+
 void xint_point_add_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
 {
     if (p->is_at_infinity)
@@ -233,25 +263,21 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t q, xint
     }
     
     // Convert to Jacobian
-    xint_t x1 = XINT_INIT_VAL;
-    xint_t y1 = XINT_INIT_VAL;
-    xint_t z1 = XINT_INIT_VAL;
-    
-    xint_t x2 = XINT_INIT_VAL;
-    xint_t y2 = XINT_INIT_VAL;
-    xint_t z2 = XINT_INIT_VAL;
-    
-    xint_t x3 = XINT_INIT_VAL;
-    xint_t y3 = XINT_INIT_VAL;
-    xint_t z3 = XINT_INIT_VAL;
-    
-    xint_copy(x1, p->x);
-    xint_copy(y1, p->y);
-    xint_assign_ulong(z1, 1);
-    
-    xint_copy(x2, q->x);
-    xint_copy(y2, q->y);
-    xint_assign_ulong(z2, 1);
+    xint_ecc_point_jacobian_t Pj;
+    xint_init(Pj->x);
+    xint_init(Pj->y);
+    xint_init(Pj->z);
+    xint_ecc_point_jacobian_t Qj;
+    xint_init(Qj->x);
+    xint_init(Qj->y);
+    xint_init(Qj->z);
+    xint_ecc_point_jacobian_t Rj;
+    xint_init(Rj->x);
+    xint_init(Rj->y);
+    xint_init(Rj->z);
+
+    to_jacobian(Pj, p);
+    to_jacobian(Qj, q);
     
     // Use algorithm from Wikibooks
     xint_t U1 = XINT_INIT_VAL;
@@ -261,6 +287,16 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t q, xint
     xint_t H = XINT_INIT_VAL;
     xint_t R = XINT_INIT_VAL;
     
+#define x1 Pj->x
+#define y1 Pj->y
+#define z1 Pj->z
+#define x2 Qj->x
+#define y2 Qj->y
+#define z2 Qj->z
+#define x3 Rj->x
+#define y3 Rj->y
+#define z3 Rj->z
+
     // U1 = x1.z2^2
     xint_mod_sqr(U1, z2, m);
     xint_mod_mul(U1, U1, x1, m);
@@ -322,23 +358,7 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t q, xint
     xint_mod_mul(z3, z3, z2, m);
     
     // Convert back to affine
-    xint_t X = XINT_INIT_VAL;
-    xint_t Y = XINT_INIT_VAL;
-    xint_t z_inv = XINT_INIT_VAL;
-    xint_mod_inverse(z_inv, z3, m);
-    
-    xint_copy(X, z_inv);
-    xint_mod_sqr(X, X, m);
-    xint_mod_mul(X, X, x3, m);
-    
-    xint_copy(Y, z_inv);
-    xint_mod_sqr(Y, Y, m);
-    xint_mod_mul(Y, Y, z_inv, m);
-    xint_mod_mul(Y, Y, y3, m);
-    
-    xint_copy(r->x, X);
-    xint_copy(r->y, Y);
-    r->is_at_infinity = 0;
+    from_jacobian(r, Rj, m);
 
     xint_delete(x1);
     xint_delete(y1);
@@ -358,22 +378,21 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t q, xint
     xint_delete (S2);
     xint_delete (H);
     xint_delete (R);
-
-    xint_delete(X);
-    xint_delete(Y);
-    xint_delete(z_inv);
 }
 
 void xint_point_double_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
 {
     // Convert to Jacobian
-    xint_t x1 = XINT_INIT_VAL;
-    xint_t y1 = XINT_INIT_VAL;
-    xint_t z1 = XINT_INIT_VAL;
-    
-    xint_t x3 = XINT_INIT_VAL;
-    xint_t y3 = XINT_INIT_VAL;
-    xint_t z3 = XINT_INIT_VAL;
+    xint_ecc_point_jacobian_t Pj;
+    xint_init(Pj->x);
+    xint_init(Pj->y);
+    xint_init(Pj->z);
+    xint_ecc_point_jacobian_t Rj;
+    xint_init(Rj->x);
+    xint_init(Rj->y);
+    xint_init(Rj->z);
+
+    to_jacobian(Pj, p);
     
     xint_copy(x1, p->x);
     xint_copy(y1, p->y);
@@ -417,22 +436,7 @@ void xint_point_double_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t p, x
     xint_mod_mul_ulong(z3, z3, 2, m);
     
     // Convert back to affine
-    xint_t X = XINT_INIT_VAL;
-    xint_t Y = XINT_INIT_VAL;
-    xint_t z_inv = XINT_INIT_VAL;
-    xint_mod_inverse(z_inv, z3, m);
-    
-    xint_copy(X, z_inv);
-    xint_mod_sqr(X, X, m);
-    xint_mod_mul(X, X, x3, m);
-    
-    xint_copy(Y, z_inv);
-    xint_mod_sqr(Y, Y, m);
-    xint_mod_mul(Y, Y, z_inv, m);
-    xint_mod_mul(Y, Y, y3, m);
-    
-    xint_copy(r->x, X);
-    xint_copy(r->y, Y);
+    from_jacobian(r, Rj, m);
 
     xint_delete(x1);
     xint_delete(y1);
@@ -445,12 +449,6 @@ void xint_point_double_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t p, x
     xint_delete(S);
     xint_delete(M);
     xint_delete(tmp);
-    
-    xint_delete(X);
-    xint_delete(Y);
-    xint_delete(z_inv);
-
-    r->is_at_infinity = 0;
 }
 
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t c)
