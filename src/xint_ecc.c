@@ -15,7 +15,7 @@ xint_ecc_curve_t p224 =
     "FFFFFFFF FFFFFFFF FFFFFFFF FFFF16A2 E0B8F03E 13DD2945 5C5C2A3D",
     "01",
     xint_point_add_pcurve,
-    xint_point_double_pcurve
+    xint_point_double_pcurve_jacobian
 };
 
 xint_ecc_curve_t p256 =
@@ -29,7 +29,7 @@ xint_ecc_curve_t p256 =
     "FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551",
     "01",
     xint_point_add_pcurve,
-    xint_point_double_pcurve
+    xint_point_double_pcurve_jacobian
 };
 
 xint_ecc_curve_t p384 =
@@ -43,7 +43,7 @@ xint_ecc_curve_t p384 =
     "FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF C7634D81 F4372DDF 581A0DB2 48B0A77A ECEC196A CCC52973",
     "01",
     xint_point_add_pcurve,
-    xint_point_double_pcurve
+    xint_point_double_pcurve_jacobian
 };
 
 xint_ecc_curve_t p521 =
@@ -57,7 +57,7 @@ xint_ecc_curve_t p521 =
     "01FF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFA 51868783 BF2F966B 7FCC0148 F709A5D0 3BB5C9B8 899C47AE BB6FB71E 91386409",
     "01",
     xint_point_add_pcurve,
-    xint_point_double_pcurve
+    xint_point_double_pcurve_jacobian
 };
 
 int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
@@ -216,6 +216,93 @@ void xint_point_double_pcurve(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, 
     xint_delete(lambda);
     xint_delete(xr);
     xint_delete(yr);
+}
+
+void xint_point_double_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
+{
+    // Convert to Jacobi
+    xint_t x1 = XINT_INIT_VAL;
+    xint_t y1 = XINT_INIT_VAL;
+    xint_t z1 = XINT_INIT_VAL;
+    
+    xint_t x3 = XINT_INIT_VAL;
+    xint_t y3 = XINT_INIT_VAL;
+    xint_t z3 = XINT_INIT_VAL;
+    
+    xint_copy(x1, p->x);
+    xint_copy(y1, p->y);
+    xint_assign_ulong(z1, 1);
+    
+    // Use algorithm from Wikibooks
+    xint_t S = XINT_INIT_VAL;
+    xint_t M = XINT_INIT_VAL;
+    xint_t tmp = XINT_INIT_VAL;
+    
+    // S = 4.x1.y1^2
+    xint_copy(S, y1);
+    xint_mod_sqr(S, S, m);
+    xint_mod_mul(S, S, x1, m);
+    xint_mod_mul_ulong(S, S, 4, m);
+    
+    // M = 3.x1^2 + a.z1^4
+    xint_copy(M, x1);
+    xint_mod_sqr(M, M, m);
+    xint_mod_mul_ulong(M, M, 3, m);
+    xint_mod_add(M, M, a, m);
+    
+    // x3 = M^2 - 2.S
+    xint_copy(x3, M);
+    xint_mod_sqr(x3, x3, m);
+    xint_mod_sub(x3, x3, S, m);
+    xint_mod_sub(x3, x3, S, m);
+    
+    // y3 = M.(S - x3) - 8.y^4
+    xint_copy(y3, S);
+    xint_mod_sub(y3, y3, x3, m);
+    xint_mod_mul(y3, y3, M, m);
+    xint_mod_sqr(tmp, y1, m);
+    xint_mod_sqr(tmp, tmp, m);
+    xint_mod_mul_ulong(tmp, tmp, 8, m);
+    xint_mod_sub(y3, y3, tmp, m);
+    
+    // z3 = 2.y1.z1
+    xint_copy(z3, y1);
+    xint_mod_mul(z3, z3, z1, m);
+    xint_mod_mul_ulong(z3, z3, 2, m);
+    
+    // Convert back to affine
+    xint_t X = XINT_INIT_VAL;
+    xint_t Y = XINT_INIT_VAL;
+    xint_t z_inv = XINT_INIT_VAL;
+    xint_mod_inverse(z_inv, z3, m);
+    
+    xint_copy(X, z_inv);
+    xint_mod_sqr(X, X, m);
+    xint_mod_mul(X, X, x3, m);
+    
+    xint_copy(Y, z_inv);
+    xint_mod_sqr(Y, Y, m);
+    xint_mod_mul(Y, Y, z_inv, m);
+    xint_mod_mul(Y, Y, y3, m);
+    
+    xint_copy(r->x, X);
+    xint_copy(r->y, Y);
+
+    xint_delete(x1);
+    xint_delete(y1);
+    xint_delete(z1);
+    
+    xint_delete(x3);
+    xint_delete(y3);
+    xint_delete(z3);
+    
+    xint_delete(S);
+    xint_delete(M);
+    xint_delete(tmp);
+    
+    xint_delete(X);
+    xint_delete(Y);
+    xint_delete(z_inv);
 }
 
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t c)
