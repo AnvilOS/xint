@@ -70,6 +70,10 @@ int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
     xint_gcd_ext(gcd, ud, vd, u, v);
     if (xint_cmp_ulong(gcd, 1) == 0)
     {
+        if (xint_is_neg(ud))
+        {
+            xint_add(ud, ud, v);
+        }
         xint_copy(w, ud);
         ret = 1;
     }
