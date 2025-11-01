@@ -14,8 +14,8 @@ xint_ecc_curve_t p224 =
     "BD376388 B5F723FB 4C22DFE6 CD4375A0 5A074764 44D58199 85007E34",
     "FFFFFFFF FFFFFFFF FFFFFFFF FFFF16A2 E0B8F03E 13DD2945 5C5C2A3D",
     "01",
-    xint_point_add_pcurve_jacobian,
-    xint_point_double_pcurve_jacobian
+    xint_point_add,
+    xint_point_double
 };
 
 xint_ecc_curve_t p256 =
@@ -28,8 +28,8 @@ xint_ecc_curve_t p256 =
     "4FE342E2 FE1A7F9B 8EE7EB4A 7C0F9E16 2BCE3357 6B315ECE CBB64068 37BF51F5",
     "FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551",
     "01",
-    xint_point_add_pcurve_jacobian,
-    xint_point_double_pcurve_jacobian
+    xint_point_add,
+    xint_point_double
 };
 
 xint_ecc_curve_t p384 =
@@ -42,8 +42,8 @@ xint_ecc_curve_t p384 =
     "3617DE4A 96262C6F 5D9E98BF 9292DC29 F8F41DBD 289A147C E9DA3113 B5F0B8C0 0A60B1CE 1D7E819D 7A431D7C 90EA0E5F",
     "FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF C7634D81 F4372DDF 581A0DB2 48B0A77A ECEC196A CCC52973",
     "01",
-    xint_point_add_pcurve_jacobian,
-    xint_point_double_pcurve_jacobian
+    xint_point_add,
+    xint_point_double
 };
 
 xint_ecc_curve_t p521 =
@@ -56,8 +56,8 @@ xint_ecc_curve_t p521 =
     "0118 39296A78 9A3BC004 5C8A5FB4 2C7D1BD9 98F54449 579B4468 17AFBD17 273E662C 97EE7299 5EF42640 C550B901 3FAD0761 353C7086 A272C240 88BE9476 9FD16650",
     "01FF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFA 51868783 BF2F966B 7FCC0148 F709A5D0 3BB5C9B8 899C47AE BB6FB71E 91386409",
     "01",
-    xint_point_add_pcurve_jacobian,
-    xint_point_double_pcurve_jacobian
+    xint_point_add,
+    xint_point_double
 };
 
 int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
@@ -170,78 +170,6 @@ void xint_mod_sqr(xint_t w, const xint_t u, const xint_t m)
     xint_mod(w, w, m);
 }
 
-void xint_point_add_pcurve(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
-{
-    xint_t diffy = XINT_INIT_VAL;
-    xint_t diffx = XINT_INIT_VAL;
-    xint_t lambda = XINT_INIT_VAL;
-    xint_t xr = XINT_INIT_VAL;
-    xint_t yr = XINT_INIT_VAL;
-    
-    if (p->is_at_infinity)
-    {
-        xint_point_copy(r, q);
-        return;
-    }
-
-    if (q->is_at_infinity)
-    {
-        xint_point_copy(r, p);
-        return;
-    }
-
-    xint_mod_sub(diffy, q->y, p->y, m);
-    xint_mod_sub(diffx, q->x, p->x, m);
-    xint_mod_inverse(diffx, diffx, m);
-    xint_mod_mul(lambda, diffy, diffx, m);
-        
-    xint_mod_sqr(xr, lambda, m);
-    xint_mod_sub(xr, xr, p->x, m);
-    xint_mod_sub(xr, xr, q->x, m);
-
-    xint_mod_sub(yr, p->x, xr, m);
-    xint_mod_mul(yr, yr, lambda, m);
-    xint_mod_sub(yr, yr, p->y, m);
-
-    xint_mod(r->x, xr, m);
-    xint_mod(r->y, yr, m);
-    r->is_at_infinity = 0;
-}
-
-void xint_point_double_pcurve(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
-{
-    xint_t tmp = XINT_INIT_VAL;
-    xint_t lambda = XINT_INIT_VAL;
-    xint_t xr = XINT_INIT_VAL;
-    xint_t yr = XINT_INIT_VAL;
-
-    xint_mod_sqr(tmp, p->x, m);
-    xint_mod_mul_ulong(tmp, tmp, 3, m);
-    xint_mod_add(tmp, tmp, a, m);
-
-    xint_lshift(lambda, p->y, 1);
-    xint_mod(lambda, lambda, m);
-    xint_mod_inverse(lambda, lambda, m);
-    xint_mod_mul(lambda, tmp, lambda, m);
-    
-    xint_mod_sqr(xr, lambda, m);
-    xint_mod_sub(xr, xr, p->x, m);
-    xint_mod_sub(xr, xr, p->x, m);
-
-    xint_mod_sub(tmp, p->x, xr, m);
-    xint_mod_mul(yr, tmp, lambda, m);
-    xint_mod_sub(yr, yr, p->y, m);
-    
-    xint_mod(r->x, xr, m);
-    xint_mod(r->y, yr, m);
-    r->is_at_infinity = 0;
-    
-    xint_delete(tmp);
-    xint_delete(lambda);
-    xint_delete(xr);
-    xint_delete(yr);
-}
-
 void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u)
 {
     xint_copy(w->x, u->x);
@@ -272,7 +200,7 @@ void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, xint_t
     w->is_at_infinity = 0;
 }
 
-void xint_point_add_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_t m)
+void xint_point_add(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_t m)
 {
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
@@ -380,7 +308,7 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ec
     xint_delete (R);
 }
 
-void xint_point_double_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_t m)
+void xint_point_double(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_t m)
 {
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
@@ -444,7 +372,6 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
 
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
-    to_jacobian(Rj, R);
 
     xint_t a = XINT_INIT_VAL;
     xint_assign_str(a, c.a, 16);
