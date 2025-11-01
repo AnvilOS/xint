@@ -440,18 +440,17 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
 {
     xint_ecc_point_jacobian_t TMPj;
     xint_point_jacobian_init(TMPj);
+    to_jacobian(TMPj, P);
+
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
-    xint_ecc_point_t TMP;
-    xint_point_init(TMP);
-    xint_point_copy(TMP, P);
-    xint_t a = XINT_INIT_VAL;
-    xint_t p = XINT_INIT_VAL;
-    xint_assign_str(a, c.a, 16);
-    xint_assign_str(p, c.p, 16);
-
     to_jacobian(Rj, R);
-    to_jacobian(TMPj, TMP);
+
+    xint_t a = XINT_INIT_VAL;
+    xint_assign_str(a, c.a, 16);
+
+    xint_t p = XINT_INIT_VAL;
+    xint_assign_str(p, c.p, 16);
     
     for (int i=0; i<c.nbits; ++i)
     {
