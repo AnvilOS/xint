@@ -134,7 +134,7 @@ void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p)
     xint_chs(r->y);
 }
 
-void xint_mod_add(xint_t w, xint_t u, xint_t v, xint_t m)
+void xint_mod_add(xint_t w, const xint_t u, const xint_t v, const xint_t m)
 {
     xint_add(w, u, v);
     if (xint_cmp(w, m) >= 0)
@@ -143,7 +143,7 @@ void xint_mod_add(xint_t w, xint_t u, xint_t v, xint_t m)
     }
 }
 
-void xint_mod_sub(xint_t w, xint_t u, xint_t v, xint_t m)
+void xint_mod_sub(xint_t w, const xint_t u, const xint_t v, const xint_t m)
 {
     xint_sub(w, u, v);
     if (xint_is_neg(w))
@@ -152,19 +152,19 @@ void xint_mod_sub(xint_t w, xint_t u, xint_t v, xint_t m)
     }
 }
 
-void xint_mod_mul(xint_t w, const xint_t u, const xint_t v, xint_t m)
+void xint_mod_mul(xint_t w, const xint_t u, const xint_t v, const xint_t m)
 {
     xint_mul(w, u, v);
     xint_mod(w, w, m);
 }
 
-void xint_mod_mul_ulong(xint_t w, const xint_t u, unsigned long v, xint_t m)
+void xint_mod_mul_ulong(xint_t w, const xint_t u, unsigned long v, const xint_t m)
 {
     xint_mul_ulong(w, u, v);
     xint_mod(w, w, m);
 }
 
-void xint_mod_sqr(xint_t w, xint_t u, xint_t m)
+void xint_mod_sqr(xint_t w, const xint_t u, const xint_t m)
 {
     xint_sqr(w, u);
     xint_mod(w, w, m);
@@ -275,7 +275,7 @@ void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, xint_t
 #ifdef OLD
 void xint_point_add_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t p, xint_ecc_point_t q, xint_t m)
 #else
-void xint_point_add_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, xint_t m)
+void xint_point_add_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_t m)
 #endif
 {
 #ifdef OLD
@@ -425,7 +425,7 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, xint_ecc_poin
 #ifdef OLD
 void xint_point_double_pcurve_jacobian(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
 #else
-void xint_point_double_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, xint_ecc_point_jacobian_t Pj, xint_t a, xint_t m)
+void xint_point_double_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_t m)
 #endif
 {
 #ifdef OLD
