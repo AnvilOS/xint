@@ -379,7 +379,7 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ec
     xint_mod_sub(x3, R2, x3, m);
     xint_mod_sub(x3, x3, H3, m);
     
-    // Y3 = R*(U1.H^2 - X3) - S1.H^3
+    // Y3 = R.(U1.H^2 - X3) - S1.H^3
     xint_mod_mul(y3, U1, H2, m);
     xint_mod_sub(y3, y3, x3, m);
     xint_mod_mul(y3, y3, R, m);
@@ -396,6 +396,7 @@ void xint_point_add_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ec
     from_jacobian(r, Rj, m);
 #else
     xint_point_jacobian_copy(Rjx, Rj);
+    Rjx->is_at_infinity = 0;
 #endif
 
     
@@ -437,9 +438,7 @@ void xint_point_double_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint
     to_jacobian(Pj, p);
 #endif
     xint_ecc_point_jacobian_t Rj;
-    xint_init(Rj->x);
-    xint_init(Rj->y);
-    xint_init(Rj->z);
+    xint_point_jacobian_init(Rj);
 
     // Use algorithm from Wikibooks
     xint_t S = XINT_INIT_VAL;
@@ -487,6 +486,7 @@ void xint_point_double_pcurve_jacobian(xint_ecc_point_jacobian_t Rjx, const xint
     from_jacobian(r, Rj, m);
 #else
     xint_point_jacobian_copy(Rjx, Rj);
+    Rjx->is_at_infinity = 0;
 #endif
     
 #if 0
@@ -519,6 +519,10 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
     xint_t p = XINT_INIT_VAL;
     xint_assign_str(a, c.a, 16);
     xint_assign_str(p, c.p, 16);
+
+    to_jacobian(Rj, R);
+    to_jacobian(TMPj, TMP);
+    
     for (int i=0; i<c.nbits; ++i)
     {
         if (xint_get_bit(k, i) == 1)
@@ -527,39 +531,15 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
             c.point_add(R, R, TMP, p);
 #else
             // Convert to Jacobian
-            to_jacobian(Rj, R);
-            to_jacobian(TMPj, TMP);
             c.point_add(Rj, Rj, TMPj, p);
-            from_jacobian(R, Rj, p);
-            from_jacobian(TMP, TMPj, p);
 #endif
         }
 #ifdef OLD
         c.point_double(TMP, TMP, a, p);
 #else
         // Convert to Jacobian
-        to_jacobian(TMPj, TMP);
         c.point_double(TMPj, TMPj, a, p);
-        from_jacobian(TMP, TMPj, p);
 #endif
-//        xint_print_hex("T", TMP->x);
-//        xint_print_hex("T", TMP->y);
-//        xint_print_hex("R", R->x);
-//        xint_print_hex("R", R->y);
     }
+    from_jacobian(R, Rj, p);
 }
-
-//T: 7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978
-//T: 7775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1
-//R: 0
-//R: 0
-//
-//T: e2534a3532d08fbba02dde659ee62bd0031fe2db785596ef509302446b030852
-//T: e0f1575a4c633cc719dfee5fda862d764efc96c3f30ee0055c42c23f184ed8c6
-//R: 7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978
-//R: 7775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1
-//
-//T: 62d9779dbee9b0534042742d3ab54cadc1d238980fce97dbb4dd9dc1db6fb393
-//T: ad5accbd91e9d8244ff15d771167cee0a2ed51f6bbe76a78da540a6a0f09957e
-//R: b01a172a76a4602c92d3242cb897dde3024c740debb215b4c6b0aae93c2291a9
-//R: e85c10743237dad56fec0e2dfba703791c00f7701c7e16bdfd7c48538fc77fe2
