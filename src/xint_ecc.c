@@ -202,7 +202,7 @@ void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, xint_t
 
 void xint_point_add(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_t m)
 {
-    // 13M + 6S
+    // 13M + 4S
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
 
@@ -236,22 +236,20 @@ void xint_point_add(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian
 #define y3 Rj->y
 #define z3 Rj->z
     
-    // U1 = x1.z2^2
-    xint_mod_sqr(U1, z2, m);
-    xint_mod_mul(U1, U1, x1, m);
+    // U1 = x1.z2^2 - use H as a scratch for z2^2
+    xint_mod_sqr(H, z2, m);
+    xint_mod_mul(U1, H, x1, m);
     
-    // U2 = x2.z1^2
-    xint_mod_sqr(U2, z1, m);
-    xint_mod_mul(U2, U2, x2, m);
+    // U2 = x2.z1^2 - use R as a scratch for z1^2
+    xint_mod_sqr(R, z1, m);
+    xint_mod_mul(U2, R, x2, m);
     
     // S1 = y1.z2^3
-    xint_mod_sqr(S1, z2, m);
-    xint_mod_mul(S1, S1, z2, m);
+    xint_mod_mul(S1, H, z2, m);
     xint_mod_mul(S1, S1, y1, m);
     
     // S2 = y2.z1^3
-    xint_mod_sqr(S2, z1, m);
-    xint_mod_mul(S2, S2, z1, m);
+    xint_mod_mul(S2, R, z1, m);
     xint_mod_mul(S2, S2, y2, m);
     
     if (xint_cmp(U1, U2) == 0)
@@ -311,7 +309,7 @@ void xint_point_add(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian
 
 void xint_point_double(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_t m)
 {
-    // 4M + 7S
+    // 4M + 6S
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
 
@@ -326,33 +324,27 @@ void xint_point_double(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacob
     xint_t M = XINT_INIT_VAL;
     xint_t tmp = XINT_INIT_VAL;
     
-    // S = 4.x1.y1^2
-    xint_copy(S, y1);
-    xint_mod_sqr(S, S, m);
-    xint_mod_mul(S, S, x1, m);
-    xint_mod_mul_ulong(S, S, 4, m);
-    
     // M = 3.x1^2 + a.z1^4
-    xint_copy(M, x1);
-    xint_mod_sqr(M, M, m);
+    xint_mod_sqr(M, x1, m);
     xint_mod_mul_ulong(M, M, 3, m);
-    xint_copy(tmp, z1);
-    xint_mod_sqr(tmp, tmp, m);
+    xint_mod_sqr(tmp, z1, m);
     xint_mod_sqr(tmp, tmp, m);
     xint_mod_mul(tmp, tmp, a, m);
     xint_mod_add(M, M, tmp, m);
     
+    // S = 4.x1.y1^2
+    xint_mod_sqr(tmp, y1, m);
+    xint_mod_mul(S, tmp, x1, m);
+    xint_mod_mul_ulong(S, S, 4, m);
+    
     // x3 = M^2 - 2.S
-    xint_copy(x3, M);
-    xint_mod_sqr(x3, x3, m);
+    xint_mod_sqr(x3, M, m);
     xint_mod_sub(x3, x3, S, m);
     xint_mod_sub(x3, x3, S, m);
     
     // y3 = M.(S - x3) - 8.y^4
-    xint_copy(y3, S);
-    xint_mod_sub(y3, y3, x3, m);
+    xint_mod_sub(y3, S, x3, m);
     xint_mod_mul(y3, y3, M, m);
-    xint_mod_sqr(tmp, y1, m);
     xint_mod_sqr(tmp, tmp, m);
     xint_mod_mul_ulong(tmp, tmp, 8, m);
     xint_mod_sub(y3, y3, tmp, m);
