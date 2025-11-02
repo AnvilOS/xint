@@ -50,5 +50,6 @@ void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
 void xint_point_add(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const xint_t m);
 void xint_point_double(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const xint_t a, const xint_t m);
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t curve);
+void xint_ecc_mul_scalar_mont_ladder(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t curve);
 
 #endif // XINT_ECC_H

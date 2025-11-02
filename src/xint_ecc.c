@@ -202,6 +202,7 @@ void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, xint_t
 
 void xint_point_add(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_t m)
 {
+    // 13M + 6S
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
 
@@ -310,8 +311,15 @@ void xint_point_add(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian
 
 void xint_point_double(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_t m)
 {
+    // 4M + 7S
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
+
+    if (Pj->is_at_infinity)
+    {
+        xint_point_jacobian_copy(Rjx, Pj);
+        return;
+    }
 
     // Use algorithm from Wikibooks
     xint_t S = XINT_INIT_VAL;
@@ -388,4 +396,35 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
         c.point_double(TMPj, TMPj, a, p);
     }
     from_jacobian(R, Rj, p);
+}
+
+void xint_ecc_mul_scalar_mont_ladder(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t c)
+{
+    xint_ecc_point_jacobian_t R0;
+    xint_point_jacobian_init(R0);
+
+    xint_ecc_point_jacobian_t R1;
+    xint_point_jacobian_init(R1);
+    to_jacobian(R1, P);
+
+    xint_t a = XINT_INIT_VAL;
+    xint_assign_str(a, c.a, 16);
+
+    xint_t p = XINT_INIT_VAL;
+    xint_assign_str(p, c.p, 16);
+    
+    for (int i=0; i<c.nbits; ++i)
+    {
+        if (xint_get_bit(k, i) == 0)
+        {
+            c.point_double(R1, R1, a, p);
+            c.point_add(R1, R1, R0, p);
+        }
+        else
+        {
+            c.point_double(R0, R0, a, p);
+            c.point_add(R0, R0, R1, p);
+        }
+    }
+    from_jacobian(R, R0, p);
 }
