@@ -27,8 +27,7 @@ struct xint_ecc_curve_s
     const xint_t p;
     const xint_t a;
     const xint_t b;
-    const xint_t Gx;
-    const xint_t Gy;
+    const xint_ecc_point_t G;
     const xint_t n;
     const xint_t h;
     void (*point_add)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const xint_t m);
