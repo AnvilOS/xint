@@ -24,22 +24,22 @@ typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
 struct xint_ecc_curve_s
 {
     unsigned nbits;
-    char *p;
-    char *a;
-    char *b;
-    char *Gx;
-    char *Gy;
-    char *n;
-    char *h;
+    const xint_t p;
+    const xint_t a;
+    const xint_t b;
+    const xint_t Gx;
+    const xint_t Gy;
+    const xint_t n;
+    const xint_t h;
     void (*point_add)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const xint_t m);
     void (*point_double)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const xint_t a, const xint_t m);
 };
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;
 
-extern xint_ecc_curve_t p224;
-extern xint_ecc_curve_t p256;
-extern xint_ecc_curve_t p384;
-extern xint_ecc_curve_t p521;
+extern const xint_ecc_curve_t p224;
+extern const xint_ecc_curve_t p256;
+extern const xint_ecc_curve_t p384;
+extern const xint_ecc_curve_t p521;
 
 int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v);
 

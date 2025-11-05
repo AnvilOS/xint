@@ -34,6 +34,8 @@ struct xint_s
 
 typedef struct xint_s xint_t[1];
 
+#define XINT_CONST(__a) { sizeof(__a)/sizeof(__a[0]), sizeof(__a)/sizeof(__a[0]), (xword_t *)__a }
+
 #ifdef __cplusplus
 extern "C"
 {
