@@ -227,7 +227,7 @@ TEST(ecc, curve_p224)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar_mont_ladder(R, p224.G, x, p224);
+    xint_ecc_mul_scalar(R, p224.G, x, p224);
     
     ASSERT_EQ(0, test_equality(R->x, "0xC3A3F5B82712532004C6F6D1DB672F55D931C3409EA1216D0BE77380"));
     ASSERT_EQ(0, test_equality(R->y, "0x9BF4978CA8C8A8DF855A74C6905A5A3947ACFF772FCE436D48341D46"));
@@ -252,7 +252,7 @@ TEST(ecc, curve_p256)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar_mont_ladder(R, p256.G, x, p256);
+    xint_ecc_mul_scalar(R, p256.G, x, p256);
 
     ASSERT_EQ(0, test_equality(R->x, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F"));
     ASSERT_EQ(0, test_equality(R->y, "0x3CE76603264661EA2F602DF7B4510BBC9ED939233C553EA5F42FB3F1338174B5"));
@@ -277,7 +277,7 @@ TEST(ecc, curve_p384)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar_mont_ladder(R, p384.G, x, p384);
+    xint_ecc_mul_scalar(R, p384.G, x, p384);
     
     ASSERT_EQ(0, test_equality(R->x, "0x30EA514FC0D38D8208756F068113C7CADA9F66A3B40EA3B313D040D9B57DD41A332795D02CC7D507FCEF9FAF01A27088"));
     ASSERT_EQ(0, test_equality(R->y, "0xC04E32465D14C50CBC3BCB88EA20F95B10616663FC62A8DCDB48D3006327EA7CA104F6F9294C66EA2487BD50357010C6"));
@@ -302,7 +302,7 @@ TEST(ecc, curve_p521)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar_mont_ladder(R, p521.G, x, p521);
+    xint_ecc_mul_scalar(R, p521.G, x, p521);
     
     ASSERT_EQ(0, test_equality(R->x, "0x140C8EDCA57108CE3F7E7A240DDD3AD74D81E2DE62451FC1D558FDC79269ADACD1C2526EEEEF32F8C0432A9D56E2B4A8A732891C37C9B96641A9254CCFE5DC3E2BA"));
     ASSERT_EQ(0, test_equality(R->y, "0xCD42A03AD1EB93C532FC8A54683998FF86FEC61F85F8E15B4ACD5B696498F211506D340091019900C918BD8088E0352E9742EA9E2B55983ECAA343E424B8113428"));
