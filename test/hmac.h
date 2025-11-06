@@ -7,34 +7,22 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-class Hmac
+struct hmac_sha256_ctx
 {
-public:
-    Hmac(const uint8_t *key, size_t keylen) { reset(key, keylen); }
-    virtual ~Hmac() {}
-    
-    void reset(const uint8_t *key, size_t keylen);
-    void append(const uint8_t *msg, size_t n);
-    void append(uint8_t ch);
-    void finalise(uint8_t digest[32]);
-
-private:
-    Sha256 sha256;
+    struct sha256_ctx *sha256_ctx;
     uint8_t blk_len_key[64];
     uint8_t o_key_pad[64];
     uint8_t i_key_pad[64];
     uint8_t int_digest[32];
 };
 
-extern "C"
-{
-#endif // __cplusplus
+struct hmac_sha256_ctx *hmac_sha256_new(const uint8_t *key, size_t keylen);
+void hmac_sha256_reset(struct hmac_sha256_ctx *ctx, const uint8_t *key, size_t keylen);
+void hmac_sha256_append(struct hmac_sha256_ctx *ctx, const uint8_t *msg, size_t n);
+void hmac_sha256_append_ch(struct hmac_sha256_ctx *ctx, uint8_t ch);
+void hmac_sha256_finalise(struct hmac_sha256_ctx *ctx, uint8_t digest[32]);
+void hmac_sha256_delete(struct hmac_sha256_ctx *ctx);
 
 void hmac_calc(uint8_t digest[32], const uint8_t *key, size_t keylen, const uint8_t *msg, size_t msglen);
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 #endif // HMAC_H

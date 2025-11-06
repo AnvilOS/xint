@@ -2,21 +2,28 @@
 #include "sha256.h"
 
 #include <string.h>
+#include <stdlib.h>
 
-void Sha256::reset()
+struct sha256_ctx *sha256_new(void)
+{
+    struct sha256_ctx *ctx = (struct sha256_ctx *)malloc(sizeof(struct sha256_ctx));
+    sha256_reset(ctx);
+    return ctx;
+}
+void sha256_reset(struct sha256_ctx *ctx)
 {
     // Initialise hash values
-    hv[0] = 0x6a09e667;
-    hv[1] = 0xbb67ae85;
-    hv[2] = 0x3c6ef372;
-    hv[3] = 0xa54ff53a;
-    hv[4] = 0x510e527f;
-    hv[5] = 0x9b05688c;
-    hv[6] = 0x1f83d9ab;
-    hv[7] = 0x5be0cd19;
+    ctx->hv[0] = 0x6a09e667;
+    ctx->hv[1] = 0xbb67ae85;
+    ctx->hv[2] = 0x3c6ef372;
+    ctx->hv[3] = 0xa54ff53a;
+    ctx->hv[4] = 0x510e527f;
+    ctx->hv[5] = 0x9b05688c;
+    ctx->hv[6] = 0x1f83d9ab;
+    ctx->hv[7] = 0x5be0cd19;
     // Initialise buffer variables
-    pbuf = buf;
-    msg_len = 0;
+    ctx->pbuf = ctx->buf;
+    ctx->msg_len = 0;
 }
 
 // The array of round constants is fixed
@@ -35,7 +42,7 @@ static const uint32_t k[] =
 #define byte_swap(x) ((x)[0]<< 24|(x)[1]<<16|(x)[2]<<8|(x)[3])
 #define rightrotate(x, n) (((x)>>(n))|((x)<<(32-(n))))
 
-void Sha256::process_chunk()
+void sha256_process_chunk(struct sha256_ctx *ctx)
 {
     // Instead of pre-calculating the full 64 message schedule array we calculate
     // each entry as required. Also we only keep the most recent 16 in a
@@ -44,20 +51,20 @@ void Sha256::process_chunk()
 #define w(a) ww[(a)&0xf]
     
     // Initialise working variables to current hash values
-    uint32_t a = hv[0];
-    uint32_t b = hv[1];
-    uint32_t c = hv[2];
-    uint32_t d = hv[3];
-    uint32_t e = hv[4];
-    uint32_t f = hv[5];
-    uint32_t g = hv[6];
-    uint32_t h = hv[7];
+    uint32_t a = ctx->hv[0];
+    uint32_t b = ctx->hv[1];
+    uint32_t c = ctx->hv[2];
+    uint32_t d = ctx->hv[3];
+    uint32_t e = ctx->hv[4];
+    uint32_t f = ctx->hv[5];
+    uint32_t g = ctx->hv[6];
+    uint32_t h = ctx->hv[7];
     
     for (int i=0; i<64; ++i)
     {
         if (i < 16)
         {
-            w(i) = byte_swap(&buf[4*i]);
+            w(i) = byte_swap(&ctx->buf[4*i]);
         }
         else
         {
@@ -81,72 +88,78 @@ void Sha256::process_chunk()
         a = temp1 + temp2;
     }
 
-    hv[0] += a;
-    hv[1] += b;
-    hv[2] += c;
-    hv[3] += d;
-    hv[4] += e;
-    hv[5] += f;
-    hv[6] += g;
-    hv[7] += h;
+    ctx->hv[0] += a;
+    ctx->hv[1] += b;
+    ctx->hv[2] += c;
+    ctx->hv[3] += d;
+    ctx->hv[4] += e;
+    ctx->hv[5] += f;
+    ctx->hv[6] += g;
+    ctx->hv[7] += h;
 }
 
-void Sha256::append(const uint8_t *msg, size_t n)
+void sha256_append(struct sha256_ctx *ctx, const uint8_t *msg, size_t n)
 {
     const uint8_t *p = msg;
     while (n--)
     {
-        *pbuf++ = *p++;
-        ++msg_len;
-        if ((msg_len % 64) == 0)
+        *ctx->pbuf++ = *p++;
+        ++ctx->msg_len;
+        if ((ctx->msg_len % 64) == 0)
         {
-            process_chunk();
-            pbuf = buf;
+            sha256_process_chunk(ctx);
+            ctx->pbuf = ctx->buf;
         }
     }
 }
 
-void Sha256::append(uint8_t ch)
+void sha256_append_ch(struct sha256_ctx *ctx, uint8_t ch)
 {
-    append(&ch, 1);
+    sha256_append(ctx, &ch, 1);
 }
 
-void Sha256::finalise(uint8_t digest[32])
+void sha256_finalise(struct sha256_ctx *ctx, uint8_t digest[32])
 {
     uint8_t *ptr = (uint8_t*)digest;
     
-    uint64_t L = msg_len * 8;
+    uint64_t L = ctx->msg_len * 8;
 
     // append a single 1 bit
-    append(0x80);
+    sha256_append_ch(ctx, 0x80);
 
     // append k '0' bits where k takes us up to 8 octets before the buf is full
-    while ((msg_len % 64) != 56)
+    while ((ctx->msg_len % 64) != 56)
     {
-        append(0x00);
+        sha256_append_ch(ctx, 0x00);
     }
     
     // append L - the message size in bits
     for (int i=0; i<8; ++i)
     {
-        append(L >> 56);
+        sha256_append_ch(ctx, L >> 56);
         L <<= 8;
     }
     
     // Produce the digest
     for (int i=0; i<8; ++i)
     {
-        *ptr++ = hv[i] >> 24 & 0xff;
-        *ptr++ = hv[i] >> 16 & 0xff;
-        *ptr++ = hv[i] >> 8 & 0xff;
-        *ptr++ = hv[i] >> 0 & 0xff;
+        *ptr++ = ctx->hv[i] >> 24 & 0xff;
+        *ptr++ = ctx->hv[i] >> 16 & 0xff;
+        *ptr++ = ctx->hv[i] >> 8 & 0xff;
+        *ptr++ = ctx->hv[i] >> 0 & 0xff;
     }
+}
+
+void sha256_delete(struct sha256_ctx *ctx)
+{
+    free(ctx);
 }
 
 void sha256_calc(uint8_t digest[32], const uint8_t *src, size_t n_bytes)
 {
-    Sha256 sha256;
-    sha256.reset();
-    sha256.append((const uint8_t*)src, n_bytes);
-    sha256.finalise(digest);
+    struct sha256_ctx *ctx = sha256_new();
+    sha256_reset(ctx);
+    sha256_append(ctx, (const uint8_t*)src, n_bytes);
+    sha256_finalise(ctx, digest);
+    sha256_delete(ctx);
 }
