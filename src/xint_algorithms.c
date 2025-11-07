@@ -3,8 +3,6 @@
 
 #include "xint_exp.h"
 
-#include <stdlib.h>
-
 static void xint_rand(xint_t u, xint_t max);
 
 static int primes[] =
@@ -34,7 +32,7 @@ static int primes[] =
     1999,
 };
 
-int xint_is_prime(xint_t n)
+int xint_is_prime(const xint_t n)
 {
     if (n->size && (n->data[0] & 1) == 0)
     {
@@ -66,7 +64,7 @@ int xint_is_prime(xint_t n)
     return xint_miller_rabin(n, 10);
 }
 
-int xint_miller_rabin(xint_t n, int t)
+int xint_miller_rabin(const xint_t n, int t)
 {
     // From Menezes alg 4.24
     // MILLER-RABIN(n,t)

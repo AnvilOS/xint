@@ -23,7 +23,7 @@ void xint_to_buf(unsigned char *buf, int len, xint_t u)
     }
 }
 
-void xint_print_raw(const char *label, xint_t u)
+void xint_print_raw(const char *label, const xint_t u)
 {
     printf("%s = [ ", label);
     for (long j=xint_size(u)-1; j>=0; --j)

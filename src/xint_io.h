@@ -10,7 +10,7 @@ extern "C"
 #endif // __cplusplus
 
 void xint_to_buf(unsigned char *buf, int len, xint_t u);
-void xint_print_raw(const char *label, xint_t u);
+void xint_print_raw(const char *label, const xint_t u);
 void xint_print(const char *label, const xint_t u);
 void xint_print_hex(const char *label, const xint_t u);
 char *xint_to_string(const xint_t u, int base);
