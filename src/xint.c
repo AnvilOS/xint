@@ -1027,24 +1027,25 @@ do { \
 #endif
 
 #if defined XDWORD_DIV
-#define div_2_1(__q, __r, __u1, __u0, __v) \
+#define div_2_1(__qh, __ql, __r, __u1, __u0, __v) \
 do { \
     xdword_t __u = (xdword_t)__u1 << XWORD_BITS | __u0; \
     xdword_t __full_q = __u / __v; \
-    __q = (xword_t)__full_q; \
+    __qh = __full_q >> XWORD_BITS; \
+    __ql = (xword_t)__full_q; \
     __r = __u % __v; \
 } while (0)
 #else
-#define div_2_1(__q, __r, __u1, __u0, __v) \
+#define div_2_1(__qh, __ql, __r, __u1, __u0, __v) \
 do { \
-    assert(__u1 < __v); \
+    assert(__u1 <= __v); \
     xword_t __v1 = __v >> (XWORD_BITS/2); \
     xword_t __v0 = __v & XWORD_HALF_MASK; \
     xword_t __u0_1 = __u0 >> (XWORD_BITS/2); \
     xword_t __u0_0 = __u0 & XWORD_HALF_MASK; \
     xword_t __q1 = __u1 / __v1; \
     xword_t __rhat = __u1 % __v1; \
-    while (__q1 >= XWORD_HALF_MASK + 1 || __q1 * __v0 > (__rhat << (XWORD_BITS/2) | __u0_1)) \
+    while (__q1 * __v0 > (__rhat << (XWORD_BITS/2) | __u0_1)) \
     { \
         --__q1; \
         __rhat += __v1; \
@@ -1067,7 +1068,8 @@ do { \
     } \
     __numer = (__numer << (XWORD_BITS/2)) + __u0_0 - __q0 * __v; \
     __r = __numer; \
-    __q = __q1 << (XWORD_BITS/2) | __q0; \
+    __ql = __q1 << (XWORD_BITS/2) | __q0; \
+    __qh = __q1 >> (XWORD_BITS/2); \
 } while (0)
 #endif
 
@@ -1333,15 +1335,19 @@ void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
                 R_jnm2 |= R[j+n-3] >> (XWORD_BITS - bit_shift);
             }
         }
-        xword_t qhat;
+        xword_t qhat_hi, qhat;
         xword_t rhat;
-        div_2_1(qhat, rhat, n1, n0, V_nm1);
+        div_2_1(qhat_hi, qhat, rhat, n1, n0, V_nm1);
 
         xword_t p1, p0;
         mul_1_1(p1, p0, qhat, V_nm2);
-        while (/*(qhat >= B) ||*/ (p1 > rhat) || ((p1 == rhat) && (p0 > R_jnm2)) )
+        while (qhat_hi || (p1 > rhat) || ((p1 == rhat) && (p0 > R_jnm2)) )
         {
             --qhat;
+            if (qhat == XWORD_MAX)
+            {
+                --qhat_hi;
+            }
             rhat += V_nm1;
             if (rhat < V_nm1)
             {
@@ -1388,7 +1394,7 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     for (int j=n-1; j>=0; --j)
     {
         // S2. [Set wj = (r * B + uj) / v , r = (r * B + uj) % v
-        xword_t q;
+        xword_t qh, ql;
         xword_t uu = U[j];
         if (bit_shift)
         {
@@ -1399,10 +1405,10 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
                 uu |= U[j-1] >> (XWORD_BITS - bit_shift);
             }
         }
-        div_2_1(q, R, R, uu, V);
+        div_2_1(qh, ql, R, R, uu, V);
         if (Q)
         {
-            Q[j] = q;
+            Q[j] = ql;
         }
         // S3. [Decrease j by 1, and return to S2]
     }
