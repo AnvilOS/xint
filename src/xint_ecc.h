@@ -30,8 +30,9 @@ struct xint_ecc_curve_s
     const xint_ecc_point_t G;
     const xint_t n;
     const xint_t h;
-    void (*point_add)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const xint_t m);
-    void (*point_double)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const xint_t a, const xint_t m);
+    void (*point_add)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const struct xint_ecc_curve_s curve);
+    void (*point_double)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const struct xint_ecc_curve_s curve);
+    void (*xint_mod_fast)(xint_t w, const xint_t u, const xint_t m);
 };
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;
 
@@ -42,12 +43,17 @@ extern const xint_ecc_curve_t p521;
 
 int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v);
 
+void xint_mod_fast_224(xint_t w, const xint_t u, const xint_t m);
+void xint_mod_fast_256(xint_t w, const xint_t u, const xint_t m);
+void xint_mod_fast_384(xint_t w, const xint_t u, const xint_t m);
+void xint_mod_fast_521(xint_t w, const xint_t u, const xint_t m);
+
 void xint_point_init(xint_ecc_point_t p);
 void xint_point_delete(xint_ecc_point_t p);
 void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p);
 void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
-void xint_point_add(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const xint_t m);
-void xint_point_double(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const xint_t a, const xint_t m);
-void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, xint_ecc_curve_t curve);
+void xint_point_add(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const xint_ecc_curve_t curve);
+void xint_point_double(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const xint_ecc_curve_t curve);
+void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t curve);
 
 #endif // XINT_ECC_H

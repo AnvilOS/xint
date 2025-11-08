@@ -22,12 +22,12 @@ static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 static int x_cmp(const xword_t *U, const xword_t *V, int n);
 static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
-static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n);
-static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k);
-static xword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xword_t v1, xword_t v0);
-static xword_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v);
+static xword_t x_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
+static xword_t x_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k);
+static xword_t x_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
+static xword_t x_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
-static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz);
+static xword_t x_squ_add_1(xword_t *W, const xword_t *U, int sz);
 
 #define XINT_SWAP(__type, __a, __b) \
 do {                                \
@@ -735,6 +735,7 @@ xword_t xint_mod(xint_t r, const xint_t u, const xint_t v)
 {
     xint_t q = XINT_INIT_VAL;
     xint_is_pos(v) ? xint_div_floor(q, r, u, v) : xint_div_ceil(q, r, u, v);
+    xint_delete(q);
     return 0;
 }
 
@@ -749,7 +750,6 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     // Algortihm D doesn't work for vn <= 1
     int Un = abs(u->size);
     int Vn = abs(v->size);
-    int Qneg = (u->size * v->size) < 0;
     if (Vn <= 1)
     {
         // Use the algorithm from exercise 16
@@ -764,10 +764,6 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         {
             r->size = 0;
         }
-        if (Qneg)
-        {
-            xint_set_neg(q);
-        }
         return 0;
     }
 
@@ -780,10 +776,6 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
             {
                 resize(q, 1);
                 q->data[0] = 1;
-                if (Qneg)
-                {
-                    xint_set_neg(q);
-                }
             }
             r->size = 0;
             return 0;
@@ -821,10 +813,6 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     if (q)
     {
         trim_zeroes(q);
-        if (Qneg)
-        {
-            xint_set_neg(q);
-        }
     }
     trim_zeroes(r);
 
@@ -1175,7 +1163,7 @@ xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
     return b;
 }
 
-static xword_t x_sub_1(xword_t *W, xword_t *U, xword_t v, size_t n)
+static xword_t x_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
 {
     xword_t b = v;
     for (size_t i=0; i<n; ++i)
@@ -1205,7 +1193,7 @@ void xll_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
     }
 }
 
-static xword_t x_mul_add_1(xword_t *W, xword_t *U, size_t m, xword_t v)
+static xword_t x_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
 {
     // W[] += U[] * v
     // M3. [Initialise i (and k)]
@@ -1243,7 +1231,7 @@ static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
     return b;
 }
 
-static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k)
+static xword_t x_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k)
 {
     // W[] = U[] * v + k
     // Cut down version of alg M with a single xword for V
@@ -1261,7 +1249,7 @@ static xword_t x_mul_1(xword_t *W, xword_t *U, size_t m, xword_t v, xword_t k)
     return k;
 }
 
-static xword_t x_mul_2(xword_t *W, xword_t *U, size_t m, xword_t v1, xword_t v0)
+static xword_t x_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0)
 {
     xword_t k0 = 0;
     xword_t k1 = 0;
@@ -1415,7 +1403,7 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     return R >> bit_shift;
 }
 
-static xword_t x_squ_add_1(xword_t *W, xword_t *U, int sz)
+static xword_t x_squ_add_1(xword_t *W, const xword_t *U, int sz)
 {
     xword_t k1 = 0;
     xword_t k0 = 0;
