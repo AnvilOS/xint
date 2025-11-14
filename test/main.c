@@ -5,9 +5,10 @@
 #include "test_abs_arith.h"
 #include "test_signed.h"
 #include "test_bitwise.h"
-#include "test_ecc.h"
 #include "test_rsa.h"
 #include "test_prime.h"
+#include "test_ecc.h"
+#include "test_collatz.h"
 
 int main(int argc, const char * argv[])
 {
@@ -20,4 +21,5 @@ int main(int argc, const char * argv[])
     test_rsa();
     test_prime();
     test_ecc();
+    test_collatz();
 }
