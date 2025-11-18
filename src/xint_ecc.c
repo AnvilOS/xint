@@ -29,8 +29,8 @@ const xint_ecc_curve_t p224 =
     { 0, XINT_CONST(p224_Gx), XINT_CONST(p224_Gy) },
     XINT_CONST(p224_n),
     XINT_CONST(p224_h),
-    xint_point_add,
-    xint_point_double,
+    0,
+    0,
     xint_mod_fast_224
 };
 
@@ -50,8 +50,8 @@ const xint_ecc_curve_t p256 =
     { 0, XINT_CONST(p256_Gx), XINT_CONST(p256_Gy) },
     XINT_CONST(p256_n),
     XINT_CONST(p256_h),
-    xint_point_add,
-    xint_point_double,
+    0,
+    0,
     xint_mod_fast_256
 };
 
@@ -71,8 +71,8 @@ const xint_ecc_curve_t p384 =
     { 0, XINT_CONST(p384_Gx), XINT_CONST(p384_Gy) },
     XINT_CONST(p384_n),
     XINT_CONST(p384_h),
-    xint_point_add,
-    xint_point_double,
+    0,
+    0,
     xint_mod_fast_384
 };
 
@@ -93,8 +93,8 @@ const xint_ecc_curve_t p521 =
     { 0,XINT_CONST(p521_Gx), XINT_CONST(p521_Gy) },
     XINT_CONST(p521_n),
     XINT_CONST(p521_h),
-    xint_point_add,
-    xint_point_double,
+    0,
+    0,
     xint_mod_fast_521
 };
 
@@ -511,160 +511,6 @@ void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const 
 #define y3 Rj->y
 #define z3 Rj->z
     
-void xint_point_add(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t curve)
-{
-    // 13M + 4S
-    xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
-
-    if (Pj->is_at_infinity)
-    {
-        xint_point_jacobian_copy(Rjx, Qj);
-        return;
-    }
-    
-    if (Qj->is_at_infinity)
-    {
-        xint_point_jacobian_copy(Rjx, Pj);
-        return;
-    }
-    
-    // Use algorithm from Wikibooks
-    xint_t U1 = XINT_INIT_VAL;
-    xint_t U2 = XINT_INIT_VAL;
-    xint_t S1 = XINT_INIT_VAL;
-    xint_t S2 = XINT_INIT_VAL;
-    xint_t H = XINT_INIT_VAL;
-    xint_t R = XINT_INIT_VAL;
-    
-    // U1 = x1.z2^2 - use H as a scratch for z2^2
-    xint_mod_sqr(H, z2, curve);
-    xint_mod_mul(U1, H, x1, curve);
-    
-    // U2 = x2.z1^2 - use R as a scratch for z1^2
-    xint_mod_sqr(R, z1, curve);
-    xint_mod_mul(U2, R, x2, curve);
-    
-    // S1 = y1.z2^3
-    xint_mod_mul(S1, H, z2, curve);
-    xint_mod_mul(S1, S1, y1, curve);
-    
-    // S2 = y2.z1^3
-    xint_mod_mul(S2, R, z1, curve);
-    xint_mod_mul(S2, S2, y2, curve);
-    
-    if (xint_cmp(U1, U2) == 0)
-    {
-        if (xint_cmp(S1, S2) != 0)
-        {
-            return; // inf
-        }
-        else
-        {
-            return; // double
-        }
-    }
-    // H = U2 - U1
-    xint_mod_sub(H, U2, U1, curve.p);
-    // R = S2 - S1
-    xint_mod_sub(R, S2, S1, curve.p);
-    
-    // Calc H^2, H^3 and R^2
-    xint_t H2 = XINT_INIT_VAL;
-    xint_t H3 = XINT_INIT_VAL;
-    xint_mod_sqr(H2, H, curve);
-    xint_mod_mul(H3, H2, H, curve);
-    xint_t R2 = XINT_INIT_VAL;
-    xint_mod_sqr(R2, R, curve);
-    
-    // X3 = R^2 - H^3 - 2.U1.H^2
-    xint_mod_mul(x3, U1, H2, curve);
-    xint_mod_mul_ulong(x3, x3, 2, curve);
-    xint_mod_sub(x3, R2, x3, curve.p);
-    xint_mod_sub(x3, x3, H3, curve.p);
-    
-    // Y3 = R.(U1.H^2 - X3) - S1.H^3
-    xint_mod_mul(y3, U1, H2, curve);
-    xint_mod_sub(y3, y3, x3, curve.p);
-    xint_mod_mul(y3, y3, R, curve);
-    // use z3 as temp S1 . H3
-    xint_mod_mul(z3, S1, H3, curve);
-    xint_mod_sub(y3, y3, z3, curve.p);
-    
-    // Z3 = H.Z1.Z2
-    xint_mod_mul(z3, H, z1, curve);
-    xint_mod_mul(z3, z3, z2, curve);
-    
-    xint_point_jacobian_copy(Rjx, Rj);
-    Rjx->is_at_infinity = 0;
-    
-    xint_point_jacobian_delete(Rj);
-    
-    xint_delete (U1);
-    xint_delete (U2);
-    xint_delete (S1);
-    xint_delete (S2);
-    xint_delete (H);
-    xint_delete (R);
-}
-
-void xint_point_double(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t curve)
-{
-    // 4M + 6S
-    xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
-
-    if (Pj->is_at_infinity)
-    {
-        xint_point_jacobian_copy(Rjx, Pj);
-        return;
-    }
-
-    // Use algorithm from Wikibooks
-    xint_t S = XINT_INIT_VAL;
-    xint_t M = XINT_INIT_VAL;
-    xint_t tmp = XINT_INIT_VAL;
-    
-    // M = 3.x1^2 + a.z1^4
-    xint_mod_sqr(M, x1, curve);
-    xint_mod_mul_ulong(M, M, 3, curve);
-    xint_mod_sqr(tmp, z1, curve);
-    xint_mod_sqr(tmp, tmp, curve);
-    xint_mod_mul(tmp, tmp, curve.a, curve);
-    xint_mod_add(M, M, tmp, curve.p);
-    
-    // S = 4.x1.y1^2
-    xint_mod_sqr(tmp, y1, curve);
-    xint_mod_mul(S, tmp, x1, curve);
-    xint_mod_mul_ulong(S, S, 4, curve);
-    
-    // x3 = M^2 - 2.S
-    xint_mod_sqr(x3, M, curve);
-    xint_mod_sub(x3, x3, S, curve.p);
-    xint_mod_sub(x3, x3, S, curve.p);
-    
-    // y3 = M.(S - x3) - 8.y^4
-    xint_mod_sub(y3, S, x3, curve.p);
-    xint_mod_mul(y3, y3, M, curve);
-    xint_mod_sqr(tmp, tmp, curve);
-    xint_mod_mul_ulong(tmp, tmp, 8, curve);
-    xint_mod_sub(y3, y3, tmp, curve.p);
-    
-    // z3 = 2.y1.z1
-    xint_copy(z3, y1);
-    xint_mod_mul(z3, z3, z1, curve);
-    xint_mod_mul_ulong(z3, z3, 2, curve);
-    
-    xint_point_jacobian_copy(Rjx, Rj);
-    Rjx->is_at_infinity = 0;
-
-    xint_point_jacobian_delete(Rj);
-
-    xint_delete(S);
-    xint_delete(M);
-    xint_delete(tmp);
-}
-
 void ecc_zaddu(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t curve)
 {
     assert(xint_cmp(Pj->z, Qj->z) == 0);
@@ -738,7 +584,6 @@ void ecc_zaddc(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const
     xint_t Dd = XINT_INIT_VAL;
     xint_t x3d = XINT_INIT_VAL;
     xint_t y3d = XINT_INIT_VAL;
-    xint_t z3d = XINT_INIT_VAL;
     xint_t tmp = XINT_INIT_VAL;
 
     // C = (X1 − X2)^2
@@ -802,20 +647,14 @@ void ecc_zaddc(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const
 
 void ecc_zdau(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t c)
 {
-    xint_t T1 = XINT_INIT_VAL;
-    xint_t T2 = XINT_INIT_VAL;
-    xint_t T3 = XINT_INIT_VAL;
-    xint_t T4 = XINT_INIT_VAL;
-    xint_t T5 = XINT_INIT_VAL;
+    #define T1 Pj->x
+    #define T2 Pj->y
+    #define T3 Pj->z
+    #define T4 Qj->x
+    #define T5 Qj->y
     xint_t T6 = XINT_INIT_VAL;
     xint_t T7 = XINT_INIT_VAL;
     xint_t T8 = XINT_INIT_VAL;
-    
-    xint_copy(T1, Pj->x);
-    xint_copy(T2, Pj->y);
-    xint_copy(T3, Pj->z);
-    xint_copy(T4, Qj->x);
-    xint_copy(T5, Qj->y);
     
     // 1
     xint_mod_sub(T6, T1, T4, c.p);
@@ -877,12 +716,16 @@ void ecc_zdau(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const 
     xint_mod_mul(T7, T7, T8, c);
     xint_mod_sub(T5, T7, T5, c.p);
 
-    xint_copy(Pj->x, T1);
-    xint_copy(Pj->y, T2);
-    xint_copy(Pj->z, T3);
-    xint_copy(Qj->x, T4);
-    xint_copy(Qj->y, T5);
     xint_copy(Qj->z, T3);
+    
+    #undef T1
+    #undef T2
+    #undef T3
+    #undef T4
+    #undef T5
+    xint_delete(T6);
+    xint_delete(T7);
+    xint_delete(T8);
 }
 
 void ecc_dblu(xint_ecc_point_jacobian_t Rjx, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t curve)
@@ -1000,21 +843,6 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
         ecc_zaddu(Rj[1-bit], Rj[bit], c);
         ecc_zaddc(Rj[bit], Rj[1-bit], c);
 #endif
-    }
-    from_jacobian(R, Rj[0], c);
-}
-
-void xint_ecc_mul_scalar_old(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t c)
-{
-    xint_ecc_point_jacobian_t Rj[2];
-    xint_point_jacobian_init(Rj[0]);
-    xint_point_jacobian_init(Rj[1]);
-    to_jacobian(Rj[1], P);
-    for (int i=0; i<c.nbits; ++i)
-    {
-        int bit = xint_get_bit(k, i);
-        c.point_double(Rj[1-bit], Rj[1-bit], c);
-        c.point_add(Rj[1-bit], Rj[1-bit], Rj[bit], c);
     }
     from_jacobian(R, Rj[0], c);
 }
