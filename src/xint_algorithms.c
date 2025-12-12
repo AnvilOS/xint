@@ -257,3 +257,25 @@ void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t
     xint_delete(v2);
     xint_delete(v3);
 }
+
+void xint_sqrt(xint_t w, xint_t r, const xint_t s)
+{
+    xint_t tmp = XINT_INIT_VAL;
+    xint_copy(w, s);
+    int nbits = xint_highest_bit_num(w) + 1;
+    xint_rshift(w, w, nbits / 2);
+    while (1)
+    {
+        xint_div(tmp, r, s, w);
+        xint_add(tmp, tmp, w);
+        xint_rshift(tmp, tmp, 1);
+        if (xint_cmp(tmp, w) >= 0)
+        {
+            xint_sqr(tmp, w);
+            xint_sub(r, s, tmp);
+            break;
+        }
+        xint_copy(w, tmp);
+    }
+    xint_delete(tmp);
+}
