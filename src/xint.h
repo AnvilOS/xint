@@ -94,11 +94,11 @@ void xint_sub_long(xint_t w, const xint_t u, const long val);
 void xint_sub(xint_t w, const xint_t u, const xint_t v);
 
 // Multiplication functions
-xword_t xint_sqr(xint_t w, const xint_t u);
-xword_t xint_mul(xint_t w, const xint_t u, const xint_t v);
-xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v);
-xword_t xint_mul_long(xint_t w, const xint_t u, long v);
-xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
+void xint_sqr(xint_t w, const xint_t u);
+void xint_mul(xint_t w, const xint_t u, const xint_t v);
+void xint_mul_ulong(xint_t w, const xint_t u, unsigned long v);
+void xint_mul_long(xint_t w, const xint_t u, long v);
+void xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
 
 // Division and modulus functions
 void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v);

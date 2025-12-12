@@ -472,12 +472,12 @@ int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
 }
 
 // Multiplication functions
-xword_t xint_sqr(xint_t w, const xint_t u)
+void xint_sqr(xint_t w, const xint_t u)
 {
     if (u->size == 0)
     {
         w->size = 0;
-        return 0;
+        return;
     }
     int Un = abs(u->size);
     resize(w, 2 * Un);
@@ -504,10 +504,10 @@ xword_t xint_sqr(xint_t w, const xint_t u)
     assert(k == 0);
 
     trim_zeroes(w);
-    return 0;
+    return;
 }
 
-xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
+void xint_mul(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
     int Vn = abs(v->size);
@@ -524,7 +524,7 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
         if (Vn == 0)
         {
             w->size = 0;
-            return 0;
+            return;
         }
         else if (Vn == 1)
         {
@@ -542,7 +542,7 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
             {
                 xint_set_neg(w);
             }
-            return 0;
+            return;
         }
         else
         {
@@ -560,7 +560,7 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
             {
                 xint_set_neg(w);
             }
-            return 0;
+            return;
         }
     }
     
@@ -602,15 +602,14 @@ xword_t xint_mul(xint_t w, const xint_t u, const xint_t v)
     {
         xint_set_neg(w);
     }
-    return 0;
 }
 
-xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
+void xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
 {
     if (u->size == 0 || v == 0)
     {
         w->size = 0;
-        return 0;
+        return;
     }
 
     int Uneg = xint_is_neg(u);
@@ -647,20 +646,18 @@ xword_t xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
     {
         xint_set_neg(w);
     }
-    return 0;
 }
 
-xword_t xint_mul_long(xint_t w, const xint_t u, long v)
+void xint_mul_long(xint_t w, const xint_t u, long v)
 {
     xint_mul_ulong(w, u, labs(v));
     if (v < 0)
     {
         xint_chs(w);
     }
-    return 0;
 }
 
-xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a)
+void xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a)
 {
     if (m <= XWORD_MAX && a <= XWORD_MAX)
     {
@@ -675,9 +672,7 @@ xword_t xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a)
         {
             --w->size;
         }
-        return k;
     }
-    return 0;
 }
 
 // Division functions
