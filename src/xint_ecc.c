@@ -13,6 +13,8 @@
 #define X(__a, __b) (xword_t)__b<<32|__a
 #endif
 
+#define CURVE_WORDS(c) (((c.nbits-1)/XWORD_BITS)+1)
+
 const xword_t p224_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
 const xword_t p224_a[]  = { X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFE), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
 const xword_t p224_b[]  = { X(0x2355FFB4, 0x270B3943), X(0xD7BFD8BA, 0x5044B0B7), X(0xF5413256, 0x0C04B3AB), 0xB4050A85 };
@@ -435,40 +437,192 @@ void xint_mod_fast_521(xint_t w, const xint_t u, const xint_t m)
     xint_mod(w, u, m);
 }
 
-void xint_mod_add(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+static int extend(xint_t x, int new_size)
 {
-    xint_add(w, u, v);
-    if (xint_cmp(w, m) >= 0)
+    if (new_size > x->capacity)
     {
-        xint_sub(w, w, m);
+        void *new_mem = realloc(x->data, sizeof(xword_t) * new_size);
+        if (new_mem == NULL)
+        {
+            return -1;
+        }
+        for (int i=x->size; i<new_size; ++i)
+        {
+            ((xword_t *)new_mem)[i] = 0;
+        }
+        x->capacity = new_size;
+        x->data = new_mem;
     }
+    x->size = x->size < 0 ? -new_size : new_size;
+    return 0;
 }
 
-void xint_mod_sub(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+void xint_mod_add(xint_t w, const xint_t u, const xint_t v, const xint_ecc_curve_t c)
 {
-    xint_sub(w, u, v);
-    if (xint_is_neg(w))
+    assert(u->size == CURVE_WORDS(c));
+    assert(v->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
+    
+    xword_t k = xll_add(w->data, u->data, v->data, u->size);
+    int cmp = xll_cmp(w->data, c.p->data, u->size);
+    if (k || cmp >= 0)
     {
-        xint_add(w, w, m);
+        xll_sub(w->data, w->data, c.p->data, u->size);
     }
+    
+    assert(u->size == CURVE_WORDS(c));
+    assert(v->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
 }
 
-void xint_mod_mul(xint_t w, const xint_t u, const xint_t v, const xint_ecc_curve_t curve)
+void xint_mod_sub(xint_t w, const xint_t u, const xint_t v, const xint_ecc_curve_t c)
 {
-    xint_mul(w, u, v);
-    xint_mod(w, w, curve.p);
+    assert(u->size == CURVE_WORDS(c));
+    assert(v->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
+    
+    xword_t b = xll_sub(w->data, u->data, v->data, u->size);
+    if (b)
+    {
+        xll_add(w->data, w->data, c.p->data, u->size);
+    }
+    
+    assert(u->size == CURVE_WORDS(c));
+    assert(v->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
 }
 
-void xint_mod_mul_ulong(xint_t w, const xint_t u, unsigned long v, const xint_ecc_curve_t curve)
+void xint_mod_mul(xint_t w, const xint_t u, const xint_t v, const xint_ecc_curve_t c)
 {
-    xint_mul_ulong(w, u, v);
-    xint_mod(w, w, curve.p);
+    assert(u->size == CURVE_WORDS(c));
+    assert(v->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
+    
+    xword_t tmp[18];
+    xword_t q[18];
+    memset(tmp, 0, sizeof(tmp));
+    memset(q, 0, sizeof(q));
+    int mul_sz = u->size + v->size;
+    xll_mul(tmp, u->data, u->size, v->data, v->size);
+    while(tmp[mul_sz - 1] == 0)
+    {
+        --mul_sz;
+    }
+    int cmp;
+    if (mul_sz < u->size)
+    {
+        cmp = -1;
+    }
+    else if (mul_sz == u->size)
+    {
+        cmp = xll_cmp(tmp, c.p->data, u->size);
+    }
+    else
+    {
+        cmp = 1;
+    }
+    if (cmp >= 0)
+    {
+        int n = c.p->size;
+        int m = mul_sz - c.p->size;
+        xll_div(q, tmp, c.p->data, m, n);
+    }
+    memcpy(w->data, tmp, CURVE_WORDS(c) * XWORD_BITS / 8);
+
+    assert(u->size == CURVE_WORDS(c));
+    assert(v->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
 }
 
-void xint_mod_sqr(xint_t w, const xint_t u, const xint_ecc_curve_t curve)
+void xint_mod_mul_ulong(xint_t w, const xint_t u, unsigned long v, const xint_ecc_curve_t c)
 {
-    xint_sqr(w, u);
-    xint_mod(w, w, curve.p);
+    assert(u->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
+    
+    xword_t tmp[10];
+    xword_t q[18];
+    memset(tmp, 0, sizeof(tmp));
+    int mul_sz = u->size + 1;
+    xword_t k = xll_mul_1(tmp, u->data, u->size, v, 0);
+    tmp[mul_sz-1] = k;
+    
+    while(tmp[mul_sz - 1] == 0)
+    {
+        --mul_sz;
+    }
+
+    int cmp;
+    if (mul_sz < u->size)
+    {
+        cmp = -1;
+    }
+    else if (mul_sz == u->size)
+    {
+        cmp = xll_cmp(tmp, c.p->data, u->size);
+    }
+    else
+    {
+        cmp = 1;
+    }
+    if (cmp >= 0)
+    {
+        int n = c.p->size;
+        int m = mul_sz - c.p->size;
+        xll_div(q, tmp, c.p->data, m, n);
+    }
+    memcpy(w->data, tmp, CURVE_WORDS(c) * XWORD_BITS / 8);
+
+    assert(u->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
+}
+
+void xint_mod_sqr(xint_t w, const xint_t u, const xint_ecc_curve_t c)
+{
+    assert(u->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
+
+    xword_t tmp[18];
+    xword_t q[18];
+    memset(tmp, 0, sizeof(tmp));
+
+    int sz = 2 * CURVE_WORDS(c);
+    xword_t k = 0;
+    for (int j=0; j<CURVE_WORDS(c); ++j)
+    {
+        xword_t tmpw = xll_squ_add_1(tmp+j+j, u->data+j, 
+                    u->size-j+1);
+        tmp[CURVE_WORDS(c) + j] += k;
+        k = tmpw;
+    }
+
+    while(tmp[sz - 1] == 0)
+    {
+        --sz;
+    }
+
+    int cmp;
+    if (sz < u->size)
+    {
+        cmp = -1;
+    }
+    else if (sz == u->size)
+    {
+        cmp = xll_cmp(tmp, c.p->data, u->size);
+    }
+    else
+    {
+        cmp = 1;
+    }
+    if (cmp >= 0)
+    {
+        int n = c.p->size;
+        int m = sz - c.p->size;
+        xll_div(q, tmp, c.p->data, m, n);
+    }
+    memcpy(w->data, tmp, CURVE_WORDS(c) * XWORD_BITS / 8);
+    
+    assert(u->size == CURVE_WORDS(c));
+    assert(w->size == CURVE_WORDS(c));
 }
 
 void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u)
@@ -525,8 +679,19 @@ void ecc_zaddu(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const
     xint_t A1 = XINT_INIT_VAL;
     xint_t tmp = XINT_INIT_VAL;
 
+    extend(C, CURVE_WORDS((curve)));
+    extend(W1, CURVE_WORDS((curve)));
+    extend(W2, CURVE_WORDS((curve)));
+    extend(D, CURVE_WORDS((curve)));
+    extend(A1, CURVE_WORDS((curve)));
+    extend(tmp, CURVE_WORDS((curve)));
+
+    extend(x3, CURVE_WORDS((curve)));
+    extend(y3, CURVE_WORDS((curve)));
+    extend(z3, CURVE_WORDS((curve)));
+
     // C = (X1 − X2)^2
-    xint_mod_sub(C, x1, x2, curve.p);
+    xint_mod_sub(C, x1, x2, curve);
     xint_mod_sqr(C, C, curve);
     
     // W1 = X1 * C
@@ -535,25 +700,25 @@ void ecc_zaddu(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const
     xint_mod_mul(W2, x2, C, curve);
     
     // D = (Y1 − Y2)^2
-    xint_mod_sub(D, y1, y2, curve.p);
+    xint_mod_sub(D, y1, y2, curve);
     xint_mod_sqr(D, D, curve);
     
     // A1 = Y1 * (W1 − W2)
-    xint_mod_sub(A1, W1, W2, curve.p);
+    xint_mod_sub(A1, W1, W2, curve);
     xint_mod_mul(A1, A1, y1, curve);
     
     // X3 = D − W1 − W2
-    xint_mod_sub(x3, D, W1, curve.p);
-    xint_mod_sub(x3, x3, W2, curve.p);
+    xint_mod_sub(x3, D, W1, curve);
+    xint_mod_sub(x3, x3, W2, curve);
     
     // Y3 = (Y1 − Y2) * (W1 − X3) − A1
-    xint_mod_sub(y3, y1, y2, curve.p);
-    xint_mod_sub(tmp, W1, x3, curve.p);
+    xint_mod_sub(y3, y1, y2, curve);
+    xint_mod_sub(tmp, W1, x3, curve);
     xint_mod_mul(y3, y3, tmp, curve);
-    xint_mod_sub(y3, y3, A1, curve.p);
+    xint_mod_sub(y3, y3, A1, curve);
 
     // Z3 = Z * (X1 − X2)
-    xint_mod_sub(z3, x1, x2, curve.p);
+    xint_mod_sub(z3, x1, x2, curve);
     xint_mod_mul(z3, z3, z1, curve);
     
     xint_point_jacobian_copy(Qj, Rj);
@@ -587,7 +752,7 @@ void ecc_zaddc(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const
     xint_t tmp = XINT_INIT_VAL;
 
     // C = (X1 − X2)^2
-    xint_mod_sub(C, x1, x2, curve.p);
+    xint_mod_sub(C, x1, x2, curve);
     xint_mod_sqr(C, C, curve);
     
     // W1 = X1 * C
@@ -596,40 +761,40 @@ void ecc_zaddc(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const
     xint_mod_mul(W2, x2, C, curve);
     
     // D = (Y1 − Y2)^2
-    xint_mod_sub(D, y1, y2, curve.p);
+    xint_mod_sub(D, y1, y2, curve);
     xint_mod_sqr(D, D, curve);
     
     // A1 = Y1 * (W1 − W2)
-    xint_mod_sub(A1, W1, W2, curve.p);
+    xint_mod_sub(A1, W1, W2, curve);
     xint_mod_mul(A1, A1, y1, curve);
     
     // X3 = D − W1 − W2
-    xint_mod_sub(x3, D, W1, curve.p);
-    xint_mod_sub(x3, x3, W2, curve.p);
+    xint_mod_sub(x3, D, W1, curve);
+    xint_mod_sub(x3, x3, W2, curve);
     
     // Y3 = (Y1 − Y2) * (W1 − X3) − A1
-    xint_mod_sub(y3, y1, y2, curve.p);
-    xint_mod_sub(tmp, W1, x3, curve.p);
+    xint_mod_sub(y3, y1, y2, curve);
+    xint_mod_sub(tmp, W1, x3, curve);
     xint_mod_mul(y3, y3, tmp, curve);
-    xint_mod_sub(y3, y3, A1, curve.p);
+    xint_mod_sub(y3, y3, A1, curve);
 
     // Z3 = Z * (X1 − X2)
-    xint_mod_sub(z3, x1, x2, curve.p);
+    xint_mod_sub(z3, x1, x2, curve);
     xint_mod_mul(z3, z3, z1, curve);
     
     // Dd = (Y1 + Y2)^2
-    xint_mod_add(Dd, y1, y2, curve.p);
+    xint_mod_add(Dd, y1, y2, curve);
     xint_mod_sqr(Dd, Dd, curve);
 
     // X3d = Dd − W1 − W2
-    xint_mod_sub(x3d, Dd, W1, curve.p);
-    xint_mod_sub(x3d, x3d, W2, curve.p);
+    xint_mod_sub(x3d, Dd, W1, curve);
+    xint_mod_sub(x3d, x3d, W2, curve);
 
     // Y3d = (Y1 + Y2) * (W1 − X3d) − A1
-    xint_mod_sub(tmp, W1, x3d, curve.p);
-    xint_mod_add(y3d, y1, y2, curve.p);
+    xint_mod_sub(tmp, W1, x3d, curve);
+    xint_mod_add(y3d, y1, y2, curve);
     xint_mod_mul(y3d, y3d, tmp, curve);
-    xint_mod_sub(y3d, y3d, A1, curve.p);
+    xint_mod_sub(y3d, y3d, A1, curve);
 
     xint_point_jacobian_copy(Qj, Rj);
     Qj->is_at_infinity = 0;
@@ -655,66 +820,75 @@ void ecc_zdau(xint_ecc_point_jacobian_t Pj, xint_ecc_point_jacobian_t Qj, const 
     xint_t T6 = XINT_INIT_VAL;
     xint_t T7 = XINT_INIT_VAL;
     xint_t T8 = XINT_INIT_VAL;
-    
+
+    extend(T1, CURVE_WORDS(c));
+    extend(T2, CURVE_WORDS(c));
+    extend(T3, CURVE_WORDS(c));
+    extend(T4, CURVE_WORDS(c));
+    extend(T5, CURVE_WORDS(c));
+    extend(T6, CURVE_WORDS(c));
+    extend(T7, CURVE_WORDS(c));
+    extend(T8, CURVE_WORDS(c));
+
     // 1
-    xint_mod_sub(T6, T1, T4, c.p);
+    xint_mod_sub(T6, T1, T4, c);
     xint_mod_sqr(T7, T6, c);
     xint_mod_mul(T1, T1, T7, c);
     xint_mod_mul(T4, T4, T7, c);
-    xint_mod_sub(T5, T2, T5, c.p);
+    xint_mod_sub(T5, T2, T5, c);
     
     // 6
-    xint_mod_sub(T8, T1, T4, c.p);
+    xint_mod_sub(T8, T1, T4, c);
     xint_mod_mul(T2, T2, T8, c);
     xint_mod_mul_ulong(T2, T2, 2, c);
     xint_mod_sqr(T8, T5, c);
-    xint_mod_sub(T4, T8, T4, c.p);
+    xint_mod_sub(T4, T8, T4, c);
     
     // 11
-    xint_mod_sub(T4, T4, T1, c.p);
-    xint_mod_sub(T4, T4, T1, c.p);
-    xint_mod_add(T6, T4, T6, c.p);
+    xint_mod_sub(T4, T4, T1, c);
+    xint_mod_sub(T4, T4, T1, c);
+    xint_mod_add(T6, T4, T6, c);
     xint_mod_sqr(T6, T6, c);
-    xint_mod_sub(T6, T6, T7, c.p);
+    xint_mod_sub(T6, T6, T7, c);
 
     // 16
-    xint_mod_sub(T5, T5, T4, c.p);
+    xint_mod_sub(T5, T5, T4, c);
     xint_mod_sqr(T5, T5, c);
-    xint_mod_sub(T5, T5, T8, c.p);
-    xint_mod_sub(T5, T5, T2, c.p);
+    xint_mod_sub(T5, T5, T8, c);
+    xint_mod_sub(T5, T5, T2, c);
     xint_mod_sqr(T7, T4, c);
     
     // 21
-    xint_mod_sub(T5, T5, T7, c.p);
+    xint_mod_sub(T5, T5, T7, c);
     xint_mod_mul_ulong(T8, T7, 4, c);
-    xint_mod_sub(T6, T6, T7, c.p);
+    xint_mod_sub(T6, T6, T7, c);
     xint_mod_mul(T3, T3, T6, c);
     xint_mod_mul(T6, T1, T8, c);
     
     // 26
-    xint_mod_add(T1, T1, T4, c.p);
+    xint_mod_add(T1, T1, T4, c);
     xint_mod_mul(T8, T8, T1, c);
-    xint_mod_add(T7, T2, T5, c.p);
-    xint_mod_sub(T2, T5, T2, c.p);
-    xint_mod_sub(T1, T8, T6, c.p);
+    xint_mod_add(T7, T2, T5, c);
+    xint_mod_sub(T2, T5, T2, c);
+    xint_mod_sub(T1, T8, T6, c);
 
     // 31
     xint_mod_mul(T5, T5, T1, c);
-    xint_mod_add(T6, T6, T8, c.p);
+    xint_mod_add(T6, T6, T8, c);
     xint_mod_sqr(T1, T2, c);
-    xint_mod_sub(T1, T1, T6, c.p);
-    xint_mod_sub(T4, T8, T1, c.p);
+    xint_mod_sub(T1, T1, T6, c);
+    xint_mod_sub(T4, T8, T1, c);
 
     // 36
     xint_mod_mul(T2, T2, T4, c);
-    xint_mod_sub(T2, T2, T5, c.p);
+    xint_mod_sub(T2, T2, T5, c);
     xint_mod_sqr(T4, T7, c);
-    xint_mod_sub(T4, T4, T6, c.p);
-    xint_mod_sub(T8, T8, T4, c.p);
+    xint_mod_sub(T4, T4, T6, c);
+    xint_mod_sub(T8, T8, T4, c);
 
     // 41
     xint_mod_mul(T7, T7, T8, c);
-    xint_mod_sub(T5, T7, T5, c.p);
+    xint_mod_sub(T5, T7, T5, c);
 
     xint_copy(Qj->z, T3);
     
@@ -744,14 +918,22 @@ void ecc_dblu(xint_ecc_point_jacobian_t Rjx, xint_ecc_point_jacobian_t Pj, const
     xint_t S = XINT_INIT_VAL;
     xint_t M = XINT_INIT_VAL;
     xint_t tmp = XINT_INIT_VAL;
-    
+
+    extend(S, CURVE_WORDS(curve));
+    extend(M, CURVE_WORDS(curve));
+    extend(tmp, CURVE_WORDS(curve));
+
+    extend(x3, CURVE_WORDS(curve));
+    extend(y3, CURVE_WORDS(curve));
+    extend(z1, CURVE_WORDS(curve));
+
     // M = 3.x1^2 + a.z1^4
     xint_mod_sqr(M, x1, curve);
     xint_mod_mul_ulong(M, M, 3, curve);
     xint_mod_sqr(tmp, z1, curve);
     xint_mod_sqr(tmp, tmp, curve);
     xint_mod_mul(tmp, tmp, curve.a, curve);
-    xint_mod_add(M, M, tmp, curve.p);
+    xint_mod_add(M, M, tmp, curve);
     
     // S = 4.x1.y1^2
     xint_mod_sqr(tmp, y1, curve);
@@ -760,15 +942,15 @@ void ecc_dblu(xint_ecc_point_jacobian_t Rjx, xint_ecc_point_jacobian_t Pj, const
     
     // x3 = M^2 - 2.S
     xint_mod_sqr(x3, M, curve);
-    xint_mod_sub(x3, x3, S, curve.p);
-    xint_mod_sub(x3, x3, S, curve.p);
+    xint_mod_sub(x3, x3, S, curve);
+    xint_mod_sub(x3, x3, S, curve);
     
     // y3 = M.(S - x3) - 8.y^4
-    xint_mod_sub(y3, S, x3, curve.p);
+    xint_mod_sub(y3, S, x3, curve);
     xint_mod_mul(y3, y3, M, curve);
     xint_mod_sqr(tmp, tmp, curve);
     xint_mod_mul_ulong(tmp, tmp, 8, curve);
-    xint_mod_sub(y3, y3, tmp, curve.p);
+    xint_mod_sub(y3, y3, tmp, curve);
     
     // z3 = 2.y1.z1
     xint_copy(z3, y1);
@@ -802,6 +984,7 @@ void ecc_tplu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const 
     ecc_zaddu(Pj, Tj, curve);
     xint_point_jacobian_copy(Rj, Tj);
     Tj->is_at_infinity = 0;
+    xint_point_jacobian_delete(Tj);
 }
 
 #undef x1
@@ -844,7 +1027,11 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
         ecc_zaddc(Rj[bit], Rj[1-bit], c);
 #endif
     }
+
     from_jacobian(R, Rj[0], c);
+    xint_delete(k);
+    xint_point_jacobian_delete(Rj[0]);
+    xint_point_jacobian_delete(Rj[1]);
 }
 
 int xint_ecc_sign_det(char *sig, char *key, char *digest, int digest_len, xint_ecc_curve_t c)
