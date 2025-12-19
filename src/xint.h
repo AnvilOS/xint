@@ -42,10 +42,14 @@ extern "C"
 #endif // __cplusplus
 
 // Low level functions
+int xll_cmp(const xword_t *U, const xword_t *V, int n);
+xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
-void xll_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n);
+void xll_mul(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n);
 void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
+xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k);
+xword_t xll_squ_add_1(xword_t *W, const xword_t *U, int sz);
 
 // Initialisation functions
 int xint_init(xint_t u);

@@ -192,97 +192,123 @@ static void trim(xint_t u)
     u->size = 0;
 }
 
-void xint_mod_fast_224(xint_t w, const xint_t u, const xint_t m)
+void xint_mod_fast_224(xword_t *w, xword_t *u, const xword_t *um)
 {
-    // From NIST SP 800-186
-    //   for 224-bit
-    //   B =  ( T + S1 + S2 – D1 – D2 ) mod p,
-    // T = ( A6 || A5 || A4 || A3 || A2 || A1 || A0 )
-    // S1 = ( A10 || A9 || A8 || A7 || 0 || 0 || 0 )
-    // S2 = ( 0 || A13 || A12 || A11 || 0 || 0 || 0 )
-    // D1 = ( A13 || A12 || A11 || A10 || A9 || A8 || A7 )
-    // D2 = ( 0 || 0 || 0 || 0 || A13 || A12 || A11 ).
-
-    int is_neg = u->size < 0;
-    
-    unsigned A[14];
-    memset(A, 0, sizeof(A));
-    for (int i=0; i<abs(u->size); ++i)
+    xword_t q[2 * p224.nwords];
+    int mul_sz = 2 * p224.nwords;
+    while(u[mul_sz - 1] == 0)
     {
-#if XDWORD_MAX
-        A[i] = u->data[i];
-#else
-        A[2*i] = (unsigned)u->data[i];
-        A[2*i+1] = u->data[i]>>(XWORD_BITS/2);
-#endif
+        --mul_sz;
     }
-
-    xint_t tmp = XINT_INIT_VAL;
-    xword_t tmp_data[7];
-    tmp->size = 7;
-    tmp->capacity = 7;
-    tmp->data = tmp_data;
-    
-#if XDWORD_MAX
-#define TMP_BUILDER(__t6, __t5, __t4, __t3, __t2, __t1, __t0) \
-    tmp->data[6] = __t6; \
-    tmp->data[5] = __t5; \
-    tmp->data[4] = __t4, \
-    tmp->data[3] = __t3; \
-    tmp->data[2] = __t2; \
-    tmp->data[1] = __t1; \
-    tmp->data[0] = __t0; \
-    tmp->size = 7; \
-    trim(tmp);
-#else
-#define TMP_BUILDER(__t6, __t5, __t4, __t3, __t2, __t1, __t0) \
-    tmp->data[3] = __t6; \
-    tmp->data[2] = ((xword_t)__t5 << (XWORD_BITS/2)) | __t4; \
-    tmp->data[1] = ((xword_t)__t3 << (XWORD_BITS/2)) | __t2; \
-    tmp->data[0] = ((xword_t)__t1 << (XWORD_BITS/2)) | __t0; \
-    tmp->size = 4; \
-    trim(tmp);
-#endif
-
-    //xint_t B = XINT_INIT_VAL;
-    xint_assign_zero(w);
-    
-    // T
-    TMP_BUILDER(A[6], A[5], A[4], A[3], A[2], A[1], A[0]);
-    xint_add(w, w, tmp);
-
-    // S1
-    TMP_BUILDER(A[10], A[9], A[8], A[7], 0, 0, 0);
-    xint_add(w, w, tmp);
-
-    // S2
-    TMP_BUILDER(0, A[13], A[12], A[11], 0, 0, 0);
-    xint_add(w, w, tmp);
-
-    // D1
-    TMP_BUILDER(A[13], A[12], A[11], A[10], A[9], A[8], A[7]);
-    xint_sub(w, w, tmp);
-
-    // D2
-    TMP_BUILDER(0, 0, 0, 0, A[13], A[12], A[11]);
-    xint_sub(w, w, tmp);
-
-    if (is_neg)
+    int cmp;
+    if (mul_sz < p224.nwords)
     {
-        xint_chs(w);
+        cmp = -1;
     }
-    while (xint_cmp(w, m) >= 0)
+    else if (mul_sz == p224.nwords)
     {
-        xint_sub(w, w, m);
+        cmp = xll_cmp(u, p224.p->data, p224.nwords);
     }
-    while (xint_is_neg(w))
+    else
     {
-        xint_add(w, w, m);
+        cmp = 1;
     }
-#undef TMP_BUILDER
+    if (cmp >= 0)
+    {
+        int n = p224.p->size;
+        int m = mul_sz - p224.p->size;
+        xll_div(q, u, p224.p->data, m, n);
+    }
+    memcpy(w, u, p224.nwords * XWORD_BITS / 8);
+//    // From NIST SP 800-186
+//    //   for 224-bit
+//    //   B =  ( T + S1 + S2 – D1 – D2 ) mod p,
+//    // T = ( A6 || A5 || A4 || A3 || A2 || A1 || A0 )
+//    // S1 = ( A10 || A9 || A8 || A7 || 0 || 0 || 0 )
+//    // S2 = ( 0 || A13 || A12 || A11 || 0 || 0 || 0 )
+//    // D1 = ( A13 || A12 || A11 || A10 || A9 || A8 || A7 )
+//    // D2 = ( 0 || 0 || 0 || 0 || A13 || A12 || A11 ).
+//
+//    int is_neg = u->size < 0;
+//    
+//    unsigned A[14];
+//    memset(A, 0, sizeof(A));
+//    for (int i=0; i<abs(u->size); ++i)
+//    {
+//#if XDWORD_MAX
+//        A[i] = u->data[i];
+//#else
+//        A[2*i] = (unsigned)u->data[i];
+//        A[2*i+1] = u->data[i]>>(XWORD_BITS/2);
+//#endif
+//    }
+//
+//    xint_t tmp = XINT_INIT_VAL;
+//    xword_t tmp_data[7];
+//    tmp->size = 7;
+//    tmp->capacity = 7;
+//    tmp->data = tmp_data;
+//    
+//#if XDWORD_MAX
+//#define TMP_BUILDER(__t6, __t5, __t4, __t3, __t2, __t1, __t0) \
+//    tmp->data[6] = __t6; \
+//    tmp->data[5] = __t5; \
+//    tmp->data[4] = __t4, \
+//    tmp->data[3] = __t3; \
+//    tmp->data[2] = __t2; \
+//    tmp->data[1] = __t1; \
+//    tmp->data[0] = __t0; \
+//    tmp->size = 7; \
+//    trim(tmp);
+//#else
+//#define TMP_BUILDER(__t6, __t5, __t4, __t3, __t2, __t1, __t0) \
+//    tmp->data[3] = __t6; \
+//    tmp->data[2] = ((xword_t)__t5 << (XWORD_BITS/2)) | __t4; \
+//    tmp->data[1] = ((xword_t)__t3 << (XWORD_BITS/2)) | __t2; \
+//    tmp->data[0] = ((xword_t)__t1 << (XWORD_BITS/2)) | __t0; \
+//    tmp->size = 4; \
+//    trim(tmp);
+//#endif
+//
+//    //xint_t B = XINT_INIT_VAL;
+//    xint_assign_zero(w);
+//    
+//    // T
+//    TMP_BUILDER(A[6], A[5], A[4], A[3], A[2], A[1], A[0]);
+//    xint_add(w, w, tmp);
+//
+//    // S1
+//    TMP_BUILDER(A[10], A[9], A[8], A[7], 0, 0, 0);
+//    xint_add(w, w, tmp);
+//
+//    // S2
+//    TMP_BUILDER(0, A[13], A[12], A[11], 0, 0, 0);
+//    xint_add(w, w, tmp);
+//
+//    // D1
+//    TMP_BUILDER(A[13], A[12], A[11], A[10], A[9], A[8], A[7]);
+//    xint_sub(w, w, tmp);
+//
+//    // D2
+//    TMP_BUILDER(0, 0, 0, 0, A[13], A[12], A[11]);
+//    xint_sub(w, w, tmp);
+//
+//    if (is_neg)
+//    {
+//        xint_chs(w);
+//    }
+//    while (xint_cmp(w, m) >= 0)
+//    {
+//        xint_sub(w, w, m);
+//    }
+//    while (xint_is_neg(w))
+//    {
+//        xint_add(w, w, m);
+//    }
+//#undef TMP_BUILDER
 }
 
-void xint_mod_fast_256(xint_t w, const xint_t u, const xint_t m)
+void xint_mod_fast_256(xword_t *w, xword_t *A, const xword_t *m)
 {
     // T  = (A7 || A6 || A5 || A4 || A3 || A2 || A1 || A0 )
     // S1 = ( A15 || A14 || A13 || A12 || A11 || 0 || 0 || 0 )
@@ -294,20 +320,20 @@ void xint_mod_fast_256(xint_t w, const xint_t u, const xint_t m)
     // D3 = ( A12 || 0 || A10 || A9 || A8 || A15 || A14 || A13 )
     // D4 = ( A13 || 0 || A11 || A10 || A9 || 0 || A15 || A14 ).
 
-    int is_neg = u->size < 0;
+   // int is_neg = u->size < 0;
     
-    xword_t A[16];
-    memset(A, 0, sizeof(A));
-    for (int i=0; i<abs(u->size); ++i)
-    {
-        A[i] = u->data[i];
-    }
+//    xword_t A[16];
+//    memset(A, 0, sizeof(A));
+//    for (int i=0; i<2 * p256.nwords; ++i)
+//    {
+//        A[i] = u[i];
+//    }
 
-    xint_t tmp = XINT_INIT_VAL;
+    //xint_t tmp = XINT_INIT_VAL;
     xword_t tmp_data[8];
-    tmp->size = 8;
-    tmp->capacity = 8;
-    tmp->data = tmp_data;
+//    tmp->size = 8;
+//    tmp->capacity = 8;
+//    tmp->data = tmp_data;
     
 #if XDWORD_MAX
 #define TMP_BUILDER(__t7, __t6, __t5, __t4, __t3, __t2, __t1, __t0) \
@@ -323,16 +349,15 @@ void xint_mod_fast_256(xint_t w, const xint_t u, const xint_t m)
     trim(tmp);
 #else
 #define TMP_BUILDER(__t3, __t2, __t1, __t0) \
-    tmp->data[3] = __t3; \
-    tmp->data[2] = __t2; \
-    tmp->data[1] = __t1; \
-    tmp->data[0] = __t0; \
-    tmp->size = 4; \
-    trim(tmp);
+    tmp_data[3] = __t3; \
+    tmp_data[2] = __t2; \
+    tmp_data[1] = __t1; \
+    tmp_data[0] = __t0;
 #endif
 
     //xint_t B = XINT_INIT_VAL;
-    xint_assign_zero(w);
+    //xint_assign_zero(w);
+    memset(w, 0, p256.nwords*XWORD_BITS/8);
     
 #if XDWORD_MAX
     // T
@@ -377,68 +402,129 @@ void xint_mod_fast_256(xint_t w, const xint_t u, const xint_t m)
 #define HI(__a) ((__a)&0xffffffff00000000ULL)
 #define SHL(__a) ((__a)<<(XWORD_BITS/2))
 #define LO(__a) ((__a)&0xffffffff)
+    long k;
     // T
     TMP_BUILDER(A[3], A[2], A[1], A[0]);
-    xint_add(w, w, tmp);
+    k = xll_add(w, w, tmp_data, p256.nwords);
 
     // S1
     TMP_BUILDER(A[7], A[6], HI(A[5]), 0);
-    xint_add(w, w, tmp);
-    xint_add(w, w, tmp);
+    k += xll_add(w, w, tmp_data, p256.nwords);
+    k += xll_add(w, w, tmp_data, p256.nwords);
 
     // S2
     TMP_BUILDER(SHR(A[7]), SHL(A[7])|SHR(A[6]), SHL(A[6]), 0);
-    xint_add(w, w, tmp);
-    xint_add(w, w, tmp);
+    k += xll_add(w, w, tmp_data, p256.nwords);
+    k += xll_add(w, w, tmp_data, p256.nwords);
 
     // S3
     TMP_BUILDER(A[7], 0, LO(A[5]), A[4]);
-    xint_add(w, w, tmp);
+    k += xll_add(w, w, tmp_data, p256.nwords);
 
     // S4
     TMP_BUILDER(SHL(A[4])|SHR(A[6]), A[7], HI(A[6])|SHR(A[5]), SHL(A[5])|SHR(A[4]));
-    xint_add(w, w, tmp);
+    k += xll_add(w, w, tmp_data, p256.nwords);
 
     // D1
     TMP_BUILDER(SHL(A[5])|LO(A[4]), 0, SHR(A[6]), SHL(A[6])|SHR(A[5]));
-    xint_sub(w, w, tmp);
+    k -= xll_sub(w, w, tmp_data, p256.nwords);
 
     // D2
     TMP_BUILDER(HI(A[5])|SHR(A[4]), 0, A[7], A[6]);
-    xint_sub(w, w, tmp);
+    k -= xll_sub(w, w, tmp_data, p256.nwords);
 
     // D3
     TMP_BUILDER(SHL(A[6]), SHL(A[5])|SHR(A[4]), SHL(A[4])|SHR(A[7]), SHL(A[7])|SHR(A[6]));
-    xint_sub(w, w, tmp);
+    k -= xll_sub(w, w, tmp_data, p256.nwords);
 
     // D4
     TMP_BUILDER(HI(A[6]), A[5], HI(A[4]), A[7]);
-    xint_sub(w, w, tmp);
+    k -= xll_sub(w, w, tmp_data, p256.nwords);
+    
+    while (k < 0)
+    {
+        // Get rid of the carry
+        k += xll_add(w, w, p256.p->data, p256.nwords);
+    }
+    while (k > 0 || xll_cmp(w, p256.p->data, p256.nwords) >= 0)
+    {
+        k -= xll_sub(w, w, p256.p->data, p256.nwords);
+    }
 #endif
     
-    if (is_neg)
-    {
-        xint_chs(w);
-    }
-    while (xint_cmp(w, m) >= 0)
-    {
-        xint_sub(w, w, m);
-    }
-    while (xint_is_neg(w))
-    {
-        xint_add(w, w, m);
-    }
+//    if (is_neg)
+//    {
+//        xint_chs(w);
+//    }
+//    while (xint_cmp(w, m) >= 0)
+//    {
+//        xint_sub(w, w, m);
+//    }
+//    while (xint_is_neg(w))
+//    {
+//        xint_add(w, w, m);
+//    }
 #undef TMP_BUILDER
 }
 
-void xint_mod_fast_384(xint_t w, const xint_t u, const xint_t m)
+void xint_mod_fast_384(xword_t *w, xword_t *u, const xword_t *m)
 {
-    xint_mod(w, u, m);
+    xword_t q[2 * p384.nwords];
+    int mul_sz = 2 * p384.nwords;
+    while(u[mul_sz - 1] == 0)
+    {
+        --mul_sz;
+    }
+    int cmp;
+    if (mul_sz < p384.nwords)
+    {
+        cmp = -1;
+    }
+    else if (mul_sz == p384.nwords)
+    {
+        cmp = xll_cmp(u, p384.p->data, p384.nwords);
+    }
+    else
+    {
+        cmp = 1;
+    }
+    if (cmp >= 0)
+    {
+        int n = p384.p->size;
+        int m = mul_sz - p384.p->size;
+        xll_div(q, u, p384.p->data, m, n);
+    }
+    memcpy(w, u, p384.nwords * XWORD_BITS / 8);
 }
 
-void xint_mod_fast_521(xint_t w, const xint_t u, const xint_t m)
+void xint_mod_fast_521(xword_t *w, xword_t *u, const xword_t *m)
 {
-    xint_mod(w, u, m);
+    xword_t q[2 * p521.nwords];
+    int mul_sz = 2 * p521.nwords;
+    while(u[mul_sz - 1] == 0)
+    {
+        --mul_sz;
+    }
+    int cmp;
+    if (mul_sz < p521.nwords)
+    {
+        cmp = -1;
+    }
+    else if (mul_sz == p521.nwords)
+    {
+        cmp = xll_cmp(u, p521.p->data, p521.nwords);
+    }
+    else
+    {
+        cmp = 1;
+    }
+    if (cmp >= 0)
+    {
+        int n = p521.p->size;
+        int m = mul_sz - p521.p->size;
+        xll_div(q, u, p521.p->data, m, n);
+    }
+    memcpy(w, u, p521.nwords * XWORD_BITS / 8);
 }
 
 static int extend(xint_t x, int new_size)
@@ -464,8 +550,7 @@ static int extend(xint_t x, int new_size)
 void xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t c)
 {
     xword_t k = xll_add(w, u, v, c.nwords);
-    int cmp = xll_cmp(w, c.p->data, c.nwords);
-    if (k || cmp >= 0)
+    if (k || xll_cmp(w, c.p->data, c.nwords) >= 0)
     {
         xll_sub(w, w, c.p->data, c.nwords);
     }
@@ -483,114 +568,32 @@ void xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc
 void xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t c)
 {
     xword_t tmp[18];
-    xword_t q[18];
     memset(tmp, 0, sizeof(tmp));
-    memset(q, 0, sizeof(q));
-    int mul_sz = 2 * c.nwords;
     xll_mul(tmp, u, c.nwords, v, c.nwords);
-    while(tmp[mul_sz - 1] == 0)
-    {
-        --mul_sz;
-    }
-    int cmp;
-    if (mul_sz < c.nwords)
-    {
-        cmp = -1;
-    }
-    else if (mul_sz == c.nwords)
-    {
-        cmp = xll_cmp(tmp, c.p->data, c.nwords);
-    }
-    else
-    {
-        cmp = 1;
-    }
-    if (cmp >= 0)
-    {
-        int n = c.p->size;
-        int m = mul_sz - c.p->size;
-        xll_div(q, tmp, c.p->data, m, n);
-    }
-    memcpy(w, tmp, c.nwords * XWORD_BITS / 8);
+    c.xint_mod_fast(w, tmp, c.p->data);
 }
 
 void xint_mod_mul_ulong(xword_t *w, const xword_t *u, unsigned long v, const xint_ecc_curve_t c)
 {
-    xword_t tmp[10];
-    xword_t q[18];
-    memset(tmp, 0, sizeof(tmp));
-    int mul_sz = c.nwords+ 1;
-    xword_t k = xll_mul_1(tmp, u, c.nwords, v, 0);
-    tmp[mul_sz-1] = k;
-    
-    while(tmp[mul_sz - 1] == 0)
+    xword_t k = xll_mul_1(w, u, c.nwords, v, 0);
+    while (k > 0 || xll_cmp(w, c.p->data, c.nwords) >= 0)
     {
-        --mul_sz;
+        k -= xll_sub(w, w, c.p->data, c.nwords);
     }
-
-    int cmp;
-    if (mul_sz < c.nwords)
-    {
-        cmp = -1;
-    }
-    else if (mul_sz == c.nwords)
-    {
-        cmp = xll_cmp(tmp, c.p->data, c.nwords);
-    }
-    else
-    {
-        cmp = 1;
-    }
-    if (cmp >= 0)
-    {
-        int n = c.p->size;
-        int m = mul_sz - c.p->size;
-        xll_div(q, tmp, c.p->data, m, n);
-    }
-    memcpy(w, tmp, c.nwords * XWORD_BITS / 8);
 }
 
 void xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t c)
 {
     xword_t tmp[18];
-    xword_t q[18];
     memset(tmp, 0, sizeof(tmp));
-
-    int sz = 2 * c.nwords;
     xword_t k = 0;
     for (int j=0; j<c.nwords; ++j)
     {
-        xword_t tmpw = xll_squ_add_1(tmp+j+j, u+j,
-                                     c.nwords-j+1);
+        xword_t tmpw = xll_squ_add_1(tmp+j+j, u+j, c.nwords-j+1);
         tmp[c.nwords + j] += k;
         k = tmpw;
     }
-
-    while(tmp[sz - 1] == 0)
-    {
-        --sz;
-    }
-
-    int cmp;
-    if (sz < c.nwords)
-    {
-        cmp = -1;
-    }
-    else if (sz == c.nwords)
-    {
-        cmp = xll_cmp(tmp, c.p->data, c.nwords);
-    }
-    else
-    {
-        cmp = 1;
-    }
-    if (cmp >= 0)
-    {
-        int n = c.p->size;
-        int m = sz - c.p->size;
-        xll_div(q, tmp, c.p->data, m, n);
-    }
-    memcpy(w, tmp, c.nwords * XWORD_BITS / 8);
+    c.xint_mod_fast(w, tmp, c.p->data);
 }
 
 void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_ecc_curve_t curve)
@@ -742,7 +745,7 @@ void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, c
     xint_mod_sub(T5, T7, T5, c);
 }
 
-void ecc_dblu(xword_t *x2, xword_t *y2, xword_t *z2, xword_t *x1, xword_t *y1, xword_t *z1, const xint_ecc_curve_t c)
+void ecc_dblu(xword_t *x3, xword_t *y3, xword_t *z3, xword_t *x1, xword_t *y1, xword_t *z1, const xint_ecc_curve_t c)
 {
     // 4M + 6S
 
@@ -750,10 +753,6 @@ void ecc_dblu(xword_t *x2, xword_t *y2, xword_t *z2, xword_t *x1, xword_t *y1, x
     xword_t S[c.nwords];
     xword_t M[c.nwords];
     xword_t tmp[c.nwords];
-
-    xword_t x3[c.nwords];
-    xword_t y3[c.nwords];
-    xword_t z3[c.nwords];
 
     // M = 3.x1^2 + a.z1^4
     xint_mod_sqr(M, x1, c);
@@ -784,10 +783,6 @@ void ecc_dblu(xword_t *x2, xword_t *y2, xword_t *z2, xword_t *x1, xword_t *y1, x
     memcpy(z3, y1, c.nwords*XWORD_BITS/8);
     xint_mod_mul(z3, z3, z1, c);
     xint_mod_mul_ulong(z3, z3, 2, c);
-    
-    memcpy(x2, x3, c.nwords*XWORD_BITS/8);
-    memcpy(y2, y3, c.nwords*XWORD_BITS/8);
-    memcpy(z2, z3, c.nwords*XWORD_BITS/8);
     
     // Now update Pj
     memcpy(x1, S, c.nwords*XWORD_BITS/8);

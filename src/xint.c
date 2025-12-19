@@ -20,14 +20,12 @@ static void x_zero(xword_t *Y, size_t sz);
 static void x_move(xword_t *Y, xword_t *X, size_t sz);
 static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
-static int x_cmp(const xword_t *U, const xword_t *V, int n);
-static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
-static xword_t x_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
-static xword_t x_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k);
+xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
+xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k);
 static xword_t x_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
 static xword_t x_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
-static xword_t x_squ_add_1(xword_t *W, const xword_t *U, int sz);
+xword_t xll_squ_add_1(xword_t *W, const xword_t *U, int sz);
 
 #define XINT_SWAP(__type, __a, __b) \
 do {                                \
@@ -263,7 +261,7 @@ int xint_cmpa(const xint_t u, const xint_t v)
     {
         return un < vn ? -1 : 1;
     }
-    return x_cmp(u->data, v->data, un);
+    return xll_cmp(u->data, v->data, un);
 }
 
 int xint_cmp(const xint_t u, const xint_t v)
@@ -274,7 +272,7 @@ int xint_cmp(const xint_t u, const xint_t v)
     {
         return un < vn ? -1 : 1;
     }
-    return un > 0 ? x_cmp(u->data, v->data, abs(un)) : x_cmp(v->data, u->data, abs(un));
+    return un > 0 ? xll_cmp(u->data, v->data, abs(un)) : xll_cmp(v->data, u->data, abs(un));
 }
 
 // Addition and Subtraction functions
@@ -363,7 +361,7 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     int part2_len = abs(Un - Vn);
     xword_t *bigger = Un>Vn ? u->data : v->data;
     xword_t k = xll_add(w->data, u->data, v->data, part1_len);
-    k = x_add_1(w->data+part1_len, bigger+part1_len, k, part2_len);
+    k = xll_add_1(w->data+part1_len, bigger+part1_len, k, part2_len);
     if (k)
     {
         resize(w, Wn + 1);
@@ -383,7 +381,7 @@ int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
         {
             return -1;
         }
-        xword_t k = x_add_1(w->data, u->data, (xword_t)v, Un);
+        xword_t k = xll_add_1(w->data, u->data, (xword_t)v, Un);
         if (k)
         {
             resize(w, Un + 1);
@@ -414,13 +412,13 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
         case -1: // U < V
             resize(w, Vn);
             b = xll_sub(w->data, v->data, u->data, Un);
-            b = x_sub_1(w->data+Un, v->data+Un, b, Vn-Un);
+            b = xll_sub_1(w->data+Un, v->data+Un, b, Vn-Un);
             break;
 
         case 1: // U > V
             resize(w, Un);
             b = xll_sub(w->data, u->data, v->data, Vn);
-            b = x_sub_1(w->data+Vn, u->data+Vn, b, Un-Vn);
+            b = xll_sub_1(w->data+Vn, u->data+Vn, b, Un-Vn);
             break;
     }
     assert(b == 0);
@@ -452,13 +450,13 @@ int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
                 else
                 {
                     resize(w, 1);
-                    b = x_sub_1(w->data, &vv, u->data[0], Un);
+                    b = xll_sub_1(w->data, &vv, u->data[0], Un);
                 }
                 break;
 
             case 1: // U > V
                 resize(w, Un);
-                b = x_sub_1(w->data, u->data, vv, Un);
+                b = xll_sub_1(w->data, u->data, vv, Un);
                 break;
         }
         assert(b == 0);
@@ -497,7 +495,7 @@ void xint_sqr(xint_t w, const xint_t u)
     xword_t k = 0;
     for (int j=0; j<Un; ++j)
     {
-        xword_t tmp = x_squ_add_1(W+j+j, U+j, Un-j+1);
+        xword_t tmp = xll_squ_add_1(W+j+j, U+j, Un-j+1);
         W[Un + j] += k;
         k = tmp;
     }
@@ -529,7 +527,7 @@ void xint_mul(xint_t w, const xint_t u, const xint_t v)
         else if (Vn == 1)
         {
             FAST_RESIZE(w, Un + 1);
-            xword_t k = x_mul_1(w->data, u->data, Un, v->data[0], 0);
+            xword_t k = xll_mul_1(w->data, u->data, Un, v->data[0], 0);
             if (k)
             {
                 w->data[Un] = k;
@@ -617,7 +615,7 @@ void xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
     if (v <= XWORD_MAX)
     {
         FAST_RESIZE(w, Un + 1);
-        xword_t k = x_mul_1(w->data, u->data, Un, (xword_t)v, 0);
+        xword_t k = xll_mul_1(w->data, u->data, Un, (xword_t)v, 0);
         if (k)
         {
             w->data[Un] = k;
@@ -663,7 +661,7 @@ void xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a)
     {
         int Un = abs(u->size);
         FAST_RESIZE(w, Un+1);
-        xword_t k = x_mul_1(w->data, u->data, Un, (xword_t)m, (xword_t)a);
+        xword_t k = xll_mul_1(w->data, u->data, Un, (xword_t)m, (xword_t)a);
         if (k)
         {
             w->data[Un] = k;
@@ -1087,7 +1085,7 @@ static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
     return 0;
 }
 
-static int x_cmp(const xword_t *U, const xword_t *V, int n)
+int xll_cmp(const xword_t *U, const xword_t *V, int n)
 {
     for (int j=n-1; j>=0; --j)
     {
@@ -1123,7 +1121,7 @@ xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
     return k;
 }
 
-static xword_t x_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
+xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
 {
     // W[] = U[] + v
     xword_t k = v;
@@ -1158,7 +1156,7 @@ xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
     return b;
 }
 
-static xword_t x_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
+xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
 {
     xword_t b = v;
     for (size_t i=0; i<n; ++i)
@@ -1170,7 +1168,7 @@ static xword_t x_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
     return b;
 }
 
-void xll_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
+void xll_mul(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
 {
     // Based on Knuth's algorithm M.
     // As pointed out by Knuth, algorithm M can cope with V[j] being co-located
@@ -1179,7 +1177,7 @@ void xll_mul(xword_t *W, xword_t *U, size_t m, xword_t *V, size_t n)
     // m xwords of W will be zeroed
 
     // M1. [Initialisation.] - clear the bottom part of W
-    W[m] = x_mul_1(W, U, m, V[0], 0);
+    W[m] = xll_mul_1(W, U, m, V[0], 0);
     for (size_t j=1; j<n; ++j)
     {
         // M2. [We skip the optional check for zero multiplier]
@@ -1208,7 +1206,7 @@ static xword_t x_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
     return k;
 }
 
-static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
+xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
 {
     // W[] -= U[] * v
     xword_t b = 0;
@@ -1226,7 +1224,7 @@ static xword_t x_mul_sub_1(xword_t *W, const xword_t *U, size_t n, xword_t v)
     return b;
 }
 
-static xword_t x_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k)
+xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k)
 {
     // W[] = U[] * v + k
     // Cut down version of alg M with a single xword for V
@@ -1398,7 +1396,7 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     return R >> bit_shift;
 }
 
-static xword_t x_squ_add_1(xword_t *W, const xword_t *U, int sz)
+xword_t xll_squ_add_1(xword_t *W, const xword_t *U, int sz)
 {
     xword_t k1 = 0;
     xword_t k0 = 0;
