@@ -49,7 +49,8 @@ xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 void xll_mul(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n);
 void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k);
-xword_t xll_squ_add_1(xword_t *W, const xword_t *U, int sz);
+xword_t xll_squ_1(xword_t *W, const xword_t *U, int sz);
+xword_t xll_squ_2(xword_t *W, const xword_t *U, int sz);
 
 // Initialisation functions
 int xint_init(xint_t u);

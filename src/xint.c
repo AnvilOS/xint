@@ -25,7 +25,8 @@ xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k);
 static xword_t x_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
 static xword_t x_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
-xword_t xll_squ_add_1(xword_t *W, const xword_t *U, int sz);
+xword_t xll_squ_1(xword_t *W, const xword_t *U, int sz);
+xword_t xll_squ_2(xword_t *W, const xword_t *U, int sz);
 
 #define XINT_SWAP(__type, __a, __b) \
 do {                                \
@@ -492,13 +493,7 @@ void xint_sqr(xint_t w, const xint_t u)
 
     // Clear the bottom words
     x_zero(w->data, Un);
-    xword_t k = 0;
-    for (int j=0; j<Un; ++j)
-    {
-        xword_t tmp = xll_squ_add_1(W+j+j, U+j, Un-j+1);
-        W[Un + j] += k;
-        k = tmp;
-    }
+    xword_t k = xll_squ_1(W, U, Un);
     assert(k == 0);
 
     trim_zeroes(w);
@@ -1396,47 +1391,81 @@ static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     return R >> bit_shift;
 }
 
-xword_t xll_squ_add_1(xword_t *W, const xword_t *U, int sz)
+xword_t xll_squ_1(xword_t *WW, const xword_t *UU, int Un)
 {
-    xword_t k1 = 0;
-    xword_t k0 = 0;
-    xword_t tmp;
-    // k, W[0] = W[0] + U[0] * U[0]
-    mul_1_1(k0, tmp, U[0], U[0]);
-    W[0] += tmp;
-    k0 += W[0] < tmp;
-    
-    for (int i=1; i<sz-1; ++i)
+    xword_t kk = 0;
+    for (int j=0; j<Un; ++j)
     {
-        xword_t t2, t1, t0;
-        // t2, t1, t0 = U[i] * U[0]
-        mul_1_1(t1, t0, U[i], U[0]);
+        xword_t *W = WW+j+j;
+        const xword_t *U = UU+j;
+        xword_t k1 = 0;
+        xword_t k0 = 0;
+ 
+        xword_t tmp;
+        // k, W[0] = W[0] + U[0] * U[0]
+        mul_1_1(k0, tmp, UU[j], UU[j]);
+        WW[2*j] += tmp;
+        k0 += WW[2*j] < tmp;
         
-        // t2, t1, t0 = 2 * [ t2, t1, t0 ]
-        t2 = t1 >> (XWORD_BITS-1);
-        t1 <<= 1;
-        t1 |= t0 >> (XWORD_BITS-1);
-        t0 <<= 1;
-        
-        // t2, t1, t0 += k1, k0
-        // Max t0 is almost ffffffff
-        // Max k0 is almost ffffffff
-        // Max t1 is fffffffd at b504f333
-        // Max k1 is 1
-        // Therefore t0 += k0 can overflow into t1
-        // but t1 += k1 + (t0 < k0) can never overflow into t2
-        t0 += k0;
-        t1 += k1 + (t0 < k0);
-
-        // t2, t1, t0 += W[i]
-        t0 += W[i];
-        t1 += t0 < W[i];
-        t2 += t1 < (t0 < W[i]);
-
-        W[i] = t0;
-        k0 = t1;
-        k1 = t2;
+        for (int i=1; i<Un-j; ++i)
+        {
+            xword_t t2, t1, t0;
+            // t2, t1, t0 = U[i] * U[0]
+            mul_1_1(t1, t0, U[i], U[0]);
+            
+            // t2, t1, t0 = 2 * [ t2, t1, t0 ]
+            t2 = t1 >> (XWORD_BITS-1);
+            t1 <<= 1;
+            t1 |= t0 >> (XWORD_BITS-1);
+            t0 <<= 1;
+            
+            // t2, t1, t0 += k1, k0
+            // Max t0 is almost ffffffff
+            // Max k0 is almost ffffffff
+            // Max t1 is fffffffd at b504f333
+            // Max k1 is 1
+            // Therefore t0 += k0 can overflow into t1
+            // but t1 += k1 + (t0 < k0) can never overflow into t2
+            t0 += k0;
+            t1 += k1 + (t0 < k0);
+            
+            // t2, t1, t0 += W[i]
+            t0 += W[i];
+            t1 += t0 < W[i];
+            t2 += t1 < (t0 < W[i]);
+            
+            W[i] = t0;
+            k0 = t1;
+            k1 = t2;
+        }
+        W[Un-j] = k0 + kk;
+        kk = k1;
     }
-    W[sz-1] = k0;
-    return k1;
+    return 0;
+}
+
+xword_t xll_squ_2(xword_t *W, const xword_t *U, int Un)
+{
+    W[0] = 0;
+    W[Un] = xll_mul_1(W+1, U+1, Un-1, U[0], 0);
+    for (int j=1; j<Un; ++j)
+    {
+        W[j+Un] = x_mul_add_1(W+2*j+1, U+j+1, Un-j-1, U[j]);
+    }
+    x_lshift(W, W, 2*Un, 1);
+    xword_t kk = 0;
+    for (int j=0; j<Un; ++j)
+    {
+        xword_t t0;
+        xword_t t1;
+        // k, W[0] = W[0] + U[0] * U[0]
+        mul_1_1(t1, t0, U[j], U[j]);
+        t0 += kk;
+        t1 += t0 < kk;
+        W[2*j] += t0;
+        W[2*j+1] += W[2*j] < t0;
+        W[2*j+1] += t1;
+        kk = W[2*j+1] < t1;
+    }
+    return 0;
 }
