@@ -22,8 +22,8 @@ static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
 xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k);
-static xword_t x_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
-static xword_t x_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
+static xword_t xll_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
+static xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
 static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 xword_t xll_squ_1(xword_t *W, const xword_t *U, int sz);
 xword_t xll_squ_2(xword_t *W, const xword_t *U, int sz);
@@ -540,7 +540,7 @@ void xint_mul(xint_t w, const xint_t u, const xint_t v)
         else
         {
             FAST_RESIZE(w, Un + 2);
-            xword_t k = x_mul_2(w->data, u->data, Un + 1, v->data[1], v->data[0]);
+            xword_t k = xll_mul_2(w->data, u->data, Un + 1, v->data[1], v->data[0]);
             if (k)
             {
                 w->data[Un+1] = k;
@@ -624,7 +624,7 @@ void xint_mul_ulong(xint_t w, const xint_t u, unsigned long v)
     else if (v <= XDWORD_MAX)
     {
         FAST_RESIZE(w, Un + 2);
-        xword_t k = x_mul_2(w->data, u->data, Un + 1, v>>(XWORD_BITS), (xword_t)v);
+        xword_t k = xll_mul_2(w->data, u->data, Un + 1, v>>(XWORD_BITS), (xword_t)v);
         if (k)
         {
             w->data[Un+1] = k;
@@ -1106,9 +1106,9 @@ xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
         // We check for overflow by noting the sum to be less
         // than an addend
         xword_t sum = U[j] + k;
-        k = sum < k ? 1 : 0;
+        k = sum < k;
         sum += V[j];
-        k += sum < V[j] ? 1 : 0;
+        k += sum < V[j];
         W[j] = sum;
         // A3. [Loop on j]
     }
@@ -1163,6 +1163,36 @@ xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
     return b;
 }
 
+static xword_t xll_mul_add_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0)
+{
+    xword_t k0 = 0;
+    xword_t k1 = 0;
+    for (int j=0; j<m-1; ++j)
+    {
+        xword_t p1, p0;
+        mul_1_1(p1, p0, U[j], v0);
+        p0 += k0;
+        p1 += p0 < k0;
+
+        p0 += W[j];
+        p1 += p0 < W[j];
+
+        xword_t t1, t0;
+        mul_1_1(t1, t0, U[j], v1);
+        t0 += k1;
+        t1 += t0 < k1;
+        t0 += p1;
+        t1 += t0 < p1;
+        
+        k0 = t0;
+        k1 = t1;
+        W[j] = p0;
+    }
+    //assert(k0 || k1);
+    W[m-1] = k0;
+    return k1;
+}
+
 void xll_mul(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
 {
     // Based on Knuth's algorithm M.
@@ -1176,12 +1206,20 @@ void xll_mul(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
     for (size_t j=1; j<n; ++j)
     {
         // M2. [We skip the optional check for zero multiplier]
-        W[j + m] = x_mul_add_1(W+j, U, m, V[j]);
+        if (n - j > 2)
+        {
+            W[j + m +1] = xll_mul_add_2(W+j, U, m+1, V[j+1], V[j]);
+            ++j;
+        }
+        else
+        {
+            W[j + m] = xll_mul_add_1(W+j, U, m, V[j]);
+        }
         // M6. [Loop on j]
     }
 }
 
-static xword_t x_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
+xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
 {
     // W[] += U[] * v
     // M3. [Initialise i (and k)]
@@ -1237,7 +1275,7 @@ xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v, xword_t k)
     return k;
 }
 
-static xword_t x_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0)
+static xword_t xll_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0)
 {
     xword_t k0 = 0;
     xword_t k1 = 0;
@@ -1450,7 +1488,7 @@ xword_t xll_squ_2(xword_t *W, const xword_t *U, int Un)
     W[Un] = xll_mul_1(W+1, U+1, Un-1, U[0], 0);
     for (int j=1; j<Un; ++j)
     {
-        W[j+Un] = x_mul_add_1(W+2*j+1, U+j+1, Un-j-1, U[j]);
+        W[j+Un] = xll_mul_add_1(W+2*j+1, U+j+1, Un-j-1, U[j]);
     }
     x_lshift(W, W, 2*Un, 1);
     xword_t kk = 0;
