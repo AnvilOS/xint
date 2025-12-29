@@ -522,64 +522,26 @@ void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const 
     w->is_at_infinity = 0;
 }
 
-void ecc_zaddu(xword_t *x1, xword_t *y1, xword_t *z1, xword_t *x2, xword_t *y2, xword_t *z2, const xint_ecc_curve_t c)
+void ecc_zaddu(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t c)
 {
-    //assert(xint_cmp(Pj->z, Qj->z) == 0);
+    xword_t T6[c.nwords];
     
-    xword_t C[c.nwords];
-    xword_t W1[c.nwords];
-    xword_t W2[c.nwords];
-    xword_t D[c.nwords];
-    xword_t A1[c.nwords];
-    xword_t tmp[c.nwords];
-    
-    xword_t x3[c.nwords];
-    xword_t y3[c.nwords];
-    xword_t z3[c.nwords];
+    xint_mod_sub(T6, T1, T4, c);
+    xint_mod_mul(T3, T3, T6, c);
+    xint_mod_sqr(T6, T6, c);
+    xint_mod_mul(T1, T1, T6, c);
+    xint_mod_mul(T6, T6, T4, c);
 
-    // C = (X1 − X2)^2
-    xint_mod_sub(C, x1, x2, c);
-    xint_mod_sqr(C, C, c);
-    
-    // W1 = X1 * C
-    xint_mod_mul(W1, x1, C, c);
-    // W2 = X2 * C
-    xint_mod_mul(W2, x2, C, c);
-    
-    // D = (Y1 − Y2)^2
-    xint_mod_sub(D, y1, y2, c);
-    xint_mod_sqr(D, D, c);
-    
-    // A1 = Y1 * (W1 − W2)
-    xint_mod_sub(A1, W1, W2, c);
-    xint_mod_mul(A1, A1, y1, c);
-    
-    // X3 = D − W1 − W2
-    xint_mod_sub(x3, D, W1, c);
-    xint_mod_sub(x3, x3, W2, c);
-    
-    // Y3 = (Y1 − Y2) * (W1 − X3) − A1
-    xint_mod_sub(y3, y1, y2, c);
-    xint_mod_sub(tmp, W1, x3, c);
-    xint_mod_mul(y3, y3, tmp, c);
-    xint_mod_sub(y3, y3, A1, c);
+    xint_mod_sub(T5, T2, T5, c);
+    xint_mod_sqr(T4, T5, c);
+    xint_mod_sub(T4, T4, T1, c);
+    xint_mod_sub(T4, T4, T6, c);
+    xint_mod_sub(T6, T1, T6, c);
 
-    // Z3 = Z * (X1 − X2)
-    xint_mod_sub(z3, x1, x2, c);
-    xint_mod_mul(z3, z3, z1, c);
-    
-    memcpy(x2, x3, c.nwords*XWORD_BITS/8);
-    // Y1 = A1
-    memcpy(y2, y3, c.nwords*XWORD_BITS/8);
-    // Z1 = Z3
-    memcpy(z2, z3, c.nwords*XWORD_BITS/8);
-
-    // X1 = W1
-    memcpy(x1, W1, c.nwords*XWORD_BITS/8);
-    // Y1 = A1
-    memcpy(y1, A1, c.nwords*XWORD_BITS/8);
-    // Z1 = Z3
-    memcpy(z1, z3, c.nwords*XWORD_BITS/8);
+    xint_mod_mul(T2, T2, T6, c);
+    xint_mod_sub(T6, T1, T4, c);
+    xint_mod_mul(T5, T5, T6, c);
+    xint_mod_sub(T5, T5, T2, c);
 }
 
 void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t c)
@@ -589,11 +551,11 @@ void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, c
     xword_t T8[c.nwords];
 
     // 1
-    xint_mod_sub(T6, T1, T4, c);
-    xint_mod_sqr(T7, T6, c);
-    xint_mod_mul(T1, T1, T7, c);
-    xint_mod_mul(T4, T4, T7, c);
-    xint_mod_sub(T5, T2, T5, c);
+    xint_mod_sub(T6, T1, T4, c);        // T6 = X1 - X2
+    xint_mod_sqr(T7, T6, c);            // T7 = (X1 - X2) ^2
+    xint_mod_mul(T1, T1, T7, c);        // T1 = X1 * (X1 - X2) ^ 2
+    xint_mod_mul(T4, T4, T7, c);        // T2 = X2 * (X1 - X2) ^ 2
+    xint_mod_sub(T5, T2, T5, c);        //
     
     // 6
     xint_mod_sub(T8, T1, T4, c);
@@ -722,7 +684,8 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
     // (2P, P') =  DBLU(P),
     // 3P = ZADDU(P', 2P)
     ecc_dblu(Rx[1-bit], Ry[1-bit], Rz[1-bit], Rx[bit], Ry[bit], Rz[bit], c);
-    ecc_zaddu(Rx[bit], Ry[bit], Rz[bit], Rx[1-bit], Ry[1-bit], Rz[1-bit], c);
+    ecc_zaddu(Rx[bit], Ry[bit], Rz[bit], Rx[1-bit], Ry[1-bit], c);
+    memcpy(Rz[1-bit], Rz[bit], c.nwords*XWORD_BITS/8);
 
     for (int i=2; i<nbits; ++i)
     {
