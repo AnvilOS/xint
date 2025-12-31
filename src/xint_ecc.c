@@ -1,4 +1,6 @@
 
+#include "xint_internal.h"
+
 #include "xint_ecc.h"
 #include "xint_io.h"
 #include "xint_bitwise.h"
@@ -480,13 +482,13 @@ void xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc
 void xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t c)
 {
     xword_t tmp[40];
-    xll_mul(tmp, u, c.nwords, v, c.nwords);
+    xll_mul_algm(tmp, u, c.nwords, v, c.nwords);
     c.xint_mod_fast(w, tmp, c);
 }
 
 void xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_curve_t c)
 {
-    xword_t k = xll_mul_1(w, u, c.nwords, v, 0);
+    xword_t k = xll_mul_1(w, u, c.nwords, v);
     while (k > 0 || xll_cmp(w, c.p->data, c.nwords) >= 0)
     {
         k -= xll_sub(w, w, c.p->data, c.nwords);
@@ -684,14 +686,13 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
     // (2P, P') =  DBLU(P),
     // 3P = ZADDU(P', 2P)
     ecc_dblu(Rx[1-bit], Ry[1-bit], Rz[1-bit], Rx[bit], Ry[bit], Rz[bit], c);
-    ecc_zaddu(Rx[bit], Ry[bit], Rz[bit], Rx[1-bit], Ry[1-bit], c);
-    memcpy(Rz[1-bit], Rz[bit], c.nwords*XWORD_BITS/8);
+    ecc_zaddu(Rx[bit], Ry[bit], Rz[0], Rx[1-bit], Ry[1-bit], c);
+    //memcpy(Rz[0], Rz[bit], c.nwords*XWORD_BITS/8);
 
     for (int i=2; i<nbits; ++i)
     {
         int bit = xint_get_bit(k, i);
-        ecc_zdau(Rx[1-bit], Ry[1-bit], Rz[1-bit], Rx[bit], Ry[bit], c);
-        memcpy(Rz[bit], Rz[1-bit], c.nwords*XWORD_BITS/8);
+        ecc_zdau(Rx[1-bit], Ry[1-bit], Rz[0], Rx[bit], Ry[bit], c);
     }
 
     xint_ecc_point_jacobian_t Rj;

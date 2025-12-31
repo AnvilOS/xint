@@ -2,9 +2,9 @@
 #include "test_low_level.h"
 #include "test_harness.h"
 
-#include "xint.h"
+#include "xint_internal.h"
 
-TEST_GROUP(low_level);
+TEST_GROUP(low_level)
 
 // Constants that resize for xword_t size
 #define Ox0000__0000    ((xword_t)0)
@@ -21,7 +21,46 @@ TEST_GROUP(low_level);
 #define OxFFFF__FFFE    ((xword_t)-2)
 #define OxFFFF__FFFF    ((xword_t)-1)
 
-// REMEMBER: xword_r arrays are LEAST significant first
+// REMEMBER: xword_t arrays are LEAST significant first
+
+TEST(low_level, xll_add_1_sub_1)
+{
+    xword_t A[] = { OxFFFF__FFFE, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF, OxFFFF__FFFF };
+    //xword_t B[] = { OxFFFF__FFFF, 0, 0 };
+    xword_t k, b;
+    
+    // Check that in-place add works
+    k = xll_add_1(A, A, 2, 12);
+    ASSERT_EQ(0, A[11]);
+    ASSERT_EQ(0, A[10]);
+    ASSERT_EQ(0, A[9]);
+    ASSERT_EQ(0, A[8]);
+    ASSERT_EQ(0, A[7]);
+    ASSERT_EQ(0, A[6]);
+    ASSERT_EQ(0, A[5]);
+    ASSERT_EQ(0, A[4]);
+    ASSERT_EQ(0, A[3]);
+    ASSERT_EQ(0, A[2]);
+    ASSERT_EQ(0, A[1]);
+    ASSERT_EQ(0, A[0]);
+    ASSERT_EQ(1, k);
+
+//    // Check that sub works
+//    b = xll_sub(A, A, B, 3);
+//    ASSERT_EQ(OxFFFF__FFFB, A[2]);
+//    ASSERT_EQ(OxFFFF__FFFC, A[1]);
+//    ASSERT_EQ(OxFFFF__FFFF, A[0]);
+//    ASSERT_EQ(0, b);
+//
+//    // Check that in-place sub works
+//    b = xll_sub(A, A, A, 3);
+//    ASSERT_EQ(0, A[2]);
+//    ASSERT_EQ(0, A[1]);
+//    ASSERT_EQ(0, A[0]);
+//    ASSERT_EQ(0, b);
+
+    END_TEST(low_level);
+}
 
 TEST(low_level, xll_add_sub)
 {
@@ -67,7 +106,7 @@ TEST(low_level, xll_div_normalise)
     
     // Multiply out to check it worked
     xword_t calc[7] = { 0, 0, 0, 0, 0, 0, 0 };
-    xll_mul(calc, v, 4, q, 3);
+    xll_mul_algm(calc, v, 4, q, 3);
     calc[6] = xll_add(calc, calc, u, 6);
     ASSERT_EQ(Ox8000__0002, calc[0]);
     ASSERT_EQ(Ox8000__0002, calc[1]);
@@ -102,7 +141,7 @@ TEST(low_level, xll_div_addback)
     
     // Multiply out to check it worked
     xword_t calc[5] = { 0, 0, 0, 0, 0 };
-    xll_mul(calc, v, 3, q, 1);
+    xll_mul_algm(calc, v, 3, q, 1);
     calc[4] = xll_add(calc, calc, u, 4);
     ASSERT_EQ(Ox0000__0000, calc[0]);
     ASSERT_EQ(Ox0000__0000, calc[1]);
@@ -115,6 +154,7 @@ TEST(low_level, xll_div_addback)
 
 int test_low_level(void)
 {
+    CALL_TEST(low_level, xll_add_1_sub_1);
     CALL_TEST(low_level, xll_add_sub);
     CALL_TEST(low_level, xll_div_normalise);
     CALL_TEST(low_level, xll_div_addback);
