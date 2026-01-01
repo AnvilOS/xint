@@ -6,50 +6,6 @@
 #include <ctype.h>
 #include <assert.h>
 
-#define MIN(a, b) ((a)<(b)?(a):(b))
-#define MAX(a, b) ((a)>(b)?(a):(b))
-
-static void trim_zeroes(xint_t u);
-static int get_highest_word(const xint_t x);
-static int get_highest_bit(const xword_t word);
-static int resize(xint_t x, int new_size);
-static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int Upos, int Vpos);
-static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int Upos, int Vpos);
-
-static void x_zero(xword_t *Y, size_t sz);
-void x_move(xword_t *Y, xword_t *X, size_t sz);
-static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
-static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
-xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
-xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
-xword_t xll_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
-xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
-static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
-xword_t xll_squ_1(xword_t *W, const xword_t *U, int sz);
-xword_t xll_squ_2(xword_t *W, const xword_t *U, int sz);
-
-#define XINT_SWAP(__type, __a, __b) \
-do {                                \
-    __type t = (__a);               \
-    (__a) = (__b);                  \
-    (__b) = t;                      \
-} while (0)
-
-#define FAST_RESIZE(__x, __s)       \
-do                                  \
-{                                   \
-    if ((__s) <= (__x)->capacity)   \
-    {                               \
-        (__x)->size = __s;          \
-    }                               \
-    else                            \
-    {                               \
-        _fast_resize((__x), (__s)); \
-    }                               \
-} while (0);
-
-void _fast_resize(xint_t x, int new_size);
-
 // Initialisation functions
 int xint_init(xint_t u)
 {
@@ -96,7 +52,7 @@ void xint_copy(xint_t u, const xint_t v)
     }
     int Vn = abs(v->size);
     FAST_RESIZE(u, Vn);
-    x_move(u->data, v->data, Vn);
+    xll_move(u->data, v->data, Vn);
     u->size = v->size;
 }
 
@@ -355,10 +311,10 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
 {
     int Un = abs(u->size);
     int Vn = abs(v->size);
-    int Wn = MAX(Un, Vn);
+    int Wn = XINT_MAX(Un, Vn);
 
     resize(w, Wn);
-    int part1_len = MIN(Un, Vn);
+    int part1_len = XINT_MIN(Un, Vn);
     int part2_len = abs(Un - Vn);
     xword_t *bigger = Un>Vn ? u->data : v->data;
     xword_t k = xll_add(w->data, u->data, v->data, part1_len);
@@ -490,16 +446,16 @@ void xint_sqr(xint_t w, const xint_t u)
     {
         // Move V to the top of W - in reverse because there may be overlap
         xword_t tmp[Un];
-        x_move(tmp, u->data, Un);
+        xll_move(tmp, u->data, Un);
         //U = tmp;
-        x_zero(w->data, Un);
+        xll_zero(w->data, Un);
         xword_t k = xll_squ_1(W, tmp, Un);
         assert(k == 0);
     }
     else
     {
         // Clear the bottom words
-        x_zero(w->data, Un);
+        xll_zero(w->data, Un);
         xword_t k = xll_squ_1(W, U, Un);
         assert(k == 0);
     }
@@ -521,7 +477,7 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, size_t Un, const xword_t *V
 
     SV[Ln] = xll_add(SV, V, V+Hn, Hn);
     SU[Ln] = xll_add(SU, U, U+Hn, Hn);
-    
+
     xll_mul_wrap(W+2*Hn, U+Hn, Hn, V+Hn, Hn);
     xll_mul_wrap(W, U, Hn, V, Hn);
     xll_mul_wrap(mul_m, SV, Hn+1, SU, Hn+1);
@@ -529,11 +485,11 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, size_t Un, const xword_t *V
     xword_t b;
     b = xll_sub(mul_m, mul_m, W+2*Hn, 2*Hn);
     b = xll_sub_1(mul_m+2*Hn, mul_m+2*Hn, b, 2);
-    
+
     b = xll_sub(mul_m, mul_m, W, 2*Hn);
     b = xll_sub_1(mul_m+2*Hn, mul_m+2*Hn, b, 2);
     assert(b==0);
-    
+
     xll_add(W+Hn, W+Hn, mul_m, 2*Hn+2);
 }
 
@@ -625,7 +581,7 @@ void xint_mul(xint_t w, const xint_t u, const xint_t v)
     if (w == v)
     {
         // Move V to the top of W - in reverse because there may be overlap
-        x_move(tmpv, V, Vn);
+        xll_move(tmpv, V, Vn);
         V = tmpv;
         //V = W + Un;
         //xll_mul(W, U, Un, tmp, Vn);
@@ -633,7 +589,7 @@ void xint_mul(xint_t w, const xint_t u, const xint_t v)
     if (w == u)
     {
         // Move U to the top of W - in reverse because there may be overlap
-        x_move(tmpu, U, Un);
+        xll_move(tmpu, U, Un);
         // Adjust the V pointer
         U = tmpu;
         //U = W + Vn;
@@ -905,13 +861,13 @@ xword_t xint_lshift(xint_t y, const xint_t x, int numbits)
     
     if (shift_bits == 0)
     {
-        x_move(Y + shift_words, X, Xn);
+        xll_move(Y + shift_words, X, Xn);
     }
     else
     {
         Y[Yn - 1] = x_lshift(Y + shift_words, X, Xn, shift_bits);
     }
-    x_zero(Y, shift_words);
+    xll_zero(Y, shift_words);
     trim_zeroes(y);
     return 0;
 }
@@ -939,7 +895,7 @@ xword_t xint_rshift(xint_t y, const xint_t x, int numbits)
 
     if (shift_bits == 0)
     {
-        x_move(Y, X + shift_words, Xn - shift_words);
+        xll_move(Y, X + shift_words, Xn - shift_words);
     }
     else
     {
@@ -1018,95 +974,6 @@ void _fast_resize(xint_t x, int new_size)
         x->data = new_mem;
     }
     x->size = new_size;
-}
-
-#if defined XDWORD_MUL
-#define mul_1_1(__k, __w, __u, __v) \
-do { \
-    xdword_t __x = (xdword_t)__u * __v; \
-    __w = (xword_t)__x; \
-    __k = (xword_t)(__x >> (XWORD_BITS)); \
-} while (0)
-#else
-#define mul_1_1(__k, __w, __u, __v) \
-do { \
-    xword_t __uh = __u >> (XWORD_BITS/2); \
-    xword_t __ul = __u & XWORD_HALF_MASK; \
-    xword_t __vh = __v >> (XWORD_BITS/2); \
-    xword_t __vl = __v & XWORD_HALF_MASK; \
-    xword_t __lo = __ul * __vl; \
-    xword_t __hi = __uh * __vh; \
-    xword_t __mid = __uh * __vl; \
-    xword_t __tmp = __ul * __vh; \
-    __mid += __lo >> (XWORD_BITS/2); \
-    __mid += __tmp; \
-    __hi += ((xword_t)(__mid < __tmp)) << (XWORD_BITS/2); \
-    __w = (__lo & XWORD_HALF_MASK) | (__mid << (XWORD_BITS/2)); \
-    __k = __hi + (__mid >> (XWORD_BITS/2)); \
-} while (0)
-#endif
-
-#if defined XDWORD_DIV
-#define div_2_1(__qh, __ql, __r, __u1, __u0, __v) \
-do { \
-    xdword_t __u = (xdword_t)__u1 << XWORD_BITS | __u0; \
-    xdword_t __full_q = __u / __v; \
-    __qh = __full_q >> XWORD_BITS; \
-    __ql = (xword_t)__full_q; \
-    __r = __u % __v; \
-} while (0)
-#else
-#define div_2_1(__qh, __ql, __r, __u1, __u0, __v) \
-do { \
-    assert(__u1 <= __v); \
-    xword_t __v1 = __v >> (XWORD_BITS/2); \
-    xword_t __v0 = __v & XWORD_HALF_MASK; \
-    xword_t __u0_1 = __u0 >> (XWORD_BITS/2); \
-    xword_t __u0_0 = __u0 & XWORD_HALF_MASK; \
-    xword_t __q1 = __u1 / __v1; \
-    xword_t __rhat = __u1 % __v1; \
-    while (__q1 * __v0 > (__rhat << (XWORD_BITS/2) | __u0_1)) \
-    { \
-        --__q1; \
-        __rhat += __v1; \
-        if (__rhat >= XWORD_HALF_MASK + 1) \
-        { \
-            break; \
-        } \
-    } \
-    xword_t __numer = (__u1 << (XWORD_BITS/2)) + __u0_1 - __q1 * __v; \
-    xword_t __q0 = __numer / __v1; \
-    __rhat = __numer % __v1; \
-    while (__q0 >= XWORD_HALF_MASK + 1 || __q0 * __v0 > (__rhat << (XWORD_BITS/2) | __u0_0)) \
-    { \
-        --__q0; \
-        __rhat += __v1; \
-        if (__rhat >= XWORD_HALF_MASK + 1) \
-        { \
-            break; \
-        } \
-    } \
-    __numer = (__numer << (XWORD_BITS/2)) + __u0_0 - __q0 * __v; \
-    __r = __numer; \
-    __ql = __q1 << (XWORD_BITS/2) | __q0; \
-    __qh = __q1 >> (XWORD_BITS/2); \
-} while (0)
-#endif
-
-static void x_zero(xword_t *Y, size_t sz)
-{
-    for (int i=0; i< sz; ++i)
-    {
-        Y[i] = 0;
-    }
-}
-
-void x_move(xword_t *Y, xword_t *X, size_t sz)
-{
-    for (int i=0; i< sz; ++i)
-    {
-        Y[i] = X[i];
-    }
 }
 
 static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
@@ -1452,7 +1319,7 @@ void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
     // Not needed
 }
 
-static xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
+xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
 {
     // Renamed Knuth's W to Q
     // S1. [Set r = 0, j = n - 1]
@@ -1523,12 +1390,12 @@ xword_t xll_squ_1(xword_t *WW, const xword_t *UU, int Un)
             // but t1 += k1 + (t0 < k0) can never overflow into t2
             t0 += k0;
             t1 += k1 + (t0 < k0);
-            
+
             // t2, t1, t0 += W[i]
             t0 += W[i];
             t1 += t0 < W[i];
             t2 += t1 < (t0 < W[i]);
-            
+
             W[i] = t0;
             k0 = t1;
             k1 = t2;
