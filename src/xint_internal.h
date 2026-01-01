@@ -10,6 +10,8 @@ typedef const struct xint_s *const_xint_ptr;
 #define XINT_MIN(__a, __b) ((__a)<(__b)?(__a):(__b))
 #define XINT_MAX(__a, __b) ((__a)>(__b)?(__a):(__b))
 
+#define XINT_ABS(__a) ((__a)>=0?(__a):-(__a))
+
 #define XINT_SWAP(__type, __a, __b) \
 do { \
     __type t = (__a); \
@@ -122,7 +124,61 @@ static inline void xll_move(xword_t *Y, xword_t *X, size_t sz)
     }
 }
 
-void xll_move(xword_t *Y, xword_t *X, size_t sz);
+static inline int get_highest_word(const xint_t x)
+{
+    int Xn = abs(x->size);
+    for (int j=Xn-1; j>=0; --j)
+    {
+        if (x->data[j])
+        {
+            return j;
+        }
+    }
+    return -1;
+}
+
+static inline int get_highest_bit(const xword_t word)
+{
+    if (word)
+    {
+        if (sizeof(xword_t) == 8)
+            return (XWORD_BITS - 1) - __builtin_clzl(word);
+        else
+            return (XWORD_BITS - 1) - __builtin_clz(word);
+    }
+    return -1;
+}
+
+static int resize(xint_t x, int new_size)
+{
+    if (new_size > x->capacity)
+    {
+        void *new_mem = realloc(x->data, sizeof(xword_t) * new_size);
+        if (new_mem == NULL)
+        {
+            return -1;
+        }
+        x->capacity = new_size;
+        x->data = new_mem;
+    }
+    x->size = x->size < 0 ? -new_size : new_size;
+    return 0;
+}
+
+static void trim_zeroes(xint_t u)
+{
+    int Un = abs(u->size);
+    for (int j=Un-1; j>=0; --j)
+    {
+        if (u->data[j] != 0)
+        {
+            resize(u, j + 1);
+            return;
+        }
+    }
+    u->size = 0;
+}
+
 int xll_cmp(const xword_t *U, const xword_t *V, int n);
 xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
@@ -136,16 +192,8 @@ xword_t xll_squ_2(xword_t *W, const xword_t *U, int sz);
 xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
 xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
-
-static void trim_zeroes(xint_t u);
-static int get_highest_word(const xint_t x);
-static int get_highest_bit(const xword_t word);
-static int resize(xint_t x, int new_size);
-static int add_or_sub(xint_t w, const xint_t u, const xint_t v, int Upos, int Vpos);
-static int add_or_sub_long(xint_t w, const xint_t u, unsigned long v, int Upos, int Vpos);
-
-static xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
-static xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
+xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
+xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 
 
 #endif // XINT_INTERNAL_H
