@@ -464,38 +464,103 @@ void xint_sqr(xint_t w, const xint_t u)
     return;
 }
 
-void xll_mul_wrap(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n);
+void xll_mul_wrap(xword_t *W, const xword_t *U, int m, const xword_t *V, int n);
 
-void xll_mul_karatsuba(xword_t *W, const xword_t *U, size_t Un, const xword_t *V, size_t Vn)
+void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, int Vn)
 {
-    size_t Hn = Un / 2;
-    size_t Ln = Un - Hn;
-
-    xword_t SU[33];
-    xword_t SV[33];
-    xword_t mul_m[66];
-
-    SV[Ln] = xll_add(SV, V, V+Hn, Hn);
-    SU[Ln] = xll_add(SU, U, U+Hn, Hn);
-
-    xll_mul_wrap(W+2*Hn, U+Hn, Hn, V+Hn, Hn);
-    xll_mul_wrap(W, U, Hn, V, Hn);
-    xll_mul_wrap(mul_m, SV, Hn+1, SU, Hn+1);
+    int u1n = Un / 2;
+    int u0n = Un - u1n;
     
-    xword_t b;
-    b = xll_sub(mul_m, mul_m, W+2*Hn, 2*Hn);
-    b = xll_sub_1(mul_m+2*Hn, mul_m+2*Hn, b, 2);
+    int v1n = Un / 2;
+    int v0n = Un - v1n;
+    
+    assert((u0n - u1n == 0) || (u0n - u1n == 1));
+    //assert((v0n - u1n == 0) || (u0n - u1n == 1));
+    assert(u0n == v0n);
 
-    b = xll_sub(mul_m, mul_m, W, 2*Hn);
-    b = xll_sub_1(mul_m+2*Hn, mul_m+2*Hn, b, 2);
-    assert(b==0);
+    xword_t *tmp = malloc(2*u0n*sizeof(xword_t));
+    
+    // Calculate the diffs first
+    int sign_diffs;
 
-    xll_add(W+Hn, W+Hn, mul_m, 2*Hn+2);
+    // W = (u1 - u0)
+    if ((u1n < u0n) || (xll_cmp(U+u0n, U, u0n) < 0))
+    {
+        xword_t b = xll_sub(W, U, U+u0n, u1n);
+        xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
+        assert(b==0);
+        sign_diffs = -1;
+    }
+    else
+    {
+        xword_t b = xll_sub(W, U+u0n, U, u1n);
+        xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
+        assert(b==0);
+        sign_diffs = 1;
+    }
+    
+    // W + u0n = (v1 - v0)
+    if ((v1n < v0n) || (xll_cmp(V+v0n, V, v0n) < 0))
+    {
+        xword_t b = xll_sub(W+u0n, V, V+v0n, v1n);
+        xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
+        assert(b==0);
+        sign_diffs *= -1;
+    }
+    else
+    {
+        xword_t b = xll_sub(W+u0n, V+v0n, V, v1n);
+        xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
+        assert(b==0);
+        sign_diffs *= 1;
+    }
+
+    // tmp = (u1-u0) * (v1-v0)
+    xll_mul_wrap(tmp, W, u0n, W+u0n, u0n);
+    
+    // Calculate the upper and lower products
+    xll_mul_wrap(W, U, u0n, V, u0n);
+    xll_mul_wrap(W+2*u0n, U+u0n, u0n, V+u0n, u0n);
+    
+    // Now calculate the middle term
+    // mid = u1v1 + u0v0 - ((u1-u0) * (v1-v0))
+    // We already have the 3rd term in tmp
+    if (sign_diffs == -1)
+    {
+        xword_t k;
+        k = xll_add(tmp, tmp, W, 2*u0n);
+        assert(k==0);
+        k = xll_add(tmp, tmp, W+2*u0n, 2*u0n);
+        assert(k==0);
+    }
+    else if (xll_cmp(tmp, W, 2*u0n) > 0)
+    {
+        xword_t b;
+        b = xll_sub(tmp, tmp, W, 2*u0n);
+        assert(b==0);
+        b = xll_sub(tmp, W+2*u0n, tmp, 2*u0n);
+        assert(b==0);
+    }
+    else
+    {
+        xword_t k;
+        k = xll_sub(tmp, W, tmp, 2*u0n);
+        assert(k==0);
+        k = xll_add(tmp, tmp, W+2*u0n, 2*u0n);
+        assert(k==0);
+    }
+    xword_t k;
+    k = xll_add(W+u0n, W+u0n, tmp, 2*u0n);
+    k = xll_add_1(W+3*u0n, W+3*u0n, k, u0n);
+    assert(k==0);
+    free(tmp);
 }
 
-void xll_mul_wrap(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
+int kara_cutoff = 100000;
+
+void xll_mul_wrap(xword_t *W, const xword_t *U, int m, const xword_t *V, int n)
 {
-    if ((m == 64 && n == 64) || (m == 32 && n == 32) || (m == 16 && n == 16))
+    if (n > kara_cutoff)
     {
         xll_mul_karatsuba(W, U, m, V, n);
     }
