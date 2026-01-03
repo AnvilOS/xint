@@ -474,11 +474,11 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     int v1n = Un / 2;
     int v0n = Un - v1n;
     
-    assert((u0n - u1n == 0) || (u0n - u1n == 1));
-    //assert((v0n - u1n == 0) || (u0n - u1n == 1));
-    assert(u0n == v0n);
+    XLL_ASSERT((u0n - u1n == 0) || (u0n - u1n == 1));
+    //XLL_ASSERT((v0n - u1n == 0) || (u0n - u1n == 1));
+    XLL_ASSERT(u0n == v0n);
 
-    xword_t *tmp = malloc(2*u0n*sizeof(xword_t));
+    xword_t *tmp = alloca(2*u0n*sizeof(xword_t));
     
     // Calculate the diffs first
     int sign_diffs;
@@ -488,14 +488,14 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     {
         xword_t b = xll_sub(W, U, U+u0n, u1n);
         xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
-        assert(b==0);
+        XLL_ASSERT(b==0);
         sign_diffs = -1;
     }
     else
     {
         xword_t b = xll_sub(W, U+u0n, U, u1n);
         xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
-        assert(b==0);
+        XLL_ASSERT(b==0);
         sign_diffs = 1;
     }
     
@@ -504,14 +504,14 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     {
         xword_t b = xll_sub(W+u0n, V, V+v0n, v1n);
         xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
-        assert(b==0);
+        XLL_ASSERT(b==0);
         sign_diffs *= -1;
     }
     else
     {
         xword_t b = xll_sub(W+u0n, V+v0n, V, v1n);
         xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
-        assert(b==0);
+        XLL_ASSERT(b==0);
         sign_diffs *= 1;
     }
 
@@ -529,31 +529,31 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     {
         xword_t k;
         k = xll_add(tmp, tmp, W, 2*u0n);
-        assert(k==0);
+        XLL_ASSERT(k==0);
         k = xll_add(tmp, tmp, W+2*u0n, 2*u0n);
-        assert(k==0);
+        XLL_ASSERT(k==0);
     }
     else if (xll_cmp(tmp, W, 2*u0n) > 0)
     {
         xword_t b;
         b = xll_sub(tmp, tmp, W, 2*u0n);
-        assert(b==0);
+        XLL_ASSERT(b==0);
         b = xll_sub(tmp, W+2*u0n, tmp, 2*u0n);
-        assert(b==0);
+        XLL_ASSERT(b==0);
     }
     else
     {
         xword_t k;
         k = xll_sub(tmp, W, tmp, 2*u0n);
-        assert(k==0);
+        XLL_ASSERT(k==0);
         k = xll_add(tmp, tmp, W+2*u0n, 2*u0n);
-        assert(k==0);
+        XLL_ASSERT(k==0);
     }
     xword_t k;
     k = xll_add(W+u0n, W+u0n, tmp, 2*u0n);
     k = xll_add_1(W+3*u0n, W+3*u0n, k, u0n);
-    assert(k==0);
-    free(tmp);
+    XLL_ASSERT(k==0);
+    //free(tmp);
 }
 
 int kara_cutoff = 100000;
