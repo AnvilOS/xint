@@ -182,7 +182,7 @@ void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p)
 
 static void trim(xint_t u)
 {
-    int Un = abs(u->size);
+    int Un = XINT_ABS(u->size);
     for (int j=Un-1; j>=0; --j)
     {
         if (u->data[j] != 0)

@@ -1005,8 +1005,8 @@ xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
         // negative carry
         // We check for underflow by comparing the minuend and subtrahend
         xword_t tmp1 = U[i] - b;
-        b = b > U[i] ? 1 : 0;
-        b += V[i] > tmp1 ? 1 : 0;
+        b = b > U[i];
+        b += V[i] > tmp1;
         W[i] = tmp1 - V[i];
         // S3. [Loop on j]
     }
@@ -1019,7 +1019,7 @@ xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
     for (size_t i=0; i<n; ++i)
     {
         xword_t tmp1 = U[i] - b;
-        b = b > U[i] ? 1 : 0;
+        b = b > U[i];
         W[i] = tmp1;
     }
     return b;

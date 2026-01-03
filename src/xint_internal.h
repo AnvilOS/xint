@@ -126,7 +126,7 @@ static inline void xll_move(xword_t *Y, xword_t *X, size_t sz)
 
 static inline int get_highest_word(const xint_t x)
 {
-    int Xn = abs(x->size);
+    int Xn = XINT_ABS(x->size);
     for (int j=Xn-1; j>=0; --j)
     {
         if (x->data[j])
@@ -167,7 +167,7 @@ static int resize(xint_t x, int new_size)
 
 static void trim_zeroes(xint_t u)
 {
-    int Un = abs(u->size);
+    int Un = XINT_ABS(u->size);
     for (int j=Un-1; j>=0; --j)
     {
         if (u->data[j] != 0)

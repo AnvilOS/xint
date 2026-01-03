@@ -9,6 +9,7 @@
 #include "test_prime.h"
 #include "test_ecc.h"
 #include "test_collatz.h"
+#include "test_karatsuba.h"
 
 int main(int argc, const char * argv[])
 {
@@ -22,4 +23,5 @@ int main(int argc, const char * argv[])
     test_prime();
     test_ecc();
     test_collatz();
+    test_karatsuba();
 }
