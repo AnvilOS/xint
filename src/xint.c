@@ -368,14 +368,34 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
             
         case -1: // U < V
             resize(w, Vn);
-            b = xll_sub(w->data, v->data, u->data, Un);
-            b = xll_sub_1(w->data+Un, v->data+Un, b, Vn-Un);
+            if (Un == 0)
+            {
+                xll_move(w->data, v->data, Vn);
+            }
+            else
+            {
+                b = xll_sub(w->data, v->data, u->data, Un);
+                if (Vn-Un)
+                {
+                    b = xll_sub_1(w->data+Un, v->data+Un, b, Vn-Un);
+                }
+            }
             break;
 
         case 1: // U > V
             resize(w, Un);
-            b = xll_sub(w->data, u->data, v->data, Vn);
-            b = xll_sub_1(w->data+Vn, u->data+Vn, b, Un-Vn);
+            if (Vn == 0)
+            {
+                xll_move(w->data, u->data, Un);
+            }
+            else
+            {
+                b = xll_sub(w->data, u->data, v->data, Vn);
+                if (Un-Vn)
+                {
+                    b = xll_sub_1(w->data+Vn, u->data+Vn, b, Un-Vn);
+                }
+            }
             break;
     }
     assert(b == 0);
@@ -487,14 +507,14 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     if ((u1n < u0n) || (xll_cmp(U+u0n, U, u0n) < 0))
     {
         xword_t b = xll_sub(W, U, U+u0n, u1n);
-        xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
+        if (b) xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
         XLL_ASSERT(b==0);
         sign_diffs = -1;
     }
     else
     {
         xword_t b = xll_sub(W, U+u0n, U, u1n);
-        xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
+        if (b) xll_sub_1(W+u1n, W+u1n, b, 2*u0n-u1n);
         XLL_ASSERT(b==0);
         sign_diffs = 1;
     }
@@ -503,14 +523,14 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     if ((v1n < v0n) || (xll_cmp(V+v0n, V, v0n) < 0))
     {
         xword_t b = xll_sub(W+u0n, V, V+v0n, v1n);
-        xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
+        if (b) xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
         XLL_ASSERT(b==0);
         sign_diffs *= -1;
     }
     else
     {
         xword_t b = xll_sub(W+u0n, V+v0n, V, v1n);
-        xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
+        if (b) xll_sub_1(W+u0n+v1n, W+u0n+u1n, b, 2*v0n-v1n);
         XLL_ASSERT(b==0);
         sign_diffs *= 1;
     }
@@ -525,9 +545,9 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     // Now calculate the middle term
     // mid = u1v1 + u0v0 - ((u1-u0) * (v1-v0))
     // We already have the 3rd term in tmp
+    xword_t k;
     if (sign_diffs == -1)
     {
-        xword_t k;
         k = xll_add(tmp, tmp, W, 2*u0n);
         XLL_ASSERT(k==0);
         k = xll_add(tmp, tmp, W+2*u0n, 2*u0n);
@@ -543,13 +563,12 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     }
     else
     {
-        xword_t k;
         k = xll_sub(tmp, W, tmp, 2*u0n);
         XLL_ASSERT(k==0);
         k = xll_add(tmp, tmp, W+2*u0n, 2*u0n);
-        XLL_ASSERT(k==0);
+        //XLL_ASSERT(k==0);
     }
-    xword_t k;
+    k = xll_add_1(W+3*u0n, W+3*u0n, k, u0n);
     k = xll_add(W+u0n, W+u0n, tmp, 2*u0n);
     k = xll_add_1(W+3*u0n, W+3*u0n, k, u0n);
     XLL_ASSERT(k==0);
@@ -1056,8 +1075,10 @@ xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
     return k;
 }
 
+#if !defined __arm__
 xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
+    XLL_ASSERT(n != 0);
     // This function will work if any or all of the xints are
     // in the same place in memory. e.g. a = a - a will work
     // S1. [Initialise.]
@@ -1077,9 +1098,12 @@ xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
     }
     return b;
 }
+#endif
 
+#if !defined __arm__
 xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
 {
+    XLL_ASSERT(n != 0);
     xword_t b = v;
     for (size_t i=0; i<n; ++i)
     {
@@ -1089,35 +1113,52 @@ xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
     }
     return b;
 }
+#endif
+
+#define AMAAL(__a, __b, __c, __d) \
+{ \
+    xword_t __t1, __t0; \
+    mul_1_1(__t1, __t0, __c, __d); \
+    __t0 += __b; \
+    __t1 += __t0 < __b; \
+    __t0 += __a; \
+    __t1 += __t0 < __a; \
+    __a = __t0; \
+    __b = __t1; \
+}
+
+#if !defined __arm__
+xword_t xll_mul_add_4(xword_t *W, const xword_t *U, size_t m, const xword_t *V)
+{
+    xword_t k0 = 0;
+    xword_t k1 = 0;
+    xword_t k2 = 0;
+    xword_t k3 = 0;
+    for (int j=0; j<m; ++j)
+    {
+        AMAAL(W[j], k0, U[j], V[0]);
+        AMAAL(k0, k1, U[j], V[1]);
+        AMAAL(k1, k2, U[j], V[2]);
+        AMAAL(k2, k3, U[j], V[3]);
+    }
+    W[m] = k0;
+    W[m+1] = k1;
+    W[m+2] = k2;
+    return k3;
+}
+#endif
 
 #if !defined __arm__
 xword_t xll_mul_add_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0)
 {
     xword_t k0 = 0;
     xword_t k1 = 0;
-    for (int j=0; j<m-1; ++j)
+    for (int j=0; j<m; ++j)
     {
-        xword_t p1, p0;
-        mul_1_1(p1, p0, U[j], v0);
-        p0 += k0;
-        p1 += p0 < k0;
-
-        p0 += W[j];
-        p1 += p0 < W[j];
-
-        xword_t t1, t0;
-        mul_1_1(t1, t0, U[j], v1);
-        t0 += k1;
-        t1 += t0 < k1;
-        t0 += p1;
-        t1 += t0 < p1;
-        
-        k0 = t0;
-        k1 = t1;
-        W[j] = p0;
+        AMAAL(W[j], k0, U[j], v0);
+        AMAAL(k0, k1, U[j], v1);
     }
-    //assert(k0 || k1);
-    W[m-1] = k0;
+    W[m] = k0;
     return k1;
 }
 #endif
@@ -1135,9 +1176,15 @@ void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size
     for (size_t j=1; j<n; ++j)
     {
         // M2. [We skip the optional check for zero multiplier]
+        if (n - j > 4)
+        {
+            W[j + m + 3] = xll_mul_add_4(W+j, U, m, V+j);
+            j += 3;
+        }
+        else
         if (n - j > 2)
         {
-            W[j + m +1] = xll_mul_add_2(W+j, U, m+1, V[j+1], V[j]);
+            W[j + m + 1] = xll_mul_add_2(W+j, U, m, V[j+1], V[j]);
             ++j;
         }
         else
@@ -1157,13 +1204,7 @@ xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
     for (size_t i=0; i<m; ++i)
     {
         // M4. [Multiply and add]
-        xword_t hi, lo;
-        mul_1_1(hi, lo, U[i], v);
-        lo += k;
-        hi += lo < k;
-        W[i] += lo;
-        hi += W[i] < lo;
-        k = hi;
+        AMAAL(W[i], k, U[i], v);
         // M5. [Loop on i]
     }
     return k;

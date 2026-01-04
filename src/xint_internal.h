@@ -12,7 +12,7 @@ typedef const struct xint_s *const_xint_ptr;
 
 #define XINT_ABS(__a) ((__a)>=0?(__a):-(__a))
 
-#define XLL_ASSERT(__a)
+#define XLL_ASSERT(__a) 
 //assert(__a)
 
 #define XINT_SWAP(__type, __a, __b) \
@@ -195,6 +195,7 @@ xword_t xll_squ_2(xword_t *W, const xword_t *U, int sz);
 xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
 xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
+xword_t xll_mul_add_4(xword_t *W, const xword_t *U, size_t m, const xword_t *V);
 xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 
