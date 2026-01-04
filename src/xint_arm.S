@@ -163,7 +163,7 @@ xll_sub:
     @ r2: V
     @ r3: Un replaced with U limit
 
-    stmdb	sp!, {r4, r5, r6 }
+    stmdb	sp!, { r4, r5 }
     subs	r1, #4
     subs	r2, #4
     subs	r0, #4
@@ -172,21 +172,19 @@ xll_sub:
     cmp     r0, r0
 
 loop_xll_sub:
-    ldr.w	r5, [r1, #4]!
-    ldr.w	r6, [r2, #4]!
-    sbcs    r6, r5, r6
+    ldr.w	r4, [r1, #4]!
+    ldr.w	r5, [r2, #4]!
+    sbcs    r5, r4, r5
     teq	    r3, r1
-    str.w	r6, [r0, #4]!
+    str.w	r5, [r0, #4]!
     bne.n   loop_xll_sub
 
     sbc	    r0, r0, r0
     and	    r0, r0, #1
-    ldmia.w	sp!, {r4, r5, r6 }
+    ldmia.w	sp!, { r4, r5 }
     bx      lr 
 
-
 @xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
-
 .global xll_sub_1
 xll_sub_1:
 
@@ -195,29 +193,29 @@ xll_sub_1:
     @ r2: v
     @ r3: Un replaced with U limit
 
-    stmdb	sp!, {r4, r5, r6 }
+    stmdb	sp!, { r4 }
     subs	r1, #4
     subs	r0, #4
     add.w	r3, r1, r3, lsl #2
 
     cmp     r0, r0
 
-    ldr.w	r5, [r1, #4]!
-    sbcs    r6, r5, r2
-    str.w	r6, [r0, #4]!
+    ldr.w	r4, [r1, #4]!
+    sbcs    r4, r4, r2
+    str.w	r4, [r0, #4]!
 
     teq	    r3, r1
     beq.n   done_xll_sub_1
 
 loop_xll_sub_1:
-    ldr.w	r5, [r1, #4]!
-    sbcs    r6, r5, $0
+    ldr.w	r4, [r1, #4]!
+    sbcs    r4, r4, $0
     teq	    r3, r1
-    str.w	r6, [r0, #4]!
+    str.w	r4, [r0, #4]!
     bne.n   loop_xll_sub_1
 
 done_xll_sub_1:
     sbc	    r0, r0, r0
     and	    r0, r0, #1
-    ldmia.w	sp!, {r4, r5, r6 }
+    ldmia.w	sp!, { r4 }
     bx      lr 
