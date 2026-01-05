@@ -449,8 +449,8 @@ int xint_suba_ulong(xint_t w, const xint_t u, const unsigned long v)
 // Multiplication functions
 void xint_sqr(xint_t w, const xint_t u)
 {
-    xint_mul(w, u, u);
-    return;
+//    xint_mul(w, u, u);
+//    return;
     if (u->size == 0)
     {
         w->size = 0;
@@ -469,15 +469,13 @@ void xint_sqr(xint_t w, const xint_t u)
         xll_move(tmp, u->data, Un);
         //U = tmp;
         xll_zero(w->data, Un);
-        xword_t k = xll_squ_1(W, tmp, Un);
-        assert(k == 0);
+        xll_squ_2(W, tmp, Un);
     }
     else
     {
         // Clear the bottom words
         xll_zero(w->data, Un);
-        xword_t k = xll_squ_1(W, U, Un);
-        assert(k == 0);
+        xll_squ_2(W, U, Un);
     }
 
     trim_zeroes(w);
@@ -648,7 +646,7 @@ void xint_mul(xint_t w, const xint_t u, const xint_t v)
     
     if (u == v)
     {
-       // return xint_sqr(w, u);
+       return xint_sqr(w, u);
     }
 
     FAST_RESIZE(w, Un + Vn);
@@ -1115,7 +1113,7 @@ xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
 }
 #endif
 
-#define AMAAL(__a, __b, __c, __d) \
+#define UMAAL(__a, __b, __c, __d) \
 { \
     xword_t __t1, __t0; \
     mul_1_1(__t1, __t0, __c, __d); \
@@ -1136,10 +1134,10 @@ xword_t xll_mul_add_4(xword_t *W, const xword_t *U, size_t m, const xword_t *V)
     xword_t k3 = 0;
     for (int j=0; j<m; ++j)
     {
-        AMAAL(W[j], k0, U[j], V[0]);
-        AMAAL(k0, k1, U[j], V[1]);
-        AMAAL(k1, k2, U[j], V[2]);
-        AMAAL(k2, k3, U[j], V[3]);
+        UMAAL(W[j], k0, U[j], V[0]);
+        UMAAL(k0, k1, U[j], V[1]);
+        UMAAL(k1, k2, U[j], V[2]);
+        UMAAL(k2, k3, U[j], V[3]);
     }
     W[m] = k0;
     W[m+1] = k1;
@@ -1155,8 +1153,8 @@ xword_t xll_mul_add_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_
     xword_t k1 = 0;
     for (int j=0; j<m; ++j)
     {
-        AMAAL(W[j], k0, U[j], v0);
-        AMAAL(k0, k1, U[j], v1);
+        UMAAL(W[j], k0, U[j], v0);
+        UMAAL(k0, k1, U[j], v1);
     }
     W[m] = k0;
     return k1;
@@ -1204,7 +1202,7 @@ xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
     for (size_t i=0; i<m; ++i)
     {
         // M4. [Multiply and add]
-        AMAAL(W[i], k, U[i], v);
+        UMAAL(W[i], k, U[i], v);
         // M5. [Loop on i]
     }
     return k;
@@ -1404,60 +1402,7 @@ xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     return R >> bit_shift;
 }
 
-xword_t xll_squ_1(xword_t *WW, const xword_t *UU, int Un)
-{
-    xword_t kk = 0;
-    for (int j=0; j<Un; ++j)
-    {
-        xword_t *W = WW+j+j;
-        const xword_t *U = UU+j;
-        xword_t k1 = 0;
-        xword_t k0 = 0;
- 
-        xword_t tmp;
-        // k, W[0] = W[0] + U[0] * U[0]
-        mul_1_1(k0, tmp, UU[j], UU[j]);
-        WW[2*j] += tmp;
-        k0 += WW[2*j] < tmp;
-        
-        for (int i=1; i<Un-j; ++i)
-        {
-            xword_t t2, t1, t0;
-            // t2, t1, t0 = U[i] * U[0]
-            mul_1_1(t1, t0, U[i], U[0]);
-            
-            // t2, t1, t0 = 2 * [ t2, t1, t0 ]
-            t2 = t1 >> (XWORD_BITS-1);
-            t1 <<= 1;
-            t1 |= t0 >> (XWORD_BITS-1);
-            t0 <<= 1;
-            
-            // t2, t1, t0 += k1, k0
-            // Max t0 is almost ffffffff
-            // Max k0 is almost ffffffff
-            // Max t1 is fffffffd at b504f333
-            // Max k1 is 1
-            // Therefore t0 += k0 can overflow into t1
-            // but t1 += k1 + (t0 < k0) can never overflow into t2
-            t0 += k0;
-            t1 += k1 + (t0 < k0);
-
-            // t2, t1, t0 += W[i]
-            t0 += W[i];
-            t1 += t0 < W[i];
-            t2 += t1 < (t0 < W[i]);
-
-            W[i] = t0;
-            k0 = t1;
-            k1 = t2;
-        }
-        W[Un-j] = k0 + kk;
-        kk = k1;
-    }
-    return 0;
-}
-
-xword_t xll_squ_2(xword_t *W, const xword_t *U, int Un)
+void xll_squ_2(xword_t *W, const xword_t *U, int Un)
 {
     W[0] = 0;
     W[Un] = xll_mul_1(W+1, U+1, Un-1, U[0]);
@@ -1470,16 +1415,9 @@ xword_t xll_squ_2(xword_t *W, const xword_t *U, int Un)
     xword_t kk = 0;
     for (int j=0; j<Un; ++j)
     {
-        xword_t t0;
-        xword_t t1;
-        // k, W[0] = W[0] + U[0] * U[0]
-        mul_1_1(t1, t0, U[j], U[j]);
-        t0 += kk;
-        t1 += t0 < kk;
-        W[2*j] += t0;
-        W[2*j+1] += W[2*j] < t0;
-        W[2*j+1] += t1;
-        kk = W[2*j+1] < t1;
+        UMAAL(W[2*j], kk, U[j], U[j]);
+        W[2*j+1] += kk;
+        kk = W[2*j+1] < kk;
     }
-    return 0;
+    XLL_ASSERT(kk==0);
 }

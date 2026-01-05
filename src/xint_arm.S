@@ -139,11 +139,11 @@ loop_mul_add_4:
     ldr.w	r8, [r0, #4]!
 
     umaal   r8, lr, r6, r7
+    cmp	    r2, r1
     umaal   lr, r11, r5, r7
     umaal   r11, r10, r4, r7
     umaal   r10, r9, r3, r7
 
-    cmp	    r2, r1
     str.w	r8, [r0]
     bne.n   loop_mul_add_4
     
