@@ -190,8 +190,7 @@ void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size
 void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
 xword_t xll_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
-xword_t xll_squ_1(xword_t *W, const xword_t *U, int sz);
-xword_t xll_squ_2(xword_t *W, const xword_t *U, int sz);
+void xll_squ_2(xword_t *W, const xword_t *U, int sz);
 xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
 xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);

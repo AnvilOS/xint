@@ -219,3 +219,72 @@ done_xll_sub_1:
     and	    r0, r0, #1
     ldmia.w	sp!, { r4 }
     bx      lr 
+
+@void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
+.global xll_mul_asm
+xll_mul_asm:
+    @ r0: W
+    @ r1: U
+    @ r2: Un
+    @ r3: V
+    @ r4: Vn
+    @ r5: w
+    @ r6: u
+    @ r7: v
+    @ r8, k
+    @ r9, Ulim
+    @ r10, Vlim
+
+    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10 }
+    ldr.w   r4, [sp, #28]
+
+    subs	r0, #4
+    subs	r1, #4
+    subs	r3, #4
+    mov	    r8, #0
+    add.w	r9, r1, r2, lsl #2
+    add.w	r10, r3, r4, lsl #2
+
+    // Load v[0]
+    ldr.w	r7, [r3, #4]!
+
+loop_mul1:
+    ldr.w	r6, [r1, #4]!
+    mov     r5, #0 
+    umaal   r5, r8, r6, r7
+    cmp	    r9, r1
+    str.w	r5, [r0, #4]!
+    bne.n   loop_mul1
+
+outer:
+    str.w	r8, [r0, #4]!
+    mov     r8, #0
+
+    // Move W and U back
+    subs    r0, r0, r2, lsl #2
+    subs    r1, r1, r2, lsl #2
+
+    ldr.w	r7, [r3, #4]!
+    b       loop_mula1
+
+.align 16
+loop_mula1:
+    ldr.w	r6, [r1, #4]!
+    ldr.w	r5, [r0, #4]!
+    cmp	    r9, r1
+    umaal   r5, r8, r6, r7
+    str.w	r5, [r0]
+    bne.n   loop_mula1
+
+    cmp	    r10, r3
+    beq.n   done
+    b       outer
+
+ done:
+    str.w	r8, [r0, #4]!
+
+    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10 }
+    bx      lr 
+
+
+
