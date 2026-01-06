@@ -225,66 +225,97 @@ done_xll_sub_1:
 xll_mul_asm:
     @ r0: W
     @ r1: U
-    @ r2: Un
-    @ r3: V
-    @ r4: Vn
+    @ r2: Ulim
+    @ r3: tmp
+    @ r4: u
     @ r5: w
-    @ r6: u
-    @ r7: v
-    @ r8, k
-    @ r9, Ulim
-    @ r10, Vlim
+    @ r6: v3
+    @ r7: v2
+    @ r8: v1
+    @ r9: v0
+    @ r10: k3
+    @ r11: k2
+    @ r12: k1
+    @ lr:  k0
+    @ sp+52: Vn
+    @ sp+0: Un
+    @ sp+4: V
+    @ sp+8: Vlim 
 
-    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10 }
-    ldr.w   r4, [sp, #28]
+    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
+    subs    sp, sp, #16
 
     subs	r0, #4
     subs	r1, #4
     subs	r3, #4
-    mov	    r8, #0
-    add.w	r9, r1, r2, lsl #2
-    add.w	r10, r3, r4, lsl #2
+
+    str.w   r2, [sp, #0]
+    str.w   r3, [sp, #4]
+
+    mov	    lr, #0
+
+    // Vlim
+    ldr.w   r3, [sp, #4]
+    ldr.w   r2, [sp, #52]
+    add.w	r3, r3, r2, lsl #2
+    str.w   r3, [sp, #8]
+
+    // Ulim
+    ldr.w   r3, [sp, #0]
+    add.w	r2, r1, r3, lsl #2
+
+    @ tst     r4, #3
+    @ beq.n   m2:
 
     // Load v[0]
-    ldr.w	r7, [r3, #4]!
+    ldr.w   r3, [sp, #4]
+    ldr.w	r9, [r3, #4]!
+    str.w	r3, [sp, #4]
+    b       loop_mul1
 
+.align 4
 loop_mul1:
-    ldr.w	r6, [r1, #4]!
+    ldr.w	r4, [r1, #4]!
     mov     r5, #0 
-    umaal   r5, r8, r6, r7
-    cmp	    r9, r1
+    umaal   r5, lr, r4, r9
+    cmp	    r2, r1
     str.w	r5, [r0, #4]!
     bne.n   loop_mul1
+    str.w	lr, [r0, #4]!
+
+m4:
+
 
 outer:
-    str.w	r8, [r0, #4]!
-    mov     r8, #0
+    mov     lr, #0
 
     // Move W and U back
-    subs    r0, r0, r2, lsl #2
-    subs    r1, r1, r2, lsl #2
+    ldr.w   r3, [sp, #0]
+    subs    r0, r0, r3, lsl #2
+    subs    r1, r1, r3, lsl #2
 
-    ldr.w	r7, [r3, #4]!
+    ldr.w   r3, [sp, #4]
+    ldr.w	r9, [r3, #4]!
+    str.w   r3, [sp, #4]
     b       loop_mula1
 
-.align 16
+.align 4
 loop_mula1:
-    ldr.w	r6, [r1, #4]!
+    ldr.w	r4, [r1, #4]!
     ldr.w	r5, [r0, #4]!
-    cmp	    r9, r1
-    umaal   r5, r8, r6, r7
+    cmp	    r2, r1
+    umaal   r5, lr, r4, r9
     str.w	r5, [r0]
     bne.n   loop_mula1
+ 
+    str.w	lr, [r0, #4]!
 
-    cmp	    r10, r3
-    beq.n   done
-    b       outer
+    ldr.w   lr, [sp, #4]
+    ldr.w   r3, [sp, #8]
 
- done:
-    str.w	r8, [r0, #4]!
+    cmp	    lr, r3
+    bne     outer
 
-    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10 }
-    bx      lr 
+    adds    sp, sp, #16
 
-
-
+    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
