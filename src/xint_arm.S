@@ -338,34 +338,48 @@ loop_mul4:
     str.w	k3, [pW, #4]!
 
 outer:
-    // Use k0 as a temp
+    // Check whether we've reached Vlim, use k0 as a temp
     ldr.w   k0, pV
     ldr.w   tmp, Vlim
     cmp	    k0, tmp
     beq     all_done
-
-    mov     k0, #0
 
     // Move W and U back
     ldr.w   tmp, Un
     subs    pW, pW, tmp, lsl #2
     subs    pU, pU, tmp, lsl #2
 
+    // Load v0, v1, v2, v3
     ldr.w   tmp, pV
     ldr.w	v0, [tmp, #4]!
-    str.w   tmp, pV
+    ldr.w	v1, [tmp, #4]!
+    ldr.w	v2, [tmp, #4]!
+    ldr.w	v3, [tmp, #4]!
+    str.w	tmp, pV
+    // Load k0, k1, k2, k3
+    mov     k0, #0
+    mov     k1, k0
+    mov     k2, k0
+    mov     k3, k0
+
     b       loop_mula1
 
 .align 4
 loop_mula1:
     ldr.w	uu, [pU, #4]!
     ldr.w	ww, [pW, #4]!
-    cmp	    Ulim, pU
     umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    umaal   k1, k2, uu, v2
+    umaal   k2, k3, uu, v3
     str.w	ww, [pW]
+    cmp	    Ulim, pU
     bne.n   loop_mula1
  
     str.w	k0, [pW, #4]!
+    str.w	k1, [pW, #4]!
+    str.w	k2, [pW, #4]!
+    str.w	k3, [pW, #4]!
 
     b       outer
 
