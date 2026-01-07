@@ -194,7 +194,7 @@ static void trim(xint_t u)
     u->size = 0;
 }
 
-void xint_mod_fast_224(xword_t *w, xword_t *u, struct xint_ecc_curve_s c)
+void xint_mod_fast_224(xword_t *w, xword_t *u, const struct xint_ecc_curve_s *c)
 {
 //    // From NIST SP 800-186
 //    //   for 224-bit
@@ -284,7 +284,7 @@ void xint_mod_fast_224(xword_t *w, xword_t *u, struct xint_ecc_curve_s c)
 //#undef TMP_BUILDER
 }
 
-void xint_mod_fast_256(xword_t *w, xword_t *A, struct xint_ecc_curve_s c)
+void xint_mod_fast_256(xword_t *w, xword_t *A, const struct xint_ecc_curve_s *c)
 {
     // T  = (A7 || A6 || A5 || A4 || A3 || A2 || A1 || A0 )
     // S1 = ( A15 || A14 || A13 || A12 || A11 || 0 || 0 || 0 )
@@ -298,7 +298,7 @@ void xint_mod_fast_256(xword_t *w, xword_t *A, struct xint_ecc_curve_s c)
 
     xword_t tmp_data[8];
     memset(w, 0, p256.nwords*XWORD_BITS/8);
-    
+
 #if XDWORD_MAX
 #define TMP_BUILDER(__t7, __t6, __t5, __t4, __t3, __t2, __t1, __t0) \
     tmp_data[7] = __t7; \
@@ -311,12 +311,11 @@ void xint_mod_fast_256(xword_t *w, xword_t *A, struct xint_ecc_curve_s c)
     tmp_data[0] = __t0;
     long k;
     // T
-    TMP_BUILDER(A[7], A[6], A[5], A[4], A[3], A[2], A[1], A[0]);
-    k = xll_add(w, w, tmp_data, p256.nwords);
+    xll_move(w, A, p256.nwords);
 
     // S1
     TMP_BUILDER(A[15], A[14], A[13], A[12], A[11], 0, 0, 0);
-    k += xll_add(w, w, tmp_data, p256.nwords);
+    k = xll_add(w, w, tmp_data, p256.nwords);
     k += xll_add(w, w, tmp_data, p256.nwords);
 
     // S2
@@ -410,22 +409,22 @@ void xint_mod_fast_256(xword_t *w, xword_t *A, struct xint_ecc_curve_s c)
 #undef TMP_BUILDER
 }
 
-void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t c)
+void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
 {
-    xword_t q[2 * c.nwords];
-    int mul_sz = 2 * c.nwords;
+    xword_t q[2 * c->nwords];
+    int mul_sz = 2 * c->nwords;
     while(u[mul_sz - 1] == 0)
     {
         --mul_sz;
     }
     int cmp;
-    if (mul_sz < c.nwords)
+    if (mul_sz < c->nwords)
     {
         cmp = -1;
     }
-    else if (mul_sz == c.nwords)
+    else if (mul_sz == c->nwords)
     {
-        cmp = xll_cmp(u, c.p->data, c.nwords);
+        cmp = xll_cmp(u, c->p->data, c->nwords);
     }
     else
     {
@@ -433,12 +432,12 @@ void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t c)
     }
     if (cmp >= 0)
     {
-        int n = c.p->size;
-        int m = mul_sz - c.p->size;
+        int n = c->p->size;
+        int m = mul_sz - c->p->size;
         u[mul_sz] = 0;
-        xll_div(q, u, c.p->data, m, n);
+        xll_div(q, u, c->p->data, m, n);
     }
-    memcpy(w, u, c.nwords * XWORD_BITS / 8);
+    memcpy(w, u, c->nwords * XWORD_BITS / 8);
 }
 
 static int extend(xint_t x, int new_size)
@@ -461,72 +460,72 @@ static int extend(xint_t x, int new_size)
     return 0;
 }
 
-void xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t c)
+void xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
-    xword_t k = xll_add(w, u, v, c.nwords);
-    if (k || xll_cmp(w, c.p->data, c.nwords) >= 0)
+    xword_t k = xll_add(w, u, v, c->nwords);
+    if (k || xll_cmp(w, c->p->data, c->nwords) >= 0)
     {
-        xll_sub(w, w, c.p->data, c.nwords);
+        xll_sub(w, w, c->p->data, c->nwords);
     }
 }
 
-void xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t c)
+void xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
-    xword_t b = xll_sub(w, u, v, c.nwords);
+    xword_t b = xll_sub(w, u, v, c->nwords);
     if (b)
     {
-        xll_add(w, w, c.p->data, c.nwords);
+        xll_add(w, w, c->p->data, c->nwords);
     }
 }
 
-void xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t c)
+void xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
-    xll_mul_algm(tmp, u, c.nwords, v, c.nwords);
-    c.xint_mod_fast(w, tmp, c);
+    xll_mul_algm(tmp, u, c->nwords, v, c->nwords);
+    c->xint_mod_fast(w, tmp, c);
 }
 
-void xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_curve_t c)
+void xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_curve_t *c)
 {
-    xword_t k = xll_mul_1(w, u, c.nwords, v);
-    while (k > 0 || xll_cmp(w, c.p->data, c.nwords) >= 0)
+    xword_t k = xll_mul_1(w, u, c->nwords, v);
+    while (k > 0 || xll_cmp(w, c->p->data, c->nwords) >= 0)
     {
-        k -= xll_sub(w, w, c.p->data, c.nwords);
+        k -= xll_sub(w, w, c->p->data, c->nwords);
     }
 }
 
-void xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t c)
+void xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
-    xll_squ_2(tmp, u, c.nwords);
-    c.xint_mod_fast(w, tmp, c);
+    xll_squ_2(tmp, u, c->nwords);
+    c->xint_mod_fast(w, tmp, c);
 }
 
-void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_ecc_curve_t curve)
+void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_ecc_curve_t *c)
 {
     // Convert back to affine
     xint_t X = XINT_INIT_VAL;
     xint_t Y = XINT_INIT_VAL;
     xint_t z_inv = XINT_INIT_VAL;
-    xint_mod_inverse(z_inv, u->z, curve.p);
+    xint_mod_inverse(z_inv, u->z, c->p);
     
     xint_copy(X, z_inv);
-    xint_mod_sqr(X->data, X->data, curve);
-    xint_mod_mul(X->data, X->data, u->x->data, curve);
+    xint_mod_sqr(X->data, X->data, c);
+    xint_mod_mul(X->data, X->data, u->x->data, c);
     
     xint_copy(Y, z_inv);
-    xint_mod_sqr(Y->data, Y->data, curve);
-    xint_mod_mul(Y->data, Y->data, z_inv->data, curve);
-    xint_mod_mul(Y->data, Y->data, u->y->data, curve);
+    xint_mod_sqr(Y->data, Y->data, c);
+    xint_mod_mul(Y->data, Y->data, z_inv->data, c);
+    xint_mod_mul(Y->data, Y->data, u->y->data, c);
     
     xint_copy(w->x, X);
     xint_copy(w->y, Y);
     w->is_at_infinity = 0;
 }
 
-void ecc_zaddu(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t c)
+void ecc_zaddu(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t *c)
 {
-    xword_t T6[c.nwords];
+    xword_t T6[c->nwords];
     
     xint_mod_sub(T6, T1, T4, c);
     xint_mod_mul(T3, T3, T6, c);
@@ -546,11 +545,11 @@ void ecc_zaddu(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, 
     xint_mod_sub(T5, T5, T2, c);
 }
 
-void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t c)
+void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t *c)
 {
-    xword_t T6[c.nwords];
-    xword_t T7[c.nwords];
-    xword_t T8[c.nwords];
+    xword_t T6[c->nwords];
+    xword_t T7[c->nwords];
+    xword_t T8[c->nwords];
 
     // 1
     xint_mod_sub(T6, T1, T4, c);        // T6 = X1 - X2
@@ -613,21 +612,21 @@ void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, c
     xint_mod_sub(T5, T7, T5, c);
 }
 
-void ecc_dblu(xword_t *x3, xword_t *y3, xword_t *z3, xword_t *x1, xword_t *y1, xword_t *z1, const xint_ecc_curve_t c)
+void ecc_dblu(xword_t *x3, xword_t *y3, xword_t *z3, xword_t *x1, xword_t *y1, xword_t *z1, const xint_ecc_curve_t *c)
 {
     // 4M + 6S
 
     // Use algorithm from Wikibooks
-    xword_t S[c.nwords];
-    xword_t M[c.nwords];
-    xword_t tmp[c.nwords];
+    xword_t S[c->nwords];
+    xword_t M[c->nwords];
+    xword_t tmp[c->nwords];
 
     // M = 3.x1^2 + a.z1^4
     xint_mod_sqr(M, x1, c);
     xint_mod_mul_ulong(M, M, 3, c);
     xint_mod_sqr(tmp, z1, c);
     xint_mod_sqr(tmp, tmp, c);
-    xint_mod_mul(tmp, tmp, c.a->data, c);
+    xint_mod_mul(tmp, tmp, c->a->data, c);
     xint_mod_add(M, M, tmp, c);
     
     // S = 4.x1.y1^2
@@ -648,37 +647,39 @@ void ecc_dblu(xword_t *x3, xword_t *y3, xword_t *z3, xword_t *x1, xword_t *y1, x
     xint_mod_sub(y3, y3, tmp, c);
     
     // z3 = 2.y1.z1
-    memcpy(z3, y1, c.nwords*XWORD_BITS/8);
+    memcpy(z3, y1, c->nwords*XWORD_BITS/8);
     xint_mod_mul(z3, z3, z1, c);
     xint_mod_mul_ulong(z3, z3, 2, c);
     
     // Now update Pj
-    memcpy(x1, S, c.nwords*XWORD_BITS/8);
-    memcpy(y1, tmp, c.nwords*XWORD_BITS/8);
-    memcpy(z1, z3, c.nwords*XWORD_BITS/8);
+    memcpy(x1, S, c->nwords*XWORD_BITS/8);
+    memcpy(y1, tmp, c->nwords*XWORD_BITS/8);
+    memcpy(z1, z3, c->nwords*XWORD_BITS/8);
 }
 
-void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k_in, const xint_ecc_curve_t c)
+#include <stdio.h>
+
+void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k_in, const xint_ecc_curve_t *c)
 {
     // Force b0 of k to be a 1
     xint_t k = XINT_INIT_VAL;
     xint_copy(k, k_in);
     if (xint_get_bit(k, 0) == 0)
     {
-        xint_add(k, k, c.n);
+        xint_add(k, k, c->n);
     }
     
     int nbits = xint_highest_bit_num(k) + 1;
-    xword_t Rx[2][c.nwords];
-    xword_t Ry[2][c.nwords];
-    xword_t Rz[2][c.nwords];
+    xword_t Rx[2][c->nwords];
+    xword_t Ry[2][c->nwords];
+    xword_t Rz[2][c->nwords];
 
     int bit = xint_get_bit(k, 1);
     
     // To Jacobian
-    memcpy(Rx[bit], P->x->data, c.nwords*XWORD_BITS/8);
-    memcpy(Ry[bit], P->y->data, c.nwords*XWORD_BITS/8);
-    memset(Rz[bit], 0, c.nwords*XWORD_BITS/8);
+    memcpy(Rx[bit], P->x->data, c->nwords*XWORD_BITS/8);
+    memcpy(Ry[bit], P->y->data, c->nwords*XWORD_BITS/8);
+    memset(Rz[bit], 0, c->nwords*XWORD_BITS/8);
     Rz[bit][0] = 1;
     
     // 3P = 2P + P
@@ -697,12 +698,12 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
 
     xint_ecc_point_jacobian_t Rj;
     xint_point_jacobian_init(Rj);
-    extend(Rj->x, c.nwords);
-    extend(Rj->y, c.nwords);
-    extend(Rj->z, c.nwords);
-    memcpy(Rj->x->data, Rx[0], c.nwords*XWORD_BITS/8);
-    memcpy(Rj->y->data, Ry[0], c.nwords*XWORD_BITS/8);
-    memcpy(Rj->z->data, Rz[0], c.nwords*XWORD_BITS/8);
+    extend(Rj->x, c->nwords);
+    extend(Rj->y, c->nwords);
+    extend(Rj->z, c->nwords);
+    memcpy(Rj->x->data, Rx[0], c->nwords*XWORD_BITS/8);
+    memcpy(Rj->y->data, Ry[0], c->nwords*XWORD_BITS/8);
+    memcpy(Rj->z->data, Rz[0], c->nwords*XWORD_BITS/8);
 
     from_jacobian(R, Rj, c);
     xint_delete(k);
@@ -718,4 +719,3 @@ int xint_ecc_verify(         )
 {
     return 0;
 }
-
