@@ -12,8 +12,7 @@ typedef const struct xint_s *const_xint_ptr;
 
 #define XINT_ABS(__a) ((__a)>=0?(__a):-(__a))
 
-#define XLL_ASSERT(__a) 
-//assert(__a)
+#define XLL_ASSERT(__a) assert(__a)
 
 #define XINT_SWAP(__type, __a, __b) \
 do { \

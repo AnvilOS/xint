@@ -33,7 +33,7 @@ struct xint_ecc_curve_s
     const xint_t h;
     void (*point_add)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const struct xint_ecc_curve_s curve);
     void (*point_double)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const struct xint_ecc_curve_s curve);
-    void (*xint_mod_fast)(xword_t *w, xword_t *u, const struct xint_ecc_curve_s *c);
+    void (*xint_mod_fast)(xword_t *w, xword_t *u);
 };
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;
 
@@ -46,10 +46,10 @@ int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v);
 
 void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
 
-void xint_mod_fast_224(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
-void xint_mod_fast_256(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
-void xint_mod_fast_384(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
-void xint_mod_fast_521(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
+void xint_mod_fast_224(xword_t *w, xword_t *u);
+void xint_mod_fast_256(xword_t *w, xword_t *u);
+void xint_mod_fast_384(xword_t *w, xword_t *u);
+void xint_mod_fast_521(xword_t *w, xword_t *u);
 
 void xint_point_init(xint_ecc_point_t p);
 void xint_point_delete(xint_ecc_point_t p);

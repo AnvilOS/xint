@@ -1036,6 +1036,7 @@ int xll_cmp(const xword_t *U, const xword_t *V, int n)
     return 0;
 }
 
+#if !defined __arm__
 xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
     // W[] = U[] + V[]
@@ -1059,6 +1060,7 @@ xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
     // Return Wn
     return k;
 }
+#endif
 
 xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
 {

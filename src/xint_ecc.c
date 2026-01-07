@@ -194,7 +194,7 @@ static void trim(xint_t u)
     u->size = 0;
 }
 
-void xint_mod_fast_224(xword_t *w, xword_t *u, const struct xint_ecc_curve_s *c)
+void xint_mod_fast_224(xword_t *w, xword_t *u)
 {
 //    // From NIST SP 800-186
 //    //   for 224-bit
@@ -284,7 +284,7 @@ void xint_mod_fast_224(xword_t *w, xword_t *u, const struct xint_ecc_curve_s *c)
 //#undef TMP_BUILDER
 }
 
-void xint_mod_fast_256(xword_t *w, xword_t *A, const struct xint_ecc_curve_s *c)
+void xint_mod_fast_256(xword_t *w, xword_t *A)
 {
     // T  = (A7 || A6 || A5 || A4 || A3 || A2 || A1 || A0 )
     // S1 = ( A15 || A14 || A13 || A12 || A11 || 0 || 0 || 0 )
@@ -297,7 +297,7 @@ void xint_mod_fast_256(xword_t *w, xword_t *A, const struct xint_ecc_curve_s *c)
     // D4 = ( A13 || 0 || A11 || A10 || A9 || 0 || A15 || A14 ).
 
     xword_t tmp_data[8];
-    memset(w, 0, p256.nwords*XWORD_BITS/8);
+    xll_zero(w, p256.nwords);
 
 #if XDWORD_MAX
 #define TMP_BUILDER(__t7, __t6, __t5, __t4, __t3, __t2, __t1, __t0) \
@@ -437,7 +437,7 @@ void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
         u[mul_sz] = 0;
         xll_div(q, u, c->p->data, m, n);
     }
-    memcpy(w, u, c->nwords * XWORD_BITS / 8);
+    xll_move(w, u, c->nwords);
 }
 
 static int extend(xint_t x, int new_size)
@@ -460,7 +460,7 @@ static int extend(xint_t x, int new_size)
     return 0;
 }
 
-void xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
+static void inline xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t k = xll_add(w, u, v, c->nwords);
     if (k || xll_cmp(w, c->p->data, c->nwords) >= 0)
@@ -469,7 +469,7 @@ void xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc
     }
 }
 
-void xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
+static void inline xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t b = xll_sub(w, u, v, c->nwords);
     if (b)
@@ -478,14 +478,14 @@ void xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc
     }
 }
 
-void xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
+static void inline xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
     xll_mul_algm(tmp, u, c->nwords, v, c->nwords);
-    c->xint_mod_fast(w, tmp, c);
+    c->xint_mod_fast(w, tmp);
 }
 
-void xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_curve_t *c)
+static void inline xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_curve_t *c)
 {
     xword_t k = xll_mul_1(w, u, c->nwords, v);
     while (k > 0 || xll_cmp(w, c->p->data, c->nwords) >= 0)
@@ -494,11 +494,11 @@ void xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_
     }
 }
 
-void xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t *c)
+static void inline xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
     xll_squ_2(tmp, u, c->nwords);
-    c->xint_mod_fast(w, tmp, c);
+    c->xint_mod_fast(w, tmp);
 }
 
 void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_ecc_curve_t *c)
@@ -647,17 +647,15 @@ void ecc_dblu(xword_t *x3, xword_t *y3, xword_t *z3, xword_t *x1, xword_t *y1, x
     xint_mod_sub(y3, y3, tmp, c);
     
     // z3 = 2.y1.z1
-    memcpy(z3, y1, c->nwords*XWORD_BITS/8);
+    xll_move(z3, y1, c->nwords);
     xint_mod_mul(z3, z3, z1, c);
     xint_mod_mul_ulong(z3, z3, 2, c);
     
     // Now update Pj
-    memcpy(x1, S, c->nwords*XWORD_BITS/8);
-    memcpy(y1, tmp, c->nwords*XWORD_BITS/8);
-    memcpy(z1, z3, c->nwords*XWORD_BITS/8);
+    xll_move(x1, S, c->nwords);
+    xll_move(y1, tmp, c->nwords);
+    xll_move(z1, z3, c->nwords);
 }
-
-#include <stdio.h>
 
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k_in, const xint_ecc_curve_t *c)
 {
@@ -677,9 +675,9 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
     int bit = xint_get_bit(k, 1);
     
     // To Jacobian
-    memcpy(Rx[bit], P->x->data, c->nwords*XWORD_BITS/8);
-    memcpy(Ry[bit], P->y->data, c->nwords*XWORD_BITS/8);
-    memset(Rz[bit], 0, c->nwords*XWORD_BITS/8);
+    xll_move(Rx[bit], P->x->data, c->nwords);
+    xll_move(Ry[bit], P->y->data, c->nwords);
+    xll_zero(Rz[bit], c->nwords);
     Rz[bit][0] = 1;
     
     // 3P = 2P + P
@@ -701,15 +699,16 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xin
     extend(Rj->x, c->nwords);
     extend(Rj->y, c->nwords);
     extend(Rj->z, c->nwords);
-    memcpy(Rj->x->data, Rx[0], c->nwords*XWORD_BITS/8);
-    memcpy(Rj->y->data, Ry[0], c->nwords*XWORD_BITS/8);
-    memcpy(Rj->z->data, Rz[0], c->nwords*XWORD_BITS/8);
+    xll_move(Rj->x->data, Rx[0], c->nwords);
+    xll_move(Rj->y->data, Ry[0], c->nwords);
+    xll_move(Rj->z->data, Rz[0], c->nwords);
 
     from_jacobian(R, Rj, c);
     xint_delete(k);
     xint_point_jacobian_delete(Rj);
 }
 
+#if 0
 int xint_ecc_sign_det(char *sig, char *key, char *digest, int digest_len, xint_ecc_curve_t c)
 {
     return 0;
@@ -719,3 +718,102 @@ int xint_ecc_verify(         )
 {
     return 0;
 }
+
+void ecc_gen_deterministic_k(char *m, char *x, xint_t q_int, int qlen)
+{
+    // a.  Process m through the hash function H
+    int hlen = 32;
+    uint8_t h1[hlen];
+    sha256_calc(h1, (uint8_t *)m, strlen(m));
+
+    xint_t h1_int = XINT_INIT_VAL;
+    xint_from_bin(h1_int, h1, 32);
+    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - 163);
+
+    xint_t v_int = XINT_INIT_VAL;
+    xint_assign_str(v_int, x, 0);
+
+    xint_t z2_int = XINT_INIT_VAL;
+    xint_mod(z2_int, h1_int, q_int);
+
+    int rolen = (qlen + 7) >> 3;
+    int rlen = rolen * 8;
+        
+    // b. V = 0x01 0x01 0x01 ... 0x01 vlen = 8*ceil(hlen/8)
+    uint8_t V[(hlen / 8 ) * 8];
+    memset(V, 0x01, sizeof(V));
+        
+    // c. K = 0x00 0x00 0x00 ... 0x00
+    uint8_t K[(hlen / 8 ) * 8];
+    memset(K, 0x00, sizeof(K));
+
+    // d. K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
+    uint8_t tmp_vec[100];
+    memset(tmp_vec, 0, sizeof(tmp_vec));
+    memcpy(tmp_vec, V, sizeof(V));
+    tmp_vec[32] = 0x00;
+    xint_to_buf(tmp_vec + 33, 21, v_int);
+    xint_to_buf(tmp_vec + 54, 21, z2_int);
+    hmac_calc(K, K, sizeof(K), tmp_vec, 75);
+
+    // e. V = HMAC_K(V)
+    hmac_calc(V, K, sizeof(K), V, sizeof(V));
+
+    // f. K = HMAC_K(V || 0x01 || int2octets(x) || bits2octets(h1))
+    memset(tmp_vec, 0, sizeof(tmp_vec));
+    memcpy(tmp_vec, V, 32);
+    tmp_vec[32] = 0x01;
+    xint_to_buf(tmp_vec + 33, 21, v_int);
+    xint_to_buf(tmp_vec + 54, 21, z2_int);
+    hmac_calc(K, K, sizeof(K), tmp_vec, 75);
+
+    // g. V = HMAC_K(V)
+    hmac_calc(V, K, sizeof(K), V, sizeof(V));
+
+    // h.
+    xint_t k = XINT_INIT_VAL;
+    while (1)
+    {
+        // 1.  Set T to the empty sequence length tlen
+        uint8_t T[100];
+        int tlen = 0;
+        // 2.  While tlen < qlen, do the following:
+        while (tlen < qlen)
+        {
+            // V = HMAC_K(V)
+            // T = T || V
+            hmac_calc(V, K, sizeof(K), V, sizeof(V));
+            memcpy(T + tlen, V, sizeof(V));
+            tlen += sizeof(V) * 8;
+        }
+            
+        // 3.  Compute:
+        // k = bits2int(T)
+        xint_from_bin(k, T, 32);
+        xint_rshift(k, k, xint_size(k) * XWORD_BITS - 163);
+        
+        // If 1 <= k <= q-1 done
+        if (xint_cmp_ulong(k, 1) >= 0 && xint_cmp(k, q_int) < 0)
+        {
+            break;
+        }
+        else
+        {
+            // else compute:
+            // K = HMAC_K(V || 0x00)
+            // V = HMAC_K(V)
+            uint8_t tmpV[33];
+            memcpy(tmpV, V, sizeof(V));
+            tmpV[32] = 0x00;
+            hmac_calc(K, K, sizeof(K), tmpV, sizeof(tmpV));
+            hmac_calc(V, K, sizeof(K), V, sizeof(V));
+        }
+    }
+
+//    char *k_str = xint_to_string(k, 16);
+//    ASSERT_EQ(0, strcasecmp(k_str, "23AF4074C90A02B3FE61D286D5C87F425E6BDD81B"));
+//    free(k_str);
+//
+//    END_TEST(ecc);
+}
+#endif

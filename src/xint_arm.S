@@ -154,6 +154,38 @@ loop_mul_add_4:
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
 
 
+@xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
+.global xll_add
+xll_add:
+
+    @ r0: W 
+    @ r1: U
+    @ r2: V
+    @ r3: Un replaced with U limit
+
+    stmdb	sp!, { r4, r5 }
+    subs	r1, #4
+    subs	r2, #4
+    subs	r0, #4
+    add.w	r3, r1, r3, lsl #2
+
+    cmn     r0, #0
+    b       loop_xll_add
+
+.align 4
+loop_xll_add:
+    ldr.w	r4, [r1, #4]!
+    ldr.w	r5, [r2, #4]!
+    adcs    r5, r4, r5
+    teq	    r3, r1
+    str.w	r5, [r0, #4]!
+    bne.n   loop_xll_add
+
+    mov     r0, #0
+    adc	    r0, r0, #0
+    ldmia.w	sp!, { r4, r5 }
+    bx      lr 
+
 @xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 .global xll_sub
 xll_sub:
@@ -170,7 +202,9 @@ xll_sub:
     add.w	r3, r1, r3, lsl #2
 
     cmp     r0, r0
+    b       loop_xll_sub
 
+.align 4
 loop_xll_sub:
     ldr.w	r4, [r1, #4]!
     ldr.w	r5, [r2, #4]!
@@ -372,8 +406,8 @@ loop_mula1:
     umaal   k0, k1, uu, v1
     umaal   k1, k2, uu, v2
     umaal   k2, k3, uu, v3
-    str.w	ww, [pW]
     cmp	    Ulim, pU
+    str.w	ww, [pW]
     bne.n   loop_mula1
  
     str.w	k0, [pW, #4]!
