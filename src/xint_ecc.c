@@ -36,7 +36,7 @@ const xint_ecc_curve_t p224 =
     XINT_CONST(p224_h),
     0,
     0,
-    xint_mod_std
+    xint_mod_fast_224
 };
 
 const xword_t p256_p[]  = { X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0x00000000), X(0x00000000, 0x00000000), X(0x00000001, 0xFFFFFFFF) };
@@ -80,7 +80,7 @@ const xint_ecc_curve_t p384 =
     XINT_CONST(p384_h),
     0,
     0,
-    xint_mod_std
+    xint_mod_fast_384
 };
 
 
@@ -103,7 +103,7 @@ const xint_ecc_curve_t p521 =
     XINT_CONST(p521_h),
     0,
     0,
-    xint_mod_std
+    xint_mod_fast_521
 };
 
 int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
@@ -196,6 +196,7 @@ static void trim(xint_t u)
 
 void xint_mod_fast_224(xword_t *w, xword_t *u)
 {
+    xint_mod_std(w, u, &p224);
 //    // From NIST SP 800-186
 //    //   for 224-bit
 //    //   B =  ( T + S1 + S2 – D1 – D2 ) mod p,
@@ -409,9 +410,19 @@ void xint_mod_fast_256(xword_t *w, xword_t *A)
 #undef TMP_BUILDER
 }
 
+void xint_mod_fast_384(xword_t *w, xword_t *u)
+{
+    xint_mod_std(w, u, &p384);
+}
+
+void xint_mod_fast_521(xword_t *w, xword_t *u)
+{
+    xint_mod_std(w, u, &p521);
+}
+
 void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
 {
-    xword_t q[2 * c->nwords];
+    xword_t q[40];
     int mul_sz = 2 * c->nwords;
     while(u[mul_sz - 1] == 0)
     {
