@@ -298,143 +298,128 @@ xll_mul_asm:
 #define tmp r3
 #define uu r4
 #define ww r5
-#define v3 r6
-#define v2 r7
-#define v1 r8
-#define v0 r9
-#define k3 r10
-#define k2 r11
-#define k1 r12
-#define k0 lr
-#define Vn [sp, #52]
+#define v0 r6
+#define v1 r7
+#define v2 r8
+#define v3 r9
+#define k0 r10
+#define k1 r11
+#define k2 r12
+#define k3 lr
+#define Vn [sp, #48]
 #define Un [sp, #0]
 #define pV [sp, #4]
 #define Vlim [sp, #8]
 
     stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
-    subs    sp, sp, #16
+    subs    sp, sp, #12
 
-    subs	pW, #4
-    subs	pU, #4
-    subs	r3, #4
+    // Vlim - use k0 as a 2nd tmp
     str.w   r3, pV
-    str.w   r2, Un
-
-    // Vlim - use r2(Ulim) as a tnp
-    ldr.w   tmp, pV
-    ldr.w   r2, Vn
-    add.w	tmp, tmp, r2, lsl #2
+    ldr.w   k0, Vn
+    add.w	tmp, tmp, k0, lsl #2
     str.w   tmp, Vlim
 
     // Ulim
-    ldr.w   tmp, Un
-    add.w	Ulim, pU, tmp, lsl #2
+    str.w   r2, Un
+    add.w	Ulim, pU, r2, lsl #2
 
-    ldr.w   tmp, Vn
-    tst     tmp, #3
+    // k0 still contains Vn
+    tst     k0, #3
     beq.n   m4
 
 m1:
     // Load v0
     ldr.w   tmp, pV
-    ldr.w	v0, [tmp, #4]!
+    ldr.w	v0, [tmp], #4
     str.w	tmp, pV
     // Load k0
     mov     k0, #0
-    b       loop_mul1
+@     b       loop_mul1
 
-.align 4
+@ .align 4
 loop_mul1:
-    ldr.w	uu, [pU, #4]!
+    ldr.w	uu, [pU], #4
     mov     ww, #0 
     umaal   ww, k0, uu, v0
     cmp	    Ulim, pU
-    str.w	ww, [pW, #4]!
+    str.w	ww, [pW], #4
     bne.n   loop_mul1
-    str.w	k0, [pW, #4]!
-
-    b       outer
+    str.w	k0, [pW], #4
+    b       xll_mul_ma4_outer
 
 m4:
     // Load v0, v1, v2, v3
     ldr.w   tmp, pV
-    ldr.w	v0, [tmp, #4]!
-    ldr.w	v1, [tmp, #4]!
-    ldr.w	v2, [tmp, #4]!
-    ldr.w	v3, [tmp, #4]!
+    ldmia   tmp!, { v0, v1, v2, v3 }
     str.w	tmp, pV
+    
     // Load k0, k1, k2, k3
     mov     k0, #0
     mov     k1, k0
     mov     k2, k0
     mov     k3, k0
-    b       loop_mul4
+    b       xll_mul_m4_loop
 
 .align 4
-loop_mul4:
-    ldr.w	uu, [pU, #4]!
+xll_mul_m4_loop:
+    ldr.w	uu, [pU], #4
     mov     ww, #0 
     umaal   ww, k0, uu, v0
     umaal   k0, k1, uu, v1
     umaal   k1, k2, uu, v2
     umaal   k2, k3, uu, v3
     cmp	    Ulim, pU
-    str.w	ww, [pW, #4]!
-    bne.n   loop_mul4
+    str.w	ww, [pW], #4
+    bne.n   xll_mul_m4_loop
 
-    str.w	k0, [pW, #4]!
-    str.w	k1, [pW, #4]!
-    str.w	k2, [pW, #4]!
-    str.w	k3, [pW, #4]!
+    stmia   pW!, { k0, k1, k2, k3 }
+ //   b       outer
 
-outer:
+//.align 4
+xll_mul_ma4_outer:
     // Check whether we've reached Vlim, use k0 as a temp
     ldr.w   k0, pV
     ldr.w   tmp, Vlim
     cmp	    k0, tmp
-    beq     all_done
+    beq     xll_mul_done
 
-    // Move W and U back
+    // Move W and U back Un places
     ldr.w   tmp, Un
     subs    pW, pW, tmp, lsl #2
     subs    pU, pU, tmp, lsl #2
 
     // Load v0, v1, v2, v3
     ldr.w   tmp, pV
-    ldr.w	v0, [tmp, #4]!
-    ldr.w	v1, [tmp, #4]!
-    ldr.w	v2, [tmp, #4]!
-    ldr.w	v3, [tmp, #4]!
+    ldmia   tmp!, { v0, v1, v2, v3 }
     str.w	tmp, pV
-    // Load k0, k1, k2, k3
+
+    // Set k0, k1, k2, k3 to 0
     mov     k0, #0
     mov     k1, k0
     mov     k2, k0
     mov     k3, k0
 
-    b       loop_mula1
+    b       xll_mul_ma4_loop
 
 .align 4
-loop_mula1:
-    ldr.w	uu, [pU, #4]!
-    ldr.w	ww, [pW, #4]!
+xll_mul_ma4_loop:
+    ldr.w	uu, [pU], #4
+    ldr.w	ww, [pW]
     umaal   ww, k0, uu, v0
     umaal   k0, k1, uu, v1
     umaal   k1, k2, uu, v2
     umaal   k2, k3, uu, v3
     cmp	    Ulim, pU
-    str.w	ww, [pW]
-    bne.n   loop_mula1
+    str.w	ww, [pW], #4
+    bne.n   xll_mul_ma4_loop
  
-    str.w	k0, [pW, #4]!
-    str.w	k1, [pW, #4]!
-    str.w	k2, [pW, #4]!
-    str.w	k3, [pW, #4]!
+    stmia   pW!, { k0, k1, k2, k3 }
 
-    b       outer
+    b       xll_mul_ma4_outer
 
-all_done:
+xll_mul_done:
 
-    adds    sp, sp, #16
+    adds    sp, sp, #12
 
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
