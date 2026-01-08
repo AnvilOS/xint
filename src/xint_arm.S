@@ -335,9 +335,7 @@ m1:
     str.w	tmp, pV
     // Load k0
     mov     k0, #0
-@     b       loop_mul1
 
-@ .align 4
 loop_mul1:
     ldr.w	uu, [pU], #4
     mov     ww, #0 
@@ -345,8 +343,55 @@ loop_mul1:
     cmp	    Ulim, pU
     str.w	ww, [pW], #4
     bne.n   loop_mul1
+
     str.w	k0, [pW], #4
     b       xll_mul_ma4_outer
+
+m2:
+    // Load v0, v1
+    ldr.w   tmp, pV
+    ldmia   tmp!, { v0, v1 }
+    str.w	tmp, pV
+    // Load k0, k1
+    mov     k0, #0
+    mov     k1, k0
+
+loop_mul2:
+    ldr.w	uu, [pU], #4
+    mov     ww, #0 
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    cmp	    Ulim, pU
+    str.w	ww, [pW], #4
+    bne.n   loop_mul2
+    
+    stmia   pW!, { k0, k1 }
+    b       xll_mul_ma4_outer
+
+m3:
+    // Load v0
+    ldr.w   tmp, pV
+    ldmia   tmp!, { v0, v1, v2 }
+    str.w	tmp, pV
+
+    // Load k0, k1, k2
+    mov     k0, #0
+    mov     k1, k0
+    mov     k2, k0
+
+loop_mul3:
+    ldr.w	uu, [pU], #4
+    mov     ww, #0 
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    umaal   k1, k2, uu, v2
+    cmp	    Ulim, pU
+    str.w	ww, [pW], #4
+    bne.n   loop_mul3
+    
+    stmia   pW!, { k0, k1, k2 }
+    b       xll_mul_ma4_outer
+
 
 m4:
     // Load v0, v1, v2, v3
