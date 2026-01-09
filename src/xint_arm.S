@@ -388,6 +388,14 @@ xll_mul_asm:
     tst     k0, #3
     beq.n   m4
 
+    and     k0, k0, #3
+
+    cmp     k0, #2
+    beq.n   m2
+
+    cmp     k0, #3
+    beq.n   m3
+
 m1:
     // Load v0
     ldr.w   tmp, pV
