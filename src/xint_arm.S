@@ -387,12 +387,9 @@ xll_mul_asm:
     // k0 still contains Vn
     tst     k0, #3
     beq.n   m4
-
     and     k0, k0, #3
-
     cmp     k0, #2
     beq.n   m2
-
     cmp     k0, #3
     beq.n   m3
 
@@ -411,7 +408,6 @@ loop_mul1:
     cmp	    Ulim, pU
     str.w	ww, [pW], #4
     bne.n   loop_mul1
-
     str.w	k0, [pW], #4
     b       xll_mul_ma4_outer
 
@@ -432,7 +428,6 @@ loop_mul2:
     cmp	    Ulim, pU
     str.w	ww, [pW], #4
     bne.n   loop_mul2
-    
     stmia   pW!, { k0, k1 }
     b       xll_mul_ma4_outer
 
@@ -455,7 +450,6 @@ loop_mul3:
     cmp	    Ulim, pU
     str.w	ww, [pW], #4
     bne.n   loop_mul3
-    
     stmia   pW!, { k0, k1, k2 }
     b       xll_mul_ma4_outer
 
@@ -464,7 +458,6 @@ m4:
     ldr.w   tmp, pV
     ldmia   tmp!, { v0, v1, v2, v3 }
     str.w	tmp, pV
-    
     // Load k0, k1, k2, k3
     mov     k0, #0
     mov     k1, k0
@@ -483,9 +476,8 @@ xll_mul_m4_loop:
     cmp	    Ulim, pU
     str.w	ww, [pW], #4
     bne.n   xll_mul_m4_loop
-
     stmia   pW!, { k0, k1, k2, k3 }
- //   b       outer
+//   b       xll_mul_ma4_outer
 
 //.align 4
 xll_mul_ma4_outer:
@@ -496,8 +488,6 @@ xll_mul_ma4_outer:
     beq     xll_mul_done
 
     // Move W and U back Un places
-    // XXXXX: Is this wrong. Should be
-    // back however many we just did?
     ldr.w   tmp, Un
     subs    pW, pW, tmp, lsl #2
     subs    pU, pU, tmp, lsl #2
@@ -514,7 +504,6 @@ xll_mul_ma4_outer:
     mov     k3, k0
 
     b       xll_mul_ma4_loop
-
 .align 4
 xll_mul_ma4_loop:
     ldr.w	uu, [pU], #4
@@ -528,11 +517,8 @@ xll_mul_ma4_loop:
     bne.n   xll_mul_ma4_loop
  
     stmia   pW!, { k0, k1, k2, k3 }
-
     b       xll_mul_ma4_outer
 
 xll_mul_done:
-
     adds    sp, sp, #12
-
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
