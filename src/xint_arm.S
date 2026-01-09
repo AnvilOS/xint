@@ -194,6 +194,54 @@ xll_add_done:
     ldmia.w	sp!, { r4, r5, r6, r7 }
     bx      lr 
 
+@xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
+.global xll_add_1
+.align 4
+xll_add_1:
+
+    @ r0: W 
+    @ r1: U
+    @ r2: v
+    @ r3: Un then U limit
+
+    stmdb	sp!, { r4, r5 }
+    cmn     r0, #0
+    sub     r12, r3, #1
+    add     r3, r1, r3, lsl #2
+
+    // Add in tne v first
+    ldr.w   r4, [r1], #4
+    adcs    r4, r4, r2
+    mov     r2, #0
+    str.w   r4, [r0], #4
+    teq	    r3, r1
+    beq.n   xll_add_1_done
+
+    tst     r12, #1
+    beq.n   xll_add_1_loop
+
+    ldr.w   r4, [r1], #4
+    adcs    r4, r4, r2
+    teq	    r3, r1
+    str.w   r4, [r0], #4
+    bne.n   xll_add_1_loop
+    b       xll_add_1_done
+
+.align 4
+xll_add_1_loop:
+    ldmia   r1!, { r4, r5 }
+    adcs    r4, r4, r2
+    adcs    r5, r5, r2
+    teq	    r3, r1
+    stmia   r0!, { r4, r5 }
+    bne.n   xll_add_1_loop
+
+xll_add_1_done:
+    mov     r0, r2
+    adc	    r0, r0, r2
+    ldmia.w	sp!, { r4, r5 }
+    bx      lr 
+
 @xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 .global xll_sub
 .align 4
@@ -236,6 +284,7 @@ xll_sub_done:
 
 @xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
 .global xll_sub_1
+.align 4
 xll_sub_1:
 
     @ r0: W 
@@ -243,31 +292,42 @@ xll_sub_1:
     @ r2: v
     @ r3: Un replaced with U limit
 
-    stmdb	sp!, { r4 }
-    subs	r1, #4
-    subs	r0, #4
-    add.w	r3, r1, r3, lsl #2
-
+    stmdb	sp!, { r4, r5 }
     cmp     r0, r0
+    sub     r12, r3, #1
+    add     r3, r1, r3, lsl #2
 
-    ldr.w	r4, [r1, #4]!
+    // Sub tne v first
+    ldr.w   r4, [r1], #4
     sbcs    r4, r4, r2
-    str.w	r4, [r0, #4]!
-
+    mov     r2, #0
+    str.w   r4, [r0], #4
     teq	    r3, r1
-    beq.n   done_xll_sub_1
+    beq.n   xll_sub_1_done
 
-loop_xll_sub_1:
-    ldr.w	r4, [r1, #4]!
-    sbcs    r4, r4, $0
+    tst     r12, #1
+    beq.n   xll_sub_1_loop
+
+    ldr.w   r4, [r1], #4
+    sbcs    r4, r4, r2
     teq	    r3, r1
-    str.w	r4, [r0, #4]!
-    bne.n   loop_xll_sub_1
+    str.w   r4, [r0], #4
+    bne.n   xll_sub_1_loop
+    b       xll_sub_1_done
 
-done_xll_sub_1:
-    sbc	    r0, r0, r0
+.align 4
+xll_sub_1_loop:
+    ldmia   r1!, { r4, r5 }
+    sbcs    r4, r4, r2
+    sbcs    r5, r5, r2
+    teq	    r3, r1
+    stmia   r0!, { r4, r5 }
+    bne.n   xll_sub_1_loop
+
+xll_sub_1_done:
+    sbcs    r0, r0, r0
     and	    r0, r0, #1
-    ldmia.w	sp!, { r4 }
+    ldmia.w	sp!, { r4, r5 }
     bx      lr 
 
 @void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
@@ -369,11 +429,10 @@ loop_mul2:
     b       xll_mul_ma4_outer
 
 m3:
-    // Load v0
+    // Load v0, v1, v2
     ldr.w   tmp, pV
     ldmia   tmp!, { v0, v1, v2 }
     str.w	tmp, pV
-
     // Load k0, k1, k2
     mov     k0, #0
     mov     k1, k0
@@ -391,7 +450,6 @@ loop_mul3:
     
     stmia   pW!, { k0, k1, k2 }
     b       xll_mul_ma4_outer
-
 
 m4:
     // Load v0, v1, v2, v3
@@ -430,6 +488,8 @@ xll_mul_ma4_outer:
     beq     xll_mul_done
 
     // Move W and U back Un places
+    // XXXXX: Is this wrong. Should be
+    // back however many we just did?
     ldr.w   tmp, Un
     subs    pW, pW, tmp, lsl #2
     subs    pU, pU, tmp, lsl #2

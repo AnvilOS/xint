@@ -181,7 +181,19 @@ static void trim_zeroes(xint_t u)
     u->size = 0;
 }
 
-int xll_cmp(const xword_t *U, const xword_t *V, int n);
+static int xll_cmp(const xword_t *U, const xword_t *V, int n)
+{
+    for (int j=n-1; j>=0; --j)
+    {
+        if (U[j] != V[j])
+        {
+            return U[j] < V[j] ? -1 : 1;
+        }
+    }
+    return 0;
+}
+
+//int xll_cmp(const xword_t *U, const xword_t *V, int n);
 xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n);

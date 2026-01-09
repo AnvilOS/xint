@@ -318,7 +318,10 @@ int xint_adda(xint_t w, const xint_t u, const xint_t v)
     int part2_len = XINT_ABS(Un - Vn);
     xword_t *bigger = Un>Vn ? u->data : v->data;
     xword_t k = xll_add(w->data, u->data, v->data, part1_len);
+    if (part2_len)
+    {
     k = xll_add_1(w->data+part1_len, bigger+part1_len, k, part2_len);
+    }
     if (k)
     {
         resize(w, Wn + 1);
@@ -333,15 +336,21 @@ int xint_adda_ulong(xint_t w, const xint_t u, const unsigned long v)
     {
         // fits in a single xword
         int Un = XINT_ABS(u->size);
-        // This is the only failure point
-        if (resize(w, Un) == -1)
+        int Wn = XINT_MAX(Un, 1);
+        resize(w, Wn);
+        xword_t k;
+        if (Un == 0)
         {
-            return -1;
+            w->data[0] = v;
+            k = 0;
         }
-        xword_t k = xll_add_1(w->data, u->data, (xword_t)v, Un);
+        else
+        {
+            k = xll_add_1(w->data, u->data, (xword_t)v, Un);
+        }
         if (k)
         {
-            resize(w, Un + 1);
+            resize(w, w->size + 1);
             w->data[Un] = k;
         }
         return 0;
@@ -482,7 +491,19 @@ void xint_sqr(xint_t w, const xint_t u)
     return;
 }
 
-void xll_mul_wrap(xword_t *W, const xword_t *U, int m, const xword_t *V, int n);
+int kara_cutoff = 100000;
+
+#define xll_mul_wrap(W, U, m, V, n) \
+{ \
+    if (n > kara_cutoff) \
+    { \
+        xll_mul_karatsuba(W, U, m, V, n); \
+    } \
+    else \
+    { \
+        xll_mul_algm(W, U, m, V, n); \
+    } \
+}
 
 void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, int Vn)
 {
@@ -571,20 +592,6 @@ void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, i
     k = xll_add_1(W+3*u0n, W+3*u0n, k, u0n);
     XLL_ASSERT(k==0);
     //free(tmp);
-}
-
-int kara_cutoff = 100000;
-
-void xll_mul_wrap(xword_t *W, const xword_t *U, int m, const xword_t *V, int n)
-{
-    if (n > kara_cutoff)
-    {
-        xll_mul_karatsuba(W, U, m, V, n);
-    }
-    else
-    {
-        xll_mul_algm(W, U, m, V, n);
-    }
 }
 
 void xint_mul(xint_t w, const xint_t u, const xint_t v)
@@ -1024,18 +1031,6 @@ xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
     return 0;
 }
 
-int xll_cmp(const xword_t *U, const xword_t *V, int n)
-{
-    for (int j=n-1; j>=0; --j)
-    {
-        if (U[j] != V[j])
-        {
-            return U[j] < V[j] ? -1 : 1;
-        }
-    }
-    return 0;
-}
-
 #if !defined __arm__
 xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
@@ -1062,9 +1057,11 @@ xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 }
 #endif
 
+#if !defined __arm__
 xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
 {
     // W[] = U[] + v
+    XLL_ASSERT(n != 0);
     xword_t k = v;
     for (size_t j=0; j<n; ++j)
     {
@@ -1074,6 +1071,7 @@ xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
     }
     return k;
 }
+#endif
 
 #if !defined __arm__
 xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
@@ -1163,6 +1161,7 @@ xword_t xll_mul_add_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_
 }
 #endif
 
+#if !defined __arm__
 void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
 {
     // Based on Knuth's algorithm M.
@@ -1194,6 +1193,7 @@ void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size
         // M6. [Loop on j]
     }
 }
+#endif
 
 #if !defined __arm__
 xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
