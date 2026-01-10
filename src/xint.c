@@ -1010,17 +1010,6 @@ void _fast_resize(xint_t x, int new_size)
     x->size = new_size;
 }
 
-xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
-{
-    xword_t ret = X[sz - 1] >> (XWORD_BITS - shift_bits);
-    for (int j=sz-1; j>=1; --j)
-    {
-        Y[j] = (X[j] << shift_bits) | (X[j - 1] >> (XWORD_BITS - shift_bits));
-    }
-    Y[0] = X[0] << shift_bits;
-    return ret;
-}
-
 xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
 {
     for (int j=0; j<sz - 1; ++j)

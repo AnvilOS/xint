@@ -118,7 +118,7 @@ static inline void xll_zero(xword_t *Y, size_t sz)
     }
 }
 
-static inline void xll_move(xword_t *Y, xword_t *X, size_t sz)
+static inline void xll_move(xword_t *Y, const xword_t *X, size_t sz)
 {
     for (int i=0; i< sz; ++i)
     {
@@ -191,6 +191,17 @@ static int xll_cmp(const xword_t *U, const xword_t *V, int n)
         }
     }
     return 0;
+}
+
+static inline xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
+{
+    xword_t ret = X[sz - 1] >> (XWORD_BITS - shift_bits);
+    for (int j=sz-1; j>=1; --j)
+    {
+        Y[j] = (X[j] << shift_bits) | (X[j - 1] >> (XWORD_BITS - shift_bits));
+    }
+    Y[0] = X[0] << shift_bits;
+    return ret;
 }
 
 //int xll_cmp(const xword_t *U, const xword_t *V, int n);
