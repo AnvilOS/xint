@@ -553,22 +553,24 @@ xll_squ_asm:
     @ r5: w
     @ r6: u
     @ r7: v
-    @ r8, k
-    @ r9, Ulim
-    @ r10, Vlim
+    @ r8: k
+    @ r9: Ulim
+    @ r10: Vlim
+    @ r11: ww1
 #define pW r0
 #define pU r1
 #define Un r2
 #define pV r3
 #define Vn r4
-#define ww r5
+#define ww0 r5
 #define uu r6
 #define v r7
 #define k r8
 #define Ulim r9
 #define Vlim r10
+#define ww1 r11
 
-    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10 }
+    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11 }
 
     // W[0] = 0;
     mov     r4, #0
@@ -593,10 +595,10 @@ sq_m1:
 
 sq_loop_mul1:
     ldr.w	uu, [pU], #4
-    mov     ww, #0 
-    umaal   ww, k, uu, v
+    mov     ww0, #0 
+    umaal   ww0, k, uu, v
     cmp	    Ulim, pU
-    str.w	ww, [pW], #4
+    str.w	ww0, [pW], #4
     bne.n   sq_loop_mul1
 
     str.w	k, [pW], #4
@@ -621,10 +623,10 @@ sq_xll_mul_ma4_outer:
 .align 4
 sq_xll_mul_ma4_loop:
     ldr.w	uu, [pU], #4
-    ldr.w   ww, [pW]
-    umaal   ww, k, uu, v
+    ldr.w   ww0, [pW]
+    umaal   ww0, k, uu, v
     cmp	    Ulim, pU
-    str.w	ww, [pW], #4
+    str.w	ww0, [pW], #4
     bne.n   sq_xll_mul_ma4_loop
 
     str.w   k, [pW], #4
@@ -632,6 +634,7 @@ sq_xll_mul_ma4_loop:
     b       sq_xll_mul_ma4_outer
 
 sq_xll_mul_done:
+    // W[2*Un-1] = 0;
     mov     r12, #0
     str.w	r12, [pW], #4
 
@@ -648,9 +651,10 @@ sq_xll_mul_done:
     mov     k, #0
 
 sq_shift_loop:
-    ldr.w   ww, [pW]
-    adcs    ww, ww, ww
-    str.w	ww, [pW], #4
+    ldmia   pW, { ww0, ww1 }
+    adcs    ww0, ww0, ww0
+    adcs    ww1, ww1, ww1
+    stmia   pW!, { ww0, ww1 }
     teq	    Ulim, pW
     bne.n   sq_shift_loop
 
@@ -659,28 +663,26 @@ sq_shift_loop:
     sub.w	pU, pU, Vn, lsl #2
 
     // Set Ulim again
-    add.w	Ulim, pU, Vn, lsl #2
+    add.w	Ulim, pW, Vn, lsl #3
 
     // Clear carry
     cmn     r0, #0
     // k = 0
     mov     k, #0
 
+    b       sq_xll_sq_loop
+
+.align 4
 sq_xll_sq_loop:
     ldr.w	uu, [pU], #4
-    ldr.w   ww, [pW]
-
-    umaal   ww, k, uu, uu
-    str.w	ww, [pW], #4
-
-    ldr.w   ww, [pW]
-
-    adds    ww, ww, k
-    str.w	ww, [pW], #4
+    ldmia   pW, { ww0, ww1 }
+    umaal   ww0, k, uu, uu
+    adds    ww1, ww1, k
+    stmia   pW!, { ww0, ww1 }
     mov     k, #0
     adc	    k, k, #0
-    teq	    Ulim, pU
+    teq	    Ulim, pW
     bne.n   sq_xll_sq_loop
 
-    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10 }
+    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11 }
     bx      lr 
