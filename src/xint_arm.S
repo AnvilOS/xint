@@ -635,5 +635,52 @@ sq_xll_mul_done:
     mov     r12, #0
     str.w	r12, [pW], #4
 
+    // rewind pU and pW
+    sub.w	pW, pW, Vn, lsl #3
+    //sub.w	pU, pU, Vn, lsl #2
+
+    // Set Wlim again
+    add.w	Ulim, pW, Vn, lsl #3
+
+    // Clear carry
+    cmn     r0, #0
+    // k = 0
+    mov     k, #0
+
+sq_shift_loop:
+    ldr.w   ww, [pW]
+    adcs    ww, ww, ww
+    str.w	ww, [pW], #4
+    teq	    Ulim, pW
+    bne.n   sq_shift_loop
+
+    // rewind pU and pW
+    sub.w	pW, pW, Vn, lsl #3
+    sub.w	pU, pU, Vn, lsl #2
+
+    // Set Ulim again
+    add.w	Ulim, pU, Vn, lsl #2
+
+    // Clear carry
+    cmn     r0, #0
+    // k = 0
+    mov     k, #0
+
+sq_xll_sq_loop:
+    ldr.w	uu, [pU], #4
+    ldr.w   ww, [pW]
+
+    umaal   ww, k, uu, uu
+    str.w	ww, [pW], #4
+
+    ldr.w   ww, [pW]
+
+    adds    ww, ww, k
+    str.w	ww, [pW], #4
+    mov     k, #0
+    adc	    k, k, #0
+    teq	    Ulim, pU
+    bne.n   sq_xll_sq_loop
+
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10 }
     bx      lr 
