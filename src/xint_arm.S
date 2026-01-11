@@ -522,3 +522,118 @@ xll_mul_ma4_loop:
 xll_mul_done:
     adds    sp, sp, #12
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
+
+#undef pW
+#undef pU
+#undef Ulim
+#undef tmp
+#undef uu
+#undef ww
+#undef v0
+#undef v1
+#undef v2
+#undef v3
+#undef k0
+#undef k1
+#undef k2
+#undef k3
+#undef Vn
+#undef Un
+#undef pV
+#undef Vlim
+
+@void xll_squ_asm(xword_t *W, const xword_t *U, int Un);
+.global xll_squ_asm
+xll_squ_asm:
+    @ r0: W
+    @ r1: U
+    @ r2: Un
+    @ r3: V
+    @ r4: Vn
+    @ r5: w
+    @ r6: u
+    @ r7: v
+    @ r8, k
+    @ r9, Ulim
+    @ r10, Vlim
+#define pW r0
+#define pU r1
+#define Un r2
+#define pV r3
+#define Vn r4
+#define ww r5
+#define uu r6
+#define v r7
+#define k r8
+#define Ulim r9
+#define Vlim r10
+
+    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10 }
+
+    // W[0] = 0;
+    mov     r4, #0
+    str.w	r4, [r0], #4
+
+    mov     pV, pU
+    add     pU, pU, #4
+    mov     Vn, Un
+
+    // Set Ulim
+    subs    Un, Un, #1
+    add.w	Ulim, pU, Un, lsl #2
+    
+    mov     Vlim, Ulim
+    subs    Vlim, Vlim, #4
+
+sq_m1:
+    // Load v0
+    ldr.w   v, [pV], #4
+    // Load k0
+    mov     k, #0
+
+sq_loop_mul1:
+    ldr.w	uu, [pU], #4
+    mov     ww, #0 
+    umaal   ww, k, uu, v
+    cmp	    Ulim, pU
+    str.w	ww, [pW], #4
+    bne.n   sq_loop_mul1
+
+    str.w	k, [pW], #4
+
+sq_xll_mul_ma4_outer:
+    // Check whether we've reached Vlim, use k0 as a temp
+    cmp	    Vlim, pV
+    beq     sq_xll_mul_done
+
+    // Move W and U back Un places
+    sub     Un, Un, #1
+    subs    pW, pW, Un, lsl #2
+    subs    pU, pU, Un, lsl #2
+
+    // Load v0
+    ldr.w   v, [pV], #4
+    // Load k0
+    mov     k, #0
+
+    b       sq_xll_mul_ma4_loop
+
+.align 4
+sq_xll_mul_ma4_loop:
+    ldr.w	uu, [pU], #4
+    ldr.w   ww, [pW]
+    umaal   ww, k, uu, v
+    cmp	    Ulim, pU
+    str.w	ww, [pW], #4
+    bne.n   sq_xll_mul_ma4_loop
+
+    str.w   k, [pW], #4
+
+    b       sq_xll_mul_ma4_outer
+
+sq_xll_mul_done:
+    mov     r12, #0
+    str.w	r12, [pW], #4
+
+    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10 }
+    bx      lr 
