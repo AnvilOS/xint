@@ -647,9 +647,6 @@ sq_xll_mul_done:
     // Set Ulim again
     add.w	Ulim, pW, Vn, lsl #3
 
-    // Clear carry
-    cmn     r0, #0
-    // k = 0
     mov     k, #0
 
     b       sq_xll_sq_loop
@@ -658,23 +655,20 @@ sq_xll_mul_done:
 sq_xll_sq_loop:
     ldmia   pW, { ww0, ww1 }
     ldr.w	uu, [pU], #4
-
+    // Square u
     mov     t0, k
     mov     t1, #0
-    
     umaal   t0, t1, uu, uu
-
+    // Left shift w
     adds    ww0, ww0, ww0
     adcs    ww1, ww1, ww1
     mov     k, #0
     adc	    k, k, #0
-    
+    // u^2 + 2w
     adds    ww0, ww0, t0
     adcs    ww1, ww1, t1
     adcs    k, k, #0
-
     stmia   pW!, { ww0, ww1 }
-
     teq	    Ulim, pW
     bne.n   sq_xll_sq_loop
 
