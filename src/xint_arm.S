@@ -569,8 +569,10 @@ xll_squ_asm:
 #define Ulim r9
 #define Vlim r10
 #define ww1 r11
+#define t1 r12
+#define t0 lr
 
-    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11 }
+    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
 
     // W[0] = 0;
     mov     r4, #0
@@ -640,26 +642,6 @@ sq_xll_mul_done:
 
     // rewind pU and pW
     sub.w	pW, pW, Vn, lsl #3
-    //sub.w	pU, pU, Vn, lsl #2
-
-    // Set Wlim again
-    add.w	Ulim, pW, Vn, lsl #3
-
-    // Clear carry
-    cmn     r0, #0
-    // k = 0
-    mov     k, #0
-
-sq_shift_loop:
-    ldmia   pW, { ww0, ww1 }
-    adcs    ww0, ww0, ww0
-    adcs    ww1, ww1, ww1
-    stmia   pW!, { ww0, ww1 }
-    teq	    Ulim, pW
-    bne.n   sq_shift_loop
-
-    // rewind pU and pW
-    sub.w	pW, pW, Vn, lsl #3
     sub.w	pU, pU, Vn, lsl #2
 
     // Set Ulim again
@@ -676,13 +658,26 @@ sq_shift_loop:
 sq_xll_sq_loop:
     ldr.w	uu, [pU], #4
     ldmia   pW, { ww0, ww1 }
-    umaal   ww0, k, uu, uu
-    adds    ww1, ww1, k
+
+    adds    ww0, ww0, ww0
+    adcs    ww1, ww1, ww1
+    mov     t0, #0
+    adc	    t0, t0, #0
+    
+    adds    ww0, ww0, k
+    adcs    ww1, ww1, #0
+    adcs    k, t0, #0
+    
+    umull   t0, t1, uu, uu
+    
+    adds    ww0, ww0, t0
+    adcs    ww1, ww1, t1
+    adcs    k, k, #0
+
     stmia   pW!, { ww0, ww1 }
-    mov     k, #0
-    adc	    k, k, #0
+
     teq	    Ulim, pW
     bne.n   sq_xll_sq_loop
 
-    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11 }
+    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
     bx      lr 
