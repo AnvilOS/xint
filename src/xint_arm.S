@@ -656,19 +656,18 @@ sq_xll_mul_done:
 
 .align 4
 sq_xll_sq_loop:
-    ldr.w	uu, [pU], #4
     ldmia   pW, { ww0, ww1 }
+    ldr.w	uu, [pU], #4
+
+    mov     t0, k
+    mov     t1, #0
+    
+    umaal   t0, t1, uu, uu
 
     adds    ww0, ww0, ww0
     adcs    ww1, ww1, ww1
-    mov     t0, #0
-    adc	    t0, t0, #0
-    
-    adds    ww0, ww0, k
-    adcs    ww1, ww1, #0
-    adcs    k, t0, #0
-    
-    umull   t0, t1, uu, uu
+    mov     k, #0
+    adc	    k, k, #0
     
     adds    ww0, ww0, t0
     adcs    ww1, ww1, t1
