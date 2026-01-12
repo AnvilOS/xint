@@ -542,6 +542,189 @@ xll_mul_done:
 #undef pV
 #undef Vlim
 
+@void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
+.global xll_mul_2x2
+xll_mul_2x2:
+    @ r0: W
+    @ r1: U
+    @ r2: Ulim
+    @ r3: tmp
+    @ r4: u
+    @ r5: w
+    @ r6: v3
+    @ r7: v2
+    @ r8: v1
+    @ r9: v0
+    @ r10: k3
+    @ r11: k2
+    @ r12: k1
+    @ lr:  k0
+    @ sp+52: Vn
+    @ sp+0: Un
+    @ sp+4: V
+    @ sp+8: Vlim 
+
+#define pW r0
+#define pU r1
+#define Ulim r2
+#define pV r3
+
+#define Vlim r4
+#define Un r5
+#define v0 r6
+#define v1 r7
+#define w0 r8
+#define w1 r9
+#define k0 r10
+#define k1 r11
+#define u0 r12
+#define u1 lr
+#define Vn [sp, #48]
+//#define Un [sp, #0]
+//#define pV [sp, #4]
+//#define Vlim [sp, #8]
+
+    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
+    subs    sp, sp, #12
+
+    // Vlim - use k0 as a 2nd tmp
+    ldr.w   k0, Vn
+    add.w	Vlim, pV, k0, lsl #2
+ 
+    // Ulim
+    //str.w   r2, Un
+    mov     Un, r2
+    add.w	Ulim, pU, r2, lsl #2
+
+    // k0 still contains Vn
+    tst     k0, #1
+    beq.n   m4_2x2
+    and     k0, k0, #3
+    cmp     k0, #2
+    //beq.n   m2_2x2
+    cmp     k0, #3
+    //beq.n   m3_2x2
+    
+m4_2x2:
+    // Load v0, v1
+    ldmia   pV!, { v0, v1 }
+
+    // Load k0, k1
+    mov     k0, #0
+    mov     k1, k0
+    mov     w0, k0
+    mov     w1, k0
+    b       xll_mul_m4_loop_2x2
+
+.align 4
+xll_mul_m4_loop_2x2:
+    ldr     u0, [pU], #4
+    umaal   w0, k0, u0, v0
+    str     w0, [pW], #4
+    mov     w1, #0 
+    umaal   w1, k1, u0, v1
+    ldr     u1, [pU], #4
+    umaal   w1, k0, u1, v0
+    str     w1, [pW], #4
+    mov     w0, #0 
+    umaal   w0, k1, u1, v1
+
+    ldr     u0, [pU], #4
+    umaal   w0, k0, u0, v0
+    str     w0, [pW], #4
+    mov     w1, #0 
+    umaal   w1, k1, u0, v1
+    ldr     u1, [pU], #4
+    umaal   w1, k0, u1, v0
+    str     w1, [pW], #4
+    mov     w0, #0 
+    umaal   k0, k1, u1, v1
+
+    cmp	    Ulim, pU
+    bne.n   xll_mul_m4_loop_2x2
+    stmia   pW!, { k0, k1 }
+    mov     k0, #0
+    str.W   k0, [pW]
+//   b       xll_mul_ma4_outer_2x2
+
+//.align 4
+xll_mul_ma4_outer_2x2:
+    // Check whether we've reached Vlim, use k0 as a temp
+//    ldr.w   k0, pV
+    //ldr.w   tmp, Vlim
+    cmp	    pV, Vlim
+    beq     xll_mul_done_2x2
+
+    // Move W and U back Un places
+    //ldr.w   tmp, Un
+    subs    pW, pW, Un, lsl #2
+    subs    pU, pU, Un, lsl #2
+
+    // Load v0, v1
+    ldmia   pV!, { v0, v1}
+
+    // Set k0, k1, k2, k3 to 0
+    mov     k0, #0
+    mov     k1, k0
+    ldr     w0, [pW]
+
+    b       xll_mul_ma4_loop_2x2
+.align 4
+xll_mul_ma4_loop_2x2:
+
+    ldr     u0, [pU], #4
+    umaal   w0, k0, u0, v0
+    str     w0, [pW], #4
+    ldr     w1, [pW]
+    umaal   w1, k1, u0, v1
+    ldr     u1, [pU], #4
+    umaal   w1, k0, u1, v0
+    str     w1, [pW], #4
+    ldr     w0, [pW]
+    umaal   w0, k1, u1, v1
+
+    ldr     u0, [pU], #4
+    umaal   w0, k0, u0, v0
+    str     w0, [pW], #4
+    ldr     w1, [pW]
+    umaal   w1, k1, u0, v1
+    ldr     u1, [pU], #4
+    umaal   w1, k0, u1, v0
+    str     w1, [pW], #4
+    ldr     w0, [pW]
+    umaal   k0, k1, u1, v1
+
+    cmp	    Ulim, pU
+    bne.n   xll_mul_ma4_loop_2x2
+ 
+    stmia   pW!, { k0, k1 }
+    mov     k0, #0
+    str.W   k0, [pW]
+    b       xll_mul_ma4_outer_2x2
+
+xll_mul_done_2x2:
+    adds    sp, sp, #12
+    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
+
+#undef pW
+#undef pU
+#undef Ulim
+#undef tmp
+#undef uu
+#undef ww
+#undef v0
+#undef v1
+#undef v2
+#undef v3
+#undef k0
+#undef k1
+#undef k2
+#undef k3
+#undef Vn
+#undef Un
+#undef pV
+#undef Vlim
+
 @void xll_squ_asm(xword_t *W, const xword_t *U, int Un);
 .global xll_squ_asm
 xll_squ_asm:
