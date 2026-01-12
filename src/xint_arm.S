@@ -556,82 +556,185 @@ xll_squ_asm:
     @ r8: k
     @ r9: Ulim
     @ r10: Vlim
-    @ r11: ww1
 #define pW r0
 #define pU r1
-#define Un r2
-#define pV r3
-#define Vn r4
-#define ww0 r5
-#define uu r6
-#define v r7
-#define k r8
-#define Ulim r9
-#define Vlim r10
-#define ww1 r11
-#define t1 r12
-#define t0 lr
+#define Ulim r2
+#define tmp r3
+#define uu r4
+#define ww r5
+#define v0 r6
+#define v1 r7
+#define v2 r8
+#define v3 r9
+#define k0 r10
+#define k1 r11
+#define k2 r12
+#define k3 lr
+#define Vn [sp, #12]
+#define Un [sp, #0]
+#define pV [sp, #4]
+#define Vlim [sp, #8]
 
     stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
+    subs    sp, sp, #16
 
     // W[0] = 0;
     mov     r4, #0
     str.w	r4, [r0], #4
 
-    mov     pV, pU
+    mov     r3, pU
+    str.w   r3, pV
     add     pU, pU, #4
-    mov     Vn, Un
+    str.w   r2, Vn
 
     // Set Ulim
-    subs    Un, Un, #1
-    add.w	Ulim, pU, Un, lsl #2
+    subs    r2, r2, #1
+    str.w   r2, Un
+    add.w	Ulim, pU, r2, lsl #2
     
-    mov     Vlim, Ulim
-    subs    Vlim, Vlim, #4
+    mov     tmp, Ulim
+    subs    tmp, tmp, #4
+    str.W   tmp, Vlim
+
+    // k0 still contains Vn
+    ldr.w   tmp, Vn
+    subs    tmp, tmp, #1
+    tst     tmp, #3
+    beq.n   sq_m4
+    and     tmp, tmp, #3
+    cmp     tmp, #2
+    beq.n   sq_m2
+    cmp     tmp, #3
+    beq.n   sq_m3
 
 sq_m1:
     // Load v0
-    ldr.w   v, [pV], #4
+    ldr.w   tmp, pV
+    ldr.w   v0, [tmp], #4
+    str.w   tmp, pV
     // Load k0
-    mov     k, #0
+    mov     k0, #0
 
 sq_loop_mul1:
     ldr.w	uu, [pU], #4
-    mov     ww0, #0 
-    umaal   ww0, k, uu, v
+    mov     ww, #0 
+    umaal   ww, k0, uu, v0
     cmp	    Ulim, pU
-    str.w	ww0, [pW], #4
+    str.w	ww, [pW], #4
     bne.n   sq_loop_mul1
 
-    str.w	k, [pW], #4
+    str.w	k0, [pW], #4
+
+sq_m2:
+    b       sq_xll_mul_ma4_outer
+
+
+
+sq_m3:
+    // Load v0, v1, v2
+    ldr.w   tmp, pV
+    ldmia   tmp!, { v0, v1, v2 }
+    str.w	tmp, pV
+    // Load k0, k1, k2
+    mov     k0, #0
+    mov     k1, k0
+    mov     k2, k0
+
+    ldr.w	uu, [pU], #4
+    mov     ww, #0 
+    umaal   ww, k0, uu, v0
+    str.w	ww, [pW], #4
+
+    ldr.w	uu, [pU], #4
+    mov     ww, #0 
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    str.w	ww, [pW], #4
+
+    b.n     sq_loop_mul3
+
+.align 4
+sq_loop_mul3:
+    ldr.w	uu, [pU], #4
+    mov     ww, #0 
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    umaal   k1, k2, uu, v2
+    cmp	    Ulim, pU
+    str.w	ww, [pW], #4
+    bne.n   sq_loop_mul3
+    stmia   pW!, { k0, k1, k2 }
+
+    ldr.w   tmp, Un
+    sub     tmp, tmp, #2
+    str.w   tmp, Un
+
+    b       sq_xll_mul_ma4_outer
+
+
+sq_m4:
+    b       sq_xll_mul_ma4_outer
 
 sq_xll_mul_ma4_outer:
     // Check whether we've reached Vlim, use k0 as a temp
-    cmp	    Vlim, pV
+    ldr.w   k0, pV
+    ldr.w   tmp, Vlim
+    cmp	    k0, tmp
+
     beq     sq_xll_mul_done
 
     // Move W and U back Un places
-    sub     Un, Un, #1
-    subs    pW, pW, Un, lsl #2
-    subs    pU, pU, Un, lsl #2
+    ldr.w   tmp, Un
+    sub     tmp, tmp, #1
+    subs    pW, pW, tmp, lsl #2
+    subs    pU, pU, tmp, lsl #2
+    str.w   tmp, Un
 
-    // Load v0
-    ldr.w   v, [pV], #4
-    // Load k0
-    mov     k, #0
+    // Load v0, v1, v2, v3
+    ldr.w   tmp, pV
+    ldmia   tmp!, { v0, v1, v2, v3 }
+    str.w   tmp, pV
+
+    // Set k0, k1, k2, k3 to 0
+    mov     k0, #0
+    mov     k1, k0
+    mov     k2, k0
+    mov     k3, k0
+
+    ldr.w	uu, [pU], #4
+    ldr.w   ww, [pW]
+    umaal   ww, k0, uu, v0
+    str.w	ww, [pW], #4
+
+    ldr.w	uu, [pU], #4
+    ldr.w   ww, [pW]
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    str.w	ww, [pW], #4
+
+    ldr.w	uu, [pU], #4
+    ldr.w   ww, [pW]
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    umaal   k1, k2, uu, v2
+    cmp	    Ulim, pU
+    str.w	ww, [pW], #4
 
     b       sq_xll_mul_ma4_loop
 
 .align 4
 sq_xll_mul_ma4_loop:
     ldr.w	uu, [pU], #4
-    ldr.w   ww0, [pW]
-    umaal   ww0, k, uu, v
+    ldr.w   ww, [pW]
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    umaal   k1, k2, uu, v2
+    umaal   k2, k3, uu, v3
     cmp	    Ulim, pU
-    str.w	ww0, [pW], #4
+    str.w	ww, [pW], #4
     bne.n   sq_xll_mul_ma4_loop
 
-    str.w   k, [pW], #4
+    stmia   pW!, { k0, k1, k2, k3 }
 
     b       sq_xll_mul_ma4_outer
 
@@ -640,14 +743,21 @@ sq_xll_mul_done:
     mov     r12, #0
     str.w	r12, [pW], #4
 
-    // rewind pU and pW
-    sub.w	pW, pW, Vn, lsl #3
-    sub.w	pU, pU, Vn, lsl #2
+// Square loop
+#define ww0 r5
+#define ww1 r11
+#define t1 r12
+#define t0 lr
+
+    // Move W and U back Un places
+    ldr.w   tmp, Vn
+    subs    pW, pW, tmp, lsl #3
+    subs    pU, pU, tmp, lsl #2
 
     // Set Ulim again
-    add.w	Ulim, pW, Vn, lsl #3
+    add.w	Ulim, pW, tmp, lsl #3
 
-    mov     k, #0
+    mov     k0, #0
 
     b       sq_xll_sq_loop
 
@@ -656,21 +766,41 @@ sq_xll_sq_loop:
     ldmia   pW, { ww0, ww1 }
     ldr.w	uu, [pU], #4
     // Square u
-    mov     t0, k
+    mov     t0, k0
     mov     t1, #0
     umaal   t0, t1, uu, uu
     // Left shift w
     adds    ww0, ww0, ww0
     adcs    ww1, ww1, ww1
-    mov     k, #0
-    adc	    k, k, #0
+    mov     k0, #0
+    adc	    k0, k0, #0
     // u^2 + 2w
     adds    ww0, ww0, t0
     adcs    ww1, ww1, t1
-    adcs    k, k, #0
+    adcs    k0, k0, #0
     stmia   pW!, { ww0, ww1 }
     teq	    Ulim, pW
     bne.n   sq_xll_sq_loop
 
+    adds    sp, sp, #16
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
-    bx      lr 
+
+#undef pW
+#undef pU
+#undef Ulim
+#undef tmp
+#undef uu
+#undef ww
+#undef v0
+#undef v1
+#undef v2
+#undef v3
+#undef k0
+#undef k1
+#undef k2
+#undef k3
+#undef Vn
+#undef Un
+#undef pV
+#undef Vlim
+
