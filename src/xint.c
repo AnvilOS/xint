@@ -478,13 +478,13 @@ void xint_sqr(xint_t w, const xint_t u)
         xll_move(tmp, u->data, Un);
         //U = tmp;
         xll_zero(w->data, Un);
-        xll_squ_2(W, tmp, Un);
+        xll_squ(W, tmp, Un);
     }
     else
     {
         // Clear the bottom words
         xll_zero(w->data, Un);
-        xll_squ_2(W, U, Un);
+        xll_squ(W, U, Un);
     }
 
     trim_zeroes(w);
@@ -493,6 +493,7 @@ void xint_sqr(xint_t w, const xint_t u)
 
 int kara_cutoff = 100000;
 
+#if defined __arm__
 #define xll_mul_wrap(W, U, m, V, n) \
 { \
     if (n > kara_cutoff) \
@@ -501,9 +502,22 @@ int kara_cutoff = 100000;
     } \
     else \
     { \
-        xll_mul_algm(W, U, m, V, n); \
+        xll_mul_asm(W, U, m, V, n); \
     } \
 }
+#else
+#define xll_mul_wrap(W, U, m, V, n) \
+{ \
+    if (n > kara_cutoff) \
+    { \
+        xll_mul_karatsuba(W, U, m, V, n); \
+    } \
+    else \
+    { \
+        xll_mul(W, U, m, V, n); \
+    } \
+}
+#endif
 
 void xll_mul_karatsuba(xword_t *W, const xword_t *U, int Un, const xword_t *V, int Vn)
 {
@@ -1150,8 +1164,7 @@ xword_t xll_mul_add_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_
 }
 #endif
 
-#if !defined __arm__
-void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
+void xll_mul_c(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
 {
     // Based on Knuth's algorithm M.
     // As pointed out by Knuth, algorithm M can cope with V[j] being co-located
@@ -1164,25 +1177,10 @@ void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size
     for (size_t j=1; j<n; ++j)
     {
         // M2. [We skip the optional check for zero multiplier]
-        if (n - j > 4)
-        {
-            W[j + m + 3] = xll_mul_add_4(W+j, U, m, V+j);
-            j += 3;
-        }
-        else
-        if (n - j > 2)
-        {
-            W[j + m + 1] = xll_mul_add_2(W+j, U, m, V[j+1], V[j]);
-            ++j;
-        }
-        else
-        {
             W[j + m] = xll_mul_add_1(W+j, U, m, V[j]);
-        }
         // M6. [Loop on j]
     }
 }
-#endif
 
 #if !defined __arm__
 xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v)
@@ -1393,7 +1391,7 @@ xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
     return R >> bit_shift;
 }
 
-void xll_squ_2(xword_t *W, const xword_t *U, int Un)
+void xll_squ_c(xword_t *W, const xword_t *U, int Un)
 {
     W[0] = 0;
     W[Un] = xll_mul_1(W+1, U+1, Un-1, U[0]);

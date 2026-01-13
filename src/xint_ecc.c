@@ -496,7 +496,7 @@ static void inline xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, 
 static void inline xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
-    xll_mul_algm(tmp, u, c->nwords, v, c->nwords);
+    xll_mul(tmp, u, c->nwords, v, c->nwords);
     c->xint_mod_fast(w, tmp);
 }
 
@@ -521,7 +521,7 @@ static void inline xint_mod_lshift(xword_t *w, const xword_t *u, int nbits, cons
 static void inline xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
-    xll_squ_2(tmp, u, c->nwords);
+    xll_squ(tmp, u, c->nwords);
     c->xint_mod_fast(w, tmp);
 }
 

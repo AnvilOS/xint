@@ -10,6 +10,7 @@
 #include "test_ecc.h"
 #include "test_collatz.h"
 #include "test_karatsuba.h"
+#include "test_ll_mul.h"
 
 int main(int argc, const char * argv[])
 {
@@ -24,4 +25,5 @@ int main(int argc, const char * argv[])
     test_ecc();
     test_collatz();
     test_karatsuba();
+    test_ll_mul();
 }

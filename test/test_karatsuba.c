@@ -6,7 +6,7 @@
 
 #include "test_harness.h"
 
-#include <time.h>
+#include "time_stamp.h"
 
 #if defined XDWORD_MAX
 xword_t rand_data[] =
@@ -78,7 +78,7 @@ TEST_GROUP(karatsuba)
 
 extern int kara_cutoff;
 
-static const int sz = 2048;
+static const int sz = 64;
 
 TEST(karatsuba, karatsuba)
 {
@@ -108,26 +108,24 @@ TEST(karatsuba, karatsuba)
     
     kara_cutoff = 10000000;
     
-    clock_t start, end;
-    start = clock();
-    //for (int x=0; x<10000; ++x)
+    STAMP_VARS();
+    __disable_irq();
+    STAMP_BEFORE();
         xint_mul(Z_algm, X, Y);
-    end = clock();
-    double time_consumed = (double)(end - start) * 1000 / CLOCKS_PER_SEC;
-    printf(" (%.0f ms)\n\n", time_consumed);
+    STAMP_AFTER();
+    __enable_irq();
+    printf("Schoolbook : %lu\n", STAMP_DIFF());
 
-    kara_cutoff = 8;
+    kara_cutoff = 16;
 
-    start = clock();
-    //for (int x=0; x<10000; ++x)
+    STAMP_BEFORE();
         xint_mul(Z_kara, X, Y);
-    end = clock();
-    time_consumed = (double)(end - start) * 1000 / CLOCKS_PER_SEC;
-    printf(" (%.0f ms)\n\n", time_consumed);
+    STAMP_AFTER();
+    __enable_irq();
+    printf("Karatsuba : %lu\n", STAMP_DIFF());
     
     int d = xint_cmp(Z_algm, Z_kara);
-    
-    printf("Diff = %d\n", d);
+    //printf("Diff = %d\n", d);
   
     if (d)
     {

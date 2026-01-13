@@ -4,6 +4,23 @@
 
 #include "xint.h"
 
+#if defined __arm__
+#define XINT_USE_MUL_ASM
+#define XINT_USE_SQU_ASM
+#endif
+
+#if defined XINT_USE_MUL_ASM
+#define xll_mul xll_mul_asm
+#else
+#define xll_mul xll_mul_c
+#endif
+
+#if defined XINT_USE_SQU_ASM
+#define xll_squ(__w, __u, __n) xll_mul_asm(__w, __u, __n, __u, __n)
+#else
+#define xll_squ xll_squ_c
+#endif
+
 typedef struct xint_s *xint_ptr;
 typedef const struct xint_s *const_xint_ptr;
 
@@ -208,11 +225,11 @@ static inline xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_b
 xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n);
 xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
 xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n);
-void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n);
+void xll_mul_c(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n);
 void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n);
 xword_t xll_mul_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
 xword_t xll_mul_2(xword_t *W, const xword_t *U, size_t m, xword_t v1, xword_t v0);
-void xll_squ_2(xword_t *W, const xword_t *U, int sz);
+void xll_squ_c(xword_t *W, const xword_t *U, int sz);
 xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
 xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);

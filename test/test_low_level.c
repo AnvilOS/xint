@@ -106,7 +106,7 @@ TEST(low_level, xll_div_normalise)
     
     // Multiply out to check it worked
     xword_t calc[7] = { 0, 0, 0, 0, 0, 0, 0 };
-    xll_mul_algm(calc, v, 4, q, 3);
+    xll_mul(calc, v, 4, q, 3);
     calc[6] = xll_add(calc, calc, u, 6);
     ASSERT_EQ(Ox8000__0002, calc[0]);
     ASSERT_EQ(Ox8000__0002, calc[1]);
@@ -141,7 +141,7 @@ TEST(low_level, xll_div_addback)
     
     // Multiply out to check it worked
     xword_t calc[5] = { 0, 0, 0, 0, 0 };
-    xll_mul_algm(calc, v, 3, q, 1);
+    xll_mul(calc, v, 3, q, 1);
     calc[4] = xll_add(calc, calc, u, 4);
     ASSERT_EQ(Ox0000__0000, calc[0]);
     ASSERT_EQ(Ox0000__0000, calc[1]);
