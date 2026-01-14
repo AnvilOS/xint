@@ -590,7 +590,7 @@ odd_v_loop:
     str.W   k0, [pW], #4
     b       outer_2x2_loop
 
-    // V is even so do 2 rows v
+    // V is even so do 2 rows
 even_v:
    // Load v0, v1
     ldr.w   v0, [pV], #4
@@ -628,6 +628,18 @@ outer_2x2_loop:
     // Set k0, k1, k2, k3 to 0
     mov     k0, #0
     ldr     w0, [pW]
+
+    // If Un is odd we need to do a single pair
+    tst     Un, #1
+    beq.n   even_u
+
+odd_u:
+    ldr.w	u0, [pU], #4
+    ldr     w0, [pW]
+    umaal   w0, k0, u0, v0
+    str.w	w0, [pW], #4
+
+even_u:
 
 inner_2x2_loop:
     ldr.w	u0, [pU], #4
