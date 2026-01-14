@@ -542,7 +542,7 @@ xll_mul_done:
 #undef pV
 #undef Vlim
 
-@void xll_mul_algm(xword_t *W, const xword_t *U, size_t m, const xword_t *V, size_t n)
+@void xll_mul_2x2(xword_t *W, const xword_t *U, size_t Un, const xword_t *V, size_t Vn)
 .global xll_mul_2x2
 xll_mul_2x2:
 
@@ -571,19 +571,15 @@ xll_mul_2x2:
 
     // k0 still contains Vn
     tst     k0, #1
-    //beq.n   even_v
+    beq.n   even_v
     
     // V is odd so do a single row v
  odd_v:
     // Load v0
     ldr.w   v0, [pV], #4
-
-    // Load k0, k1
+    // Load k0
     mov     k0, #0
-    mov     w0, k0
-    b       odd_v_loop
 
-.align 4
 odd_v_loop:
     ldr.w	u0, [pU], #4
     mov     w0, #0 
@@ -591,20 +587,36 @@ odd_v_loop:
     cmp	    Ulim, pU
     str.w	w0, [pW], #4
     bne.n   odd_v_loop
-
     str.W   k0, [pW], #4
+    b       outer_2x2_loop
 
-    b xll_mul_ma4_outer_2x2
-
-    
+    // V is even so do 2 rows v
 even_v:
+   // Load v0, v1
+    ldr.w   v0, [pV], #4
+    ldr.w   v1, [pV], #4
 
+    // Load k0, k1
+    mov     k0, #0
+    mov     k1, k0
 
-//.align 4
-xll_mul_ma4_outer_2x2:
+even_v_loop:
+    ldr.w	u0, [pU], #4
+    mov     w0, #0
+    umaal   w0, k0, u0, v0
+    umaal   k0, k1, u0, v1
+    str.w	w0, [pW], #4
+    cmp	    Ulim, pU
+    bne.n   even_v_loop
+    str.W   k0, [pW], #4
+    str.W   k1, [pW], #4
+    b       outer_2x2_loop
+
+.align 4
+outer_2x2_loop:
     // Check whether we've reached Vlim
     cmp	    pV, Vlim
-    beq     xll_mul_done_2x2
+    beq     outer_2x2_loop_done
 
     // Move W and U back Un places
     subs    pW, pW, Un, lsl #2
@@ -617,18 +629,18 @@ xll_mul_ma4_outer_2x2:
     mov     k0, #0
     ldr     w0, [pW]
 
-main_2x2_loop:
+inner_2x2_loop:
     ldr.w	u0, [pU], #4
     ldr     w0, [pW]
     umaal   w0, k0, u0, v0
     cmp	    Ulim, pU
     str.w	w0, [pW], #4
-    bne.n   main_2x2_loop
+    bne.n   inner_2x2_loop
 
     str.W   k0, [pW], #4
-    b       xll_mul_ma4_outer_2x2
+    b       outer_2x2_loop
 
-xll_mul_done_2x2:
+outer_2x2_loop_done:
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
 
 #undef pW
