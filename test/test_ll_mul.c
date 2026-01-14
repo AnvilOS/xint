@@ -153,7 +153,7 @@ TEST(ll_mul, mul_asm)
     {
         for (int Un=2; Un<=sz; ++Un)
         {
-            TRACE(" %2dx%2d -", Un, Vn);
+            TRACE(" %2dx%2d:", Un, Vn);
             __disable_irq();
             STAMP_BEFORE();
             xll_mul_c(w_c, u, Un, v, Vn);
@@ -166,7 +166,7 @@ TEST(ll_mul, mul_asm)
             xll_mul_asm(w_asm, u, Un, v, Vn);
             STAMP_AFTER();
             __enable_irq();
-            TRACE("%7lu", STAMP_DIFF());
+            TRACE("%6lu", STAMP_DIFF());
             TRACE("%c", xll_cmp(w_c, w_asm, Un+Vn) ? '*' : ' ');
 #endif
 #if defined XINT_USE_MUL_ASM
@@ -177,7 +177,7 @@ TEST(ll_mul, mul_asm)
                 xll_mul_2x2(w_2x2, u, Un, v, Vn);
                 STAMP_AFTER();
                 __enable_irq();
-                TRACE("%7lu", STAMP_DIFF());
+                TRACE("%6lu", STAMP_DIFF());
                 TRACE("%c", xll_cmp(w_c, w_2x2, Un+Vn) ? '*' : ' ');
             }
             else
@@ -200,7 +200,7 @@ TEST(ll_mul, squ_asm)
     TRACE("          MUL C  SQU C  MUL A  SQU A\n");
     for (int Un=2; Un<=sz; ++Un)
     {
-        TRACE(" %2dx%2d -", Un, Un);
+        TRACE(" %2dx%2d:", Un, Un);
         __disable_irq();
         STAMP_BEFORE();
         xll_mul_c(w_c, u, Un, u, Un);
@@ -212,7 +212,7 @@ TEST(ll_mul, squ_asm)
         xll_squ_c(w_sq, u, Un);
         STAMP_AFTER();
         __enable_irq();
-        TRACE("%7lu", STAMP_DIFF());
+        TRACE("%6lu", STAMP_DIFF());
         TRACE("%c", xll_cmp(w_c, w_sq, 2*Un) ? '*' : ' ');
 #if defined XINT_USE_MUL_ASM
         __disable_irq();
@@ -220,18 +220,18 @@ TEST(ll_mul, squ_asm)
         xll_mul_asm(w_asm, u, Un, u, Un);
         STAMP_AFTER();
         __enable_irq();
-        TRACE("%7lu", STAMP_DIFF());
+        TRACE("%6lu", STAMP_DIFF());
         TRACE("%c", xll_cmp(w_c, w_asm, 2*Un) ? '*' : ' ');
 #endif
 #if defined XINT_USE_MUL_ASM
-        //if (((Un % 2) == 0))
+        if (((Un % 2) == 0))
         {
             __disable_irq();
             STAMP_BEFORE();
             xll_squ_asm(w_sq_asm, u, Un);
             STAMP_AFTER();
             __enable_irq();
-            TRACE("%7lu", STAMP_DIFF());
+            TRACE("%6lu", STAMP_DIFF());
             TRACE("%c", xll_cmp(w_c, w_sq_asm, 2*Un) ? '*' : ' ');
         }
 #endif

@@ -92,10 +92,11 @@ TEST(low_level, xll_add_sub)
     END_TEST(low_level);
 }
 
+#define m 2
+#define n 4
+
 TEST(low_level, xll_div_normalise)
 {
-    const int m = 2;
-    const int n = 4;
     xword_t u[m+n+1] = { Ox8000__0002, Ox8000__0002, Ox8000__0002, Ox8000__0002, Ox8000__0002, Ox8000__0002, Ox0000__0000 };
     xword_t v[n]     = { Ox7FFF__FFFF, Ox8000__0001, OxFFFF__FFFD, Ox0020__0002 };
     xword_t q[m+1];
@@ -119,13 +120,16 @@ TEST(low_level, xll_div_normalise)
     END_TEST(low_level);
 }
 
+#undef m
+#undef n
+#define m 1
+#define n 3
+
 TEST(low_level, xll_div_addback)
 {
     // Do a div that exercises the add back test
     // From Knuth "when b = 2^16 we can let u = (7fff800100000000)base16, v = (800080020005)base16"
     // For 64 bit..
-    const int m = 1;
-    const int n = 3;
     xword_t u[m+n+1] = { Ox0000__0000, Ox0000__0000, Ox8000__0001, Ox7FFF__FFFF, Ox0000__0000 };
     xword_t v[n]     = { Ox0000__0005, Ox8000__0002, Ox8000__0000 };
     xword_t q[m+1];
