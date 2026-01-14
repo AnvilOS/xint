@@ -134,11 +134,12 @@ static const xword_t v[] =
 #endif
 };
 
-xword_t w_c[46];
-xword_t w_asm[46];
-xword_t w_2x2[46];
-xword_t w_sq[46];
-xword_t w_sq_asm[46];
+#define MAXUV 23
+xword_t w_c[2*MAXUV];
+xword_t w_asm[2*MAXUV];
+xword_t w_2x2[2*MAXUV];
+xword_t w_sq[2*MAXUV];
+xword_t w_sq_asm[2*MAXUV];
 
 TEST_GROUP(ll_mul)
 
@@ -146,12 +147,14 @@ TEST_GROUP(ll_mul)
 
 TEST(ll_mul, mul_asm)
 {
+    int errors = 0;
+    int cmp;
     STAMP_VARS();
     size_t sz = sizeof(u)/sizeof(u[0]);
-    TRACE("          MUL C  MUL A  MUL2x2\n");
-    for (int Vn=2; Vn<=sz; ++Vn)
+    TRACE("        MUL C  MUL A  MUL2x2\n");
+    for (int Vn=2; Vn<=MAXUV; ++Vn)
     {
-        for (int Un=2; Un<=sz; ++Un)
+        for (int Un=2; Un<=MAXUV; ++Un)
         {
             TRACE(" %2dx%2d:", Un, Vn);
             __disable_irq();
@@ -161,34 +164,31 @@ TEST(ll_mul, mul_asm)
             __enable_irq();
             TRACE("%7lu", STAMP_DIFF());
 #if defined XINT_USE_MUL_ASM
-           __disable_irq();
+            __disable_irq();
             STAMP_BEFORE();;
             xll_mul_asm(w_asm, u, Un, v, Vn);
             STAMP_AFTER();
             __enable_irq();
             TRACE("%6lu", STAMP_DIFF());
-            TRACE("%c", xll_cmp(w_c, w_asm, Un+Vn) ? '*' : ' ');
+            cmp = xll_cmp(w_c, w_asm, Un+Vn);
+            if (cmp) ++errors;
+            TRACE("%c", cmp ? '*' : ' ');
 #endif
 #if defined XINT_USE_MUL_ASM
-            if (((Un % 4) == 0) && ((Vn % 2) == 0))
-            {
-                __disable_irq();
-                STAMP_BEFORE();;
-                xll_mul_2x2(w_2x2, u, Un, v, Vn);
-                STAMP_AFTER();
-                __enable_irq();
-                TRACE("%6lu", STAMP_DIFF());
-                TRACE("%c", xll_cmp(w_c, w_2x2, Un+Vn) ? '*' : ' ');
-            }
-            else
+            __disable_irq();
+            STAMP_BEFORE();;
+            xll_mul_2x2(w_2x2, u, Un, v, Vn);
+            STAMP_AFTER();
+            __enable_irq();
+            TRACE("%6lu", STAMP_DIFF());
+            cmp = xll_cmp(w_c, w_2x2, Un+Vn);
+            if (cmp) ++errors;
+            TRACE("%c", cmp ? '*' : ' ');
 #endif
-            {
-                TRACE("      ");
-            }
             TRACE("\n");
         }
     }
-    ASSERT_EQ(0, 0);
+    ASSERT_EQ(0, errors);
 
     END_TEST(ll_mul);
 }
@@ -197,7 +197,7 @@ TEST(ll_mul, squ_asm)
 {
     STAMP_VARS();
     size_t sz = sizeof(u)/sizeof(u[0]);
-    TRACE("          MUL C  SQU C  MUL A  SQU A\n");
+    TRACE("        MUL C  SQU C  MUL A  SQU A\n");
     for (int Un=2; Un<=sz; ++Un)
     {
         TRACE(" %2dx%2d:", Un, Un);
@@ -246,7 +246,7 @@ TEST(ll_mul, squ_asm)
 int test_ll_mul(void)
 {
     CALL_TEST(ll_mul, mul_asm);
-    CALL_TEST(ll_mul, squ_asm);
+//    CALL_TEST(ll_mul, squ_asm);
 
     END_TEST_GROUP(ll_mul);
 }

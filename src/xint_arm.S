@@ -661,22 +661,19 @@ outer_2x2_loop_done:
 
 #undef pW
 #undef pU
-#undef Ulim
-#undef tmp
-#undef uu
-#undef ww
-#undef v0
-#undef v1
-#undef v2
-#undef v3
-#undef k0
-#undef k1
-#undef k2
-#undef k3
-#undef Vn
 #undef Un
 #undef pV
 #undef Vlim
+#undef Ulim
+#undef v0
+#undef v1
+#undef w0
+#undef w1
+#undef k0
+#undef k1
+#undef u0
+#undef u1
+#undef Vn
 
 @void xll_squ_asm(xword_t *W, const xword_t *U, int Un);
 .global xll_squ_asm
