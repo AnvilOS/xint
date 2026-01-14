@@ -69,6 +69,13 @@ void xint_swap(xint_t u, xint_t v)
 void xint_assign_ulong(xint_t u, unsigned long v)
 {
     u->size = 0;
+#if XWORD_SIZE >= __SIZEOF_LONG__
+    if (v)
+    {
+        FAST_RESIZE(u, 1);
+        u->data[0] = (xword_t)v;
+    }
+#else
     while (v)
     {
         FAST_RESIZE(u, u->size + 1);
@@ -79,6 +86,30 @@ void xint_assign_ulong(xint_t u, unsigned long v)
         }
         v >>= XWORD_BITS;
     }
+#endif
+}
+
+void xint_assign_uint64(xint_t u, uint64_t v)
+{
+    u->size = 0;
+#if XWORD_SIZE >= 8
+    if (v)
+    {
+        FAST_RESIZE(u, 1);
+        u->data[0] = (xword_t)v;
+    }
+#else
+    while (v)
+    {
+        FAST_RESIZE(u, u->size + 1);
+        u->data[u->size - 1] = (xword_t)v;
+        if (sizeof(v) <= sizeof(xword_t))
+        {
+            break;
+        }
+        v >>= XWORD_BITS;
+    }
+#endif
 }
 
 void xint_assign_long(xint_t u, long v)
@@ -156,27 +187,26 @@ int xint_cmpa_ulong(const xint_t u, const unsigned long v)
     {
         return v == 0 ? 0 : -1;
     }
+
     unsigned long uu = 0;
-    if (sizeof(v) <= sizeof(xword_t))
+#if XWORD_SIZE >= __SIZEOF_LONG__
+    if (Un > 1)
     {
-        if (Un > 1)
-        {
-            return 1;
-        }
+        return 1;
     }
-    else
+    uu = u->data[0];
+#else
+    if (Un > 2)
     {
-        if (Un > 2)
-        {
-            return 1;
-        }
-        if (Un == 2)
-        {
-            uu = u->data[1];
-            uu <<= XWORD_BITS;
-        }
+        return 1;
+    }
+    if (Un == 2)
+    {
+        uu = u->data[1];
+        uu <<= XWORD_BITS;
     }
     uu |= u->data[0];
+#endif
     if (uu == v)
     {
         return 0;

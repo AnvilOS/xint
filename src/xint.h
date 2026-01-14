@@ -7,19 +7,41 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#if __arm__
-typedef unsigned xword_t;
+#if defined __arm__
+#define XWORD_SIZE  (4)
+#elif defined __x86_64__
+#define XWORD_SIZE  (8)
+#endif
+
+#if XWORD_SIZE == __SIZEOF_INT__
+
+typedef unsigned int xword_t;
+
+#elif XWORD_SIZE == __SIZEOF_LONG__
+
+typedef unsigned long xword_t;
+
+#elif XWORD_SIZE == __SIZEOF_LONG_LONG__
+
+typedef unsigned long long xword_t;
+
+#endif
+
+#if XWORD_SIZE < __SIZEOF_LONG__
+typedef unsigned long xdword_t;
+#define XDWORD_MAX ((xdword_t)-1)
+#define XDWORD_MUL
+//#define XDWORD_DIV
+#elif XWORD_SIZE < __SIZEOF_LONG_LONG__
 typedef unsigned long long xdword_t;
 #define XDWORD_MAX ((xdword_t)-1)
 #define XDWORD_MUL
 //#define XDWORD_DIV
-#elif __x86_64__
-typedef unsigned long xword_t;
 #endif
 
 // Definitions for xword_t size
-#define XWORD_BITS (sizeof(xword_t) * 8)
-#define XWORD_MAX ((xword_t)-1)
+#define XWORD_MAX (xword_t)-1
+#define XWORD_BITS (XWORD_SIZE * 8)
 #define XWORD_HALF_MASK (XWORD_MAX>>(XWORD_BITS/2))
 
 struct xint_s
@@ -33,8 +55,6 @@ struct xint_s
 #define XINT_INIT_VAL {{ 0, 0, NULL }};
 
 typedef struct xint_s xint_t[1];
-
-#define XINT_CONST(__a) { sizeof(__a)/sizeof(__a[0]), sizeof(__a)/sizeof(__a[0]), (xword_t *)__a }
 
 #ifdef __cplusplus
 extern "C"
