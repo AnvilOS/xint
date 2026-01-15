@@ -628,18 +628,10 @@ outer_2x2_loop:
     // Zero k0, k1
     mov     k0, #0
     mov     k1, k0
-    ldr     w0, [pW]
 
     // If Un is odd we need to do a single pair
     tst     Un, #1
-    beq.n   even_u
-
-odd_u:
-    ldr.w	u0, [pU], #4
-    ldr     w0, [pW]
-    umaal   w0, k0, u0, v0
-    umaal   k0, k1, u0, v1
-    str.w	w0, [pW], #4
+    bne.n   odd_u
 
 even_u:
 
@@ -649,6 +641,14 @@ inner_2x2_loop:
     umaal   w0, k0, u0, v0
     umaal   k0, k1, u0, v1
     str.w	w0, [pW], #4
+
+odd_u:
+    ldr.w	u1, [pU], #4
+    ldr     w1, [pW]
+    umaal   w1, k0, u1, v0
+    umaal   k0, k1, u1, v1
+    str.w	w1, [pW], #4
+
     cmp	    Ulim, pU
     bne.n   inner_2x2_loop
 
