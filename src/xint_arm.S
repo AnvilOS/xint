@@ -566,6 +566,18 @@ xll_mul_2x2:
     stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
     subs    sp, sp, #4
 
+    // Record here wheter Un is odd or even
+    tst     Un, #1
+    beq.n   even_u
+
+    ldr     ent, =odd_entry+1
+    b       calc_limits
+
+even_u:
+    ldr     ent, =even_entry+1
+    b       calc_limits
+
+calc_limits:
     // Calculate Vlim and Ulim
     ldr.w   k0, Vn
     add.w	k1, pV, k0, lsl #2
@@ -591,7 +603,7 @@ odd_v_loop:
     cmp	    Ulim, pU
     bne.n   odd_v_loop
     str.W   k0, [pW], #4
-    b       check_u
+    b       outer_2x2_loop
 
     // Vn is even so do 2 rows at once
 even_v:
@@ -612,18 +624,6 @@ even_v_loop:
     bne.n   even_v_loop
     str.W   k0, [pW], #4
     str.W   k1, [pW], #4
-    b       check_u
-
-check_u:
-    // If Un is odd we need to do a single pair
-    tst     Un, #1
-    beq.n   even_u
-
-    ldr     ent, =odd_entry+1
-    b       outer_2x2_loop
-
-even_u:
-    ldr     ent, =even_entry+1
     b       outer_2x2_loop
 
 .align 4
