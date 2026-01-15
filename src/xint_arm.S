@@ -550,7 +550,7 @@ xll_mul_2x2:
 #define pU r1
 #define Un r2
 #define pV r3
-#define Vlim r4
+#define ent r4
 #define Ulim r5
 #define v0 r6
 #define v1 r7
@@ -560,13 +560,16 @@ xll_mul_2x2:
 #define k1 r11
 #define u0 r12
 #define u1 lr
-#define Vn [sp, #36]
+#define Vn [sp, #40]
+#define Vlim [sp, #0]
 
     stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
+    subs    sp, sp, #4
 
     // Calculate Vlim and Ulim
     ldr.w   k0, Vn
-    add.w	Vlim, pV, k0, lsl #2
+    add.w	k1, pV, k0, lsl #2
+    str.w   k1, Vlim
     add.w	Ulim, pU, Un, lsl #2
 
     // k0 still contains Vn
@@ -588,7 +591,7 @@ odd_v_loop:
     cmp	    Ulim, pU
     bne.n   odd_v_loop
     str.W   k0, [pW], #4
-    b       outer_2x2_loop
+    b       check_u
 
     // Vn is even so do 2 rows at once
 even_v:
@@ -609,12 +612,25 @@ even_v_loop:
     bne.n   even_v_loop
     str.W   k0, [pW], #4
     str.W   k1, [pW], #4
+    b       check_u
+
+check_u:
+    // If Un is odd we need to do a single pair
+    tst     Un, #1
+    beq.n   even_u
+
+    ldr     ent, =odd_entry+1
+    b       outer_2x2_loop
+
+even_u:
+    ldr     ent, =even_entry+1
     b       outer_2x2_loop
 
 .align 4
 outer_2x2_loop:
     // Check whether we've reached Vlim
-    cmp	    pV, Vlim
+    ldr.W   k0, Vlim
+    cmp	    pV, k0
     beq     outer_2x2_loop_done
 
     // Move W and U back Un places
@@ -629,20 +645,19 @@ outer_2x2_loop:
     mov     k0, #0
     mov     k1, k0
 
-    // If Un is odd we need to do a single pair
-    tst     Un, #1
-    bne.n   odd_u
+    // Jump to the correct entry point
+    bx      ent
 
-even_u:
-
+.align 4
 inner_2x2_loop:
+even_entry:
     ldr.w	u0, [pU], #4
     ldr     w0, [pW]
     umaal   w0, k0, u0, v0
     umaal   k0, k1, u0, v1
     str.w	w0, [pW], #4
 
-odd_u:
+odd_entry:
     ldr.w	u1, [pU], #4
     ldr     w1, [pW]
     umaal   w1, k0, u1, v0
@@ -657,13 +672,14 @@ odd_u:
     b       outer_2x2_loop
 
 outer_2x2_loop_done:
+    adds    sp, sp, #4
     ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
 
 #undef pW
 #undef pU
 #undef Un
 #undef pV
-#undef Vlim
+#undef ent
 #undef Ulim
 #undef v0
 #undef v1
@@ -674,6 +690,7 @@ outer_2x2_loop_done:
 #undef u0
 #undef u1
 #undef Vn
+#undef Vlim
 
 @void xll_squ_asm(xword_t *W, const xword_t *U, int Un);
 .global xll_squ_asm
