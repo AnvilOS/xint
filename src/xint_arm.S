@@ -542,6 +542,20 @@ xll_mul_done:
 #undef pV
 #undef Vlim
 
+.align 4
+u_tablea:
+    .byte ((u_00a-u_00a)/2)
+    .byte ((u_01a-u_00a)/2)
+    .byte ((u_10a-u_00a)/2)
+    .byte ((u_11a-u_00a)/2)
+
+.align 4
+u_table:
+    .byte ((u_00-u_00)/2)
+    .byte ((u_01-u_00)/2)
+    .byte ((u_10-u_00)/2)
+    .byte ((u_11-u_00)/2)
+
 @void xll_mul_2x2(xword_t *W, const xword_t *U, size_t Un, const xword_t *V, size_t Vn)
 .global xll_mul_2x2
 xll_mul_2x2:
@@ -566,18 +580,6 @@ xll_mul_2x2:
     stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
     subs    sp, sp, #4
 
-    // Record here wheter Un is odd or even
-    tst     Un, #1
-    beq.n   even_u
-
-    ldr     ent, =odd_entry+1
-    b       calc_limits
-
-even_u:
-    ldr     ent, =even_entry+1
-    b       calc_limits
-
-calc_limits:
     // Calculate Vlim and Ulim
     ldr.w   k0, Vn
     add.w	k1, pV, k0, lsl #2
@@ -614,21 +616,59 @@ even_v:
     mov     k0, #0
     mov     k1, k0
 
+    mov     w0, Un
+    and     w0, #3
+    adr.w   w1, u_tablea
+    tbb     [w1, w0]
+
+u_00a:
+    b       entry_00a
+u_01a:
+    b       entry_01a
+u_10a:
+    b       entry_10a
+u_11a:
+    b       entry_11a
+
+.align 4
 even_v_loop:
+entry_00a:
     ldr.w	u0, [pU], #4
     mov     w0, #0
     umaal   w0, k0, u0, v0
     umaal   k0, k1, u0, v1
     str.w	w0, [pW], #4
+
+entry_11a:
+    ldr.w	u1, [pU], #4
+    mov     w1, #0
+    umaal   w1, k0, u1, v0
+    umaal   k0, k1, u1, v1
+    str.w	w1, [pW], #4
+
+entry_10a:
+    ldr.w	u0, [pU], #4
+    mov     w0, #0
+    umaal   w0, k0, u0, v0
+    umaal   k0, k1, u0, v1
+    str.w	w0, [pW], #4
+
+entry_01a:
+    ldr.w	u1, [pU], #4
+    mov     w1, #0
+    umaal   w1, k0, u1, v0
+    umaal   k0, k1, u1, v1
+    str.w	w1, [pW], #4
+
     cmp	    Ulim, pU
     bne.n   even_v_loop
+    
     str.W   k0, [pW], #4
     str.W   k1, [pW], #4
     b       outer_2x2_loop
 
 .align 4
 outer_2x2_loop:
-    // Check whether we've reached Vlim
     ldr.W   k0, Vlim
     cmp	    pV, k0
     beq     outer_2x2_loop_done
@@ -645,19 +685,44 @@ outer_2x2_loop:
     mov     k0, #0
     mov     k1, k0
 
-    // Jump to the correct entry point
-    bx      ent
+    mov     w0, Un
+    and     w0, #3
+    adr.w   w1, u_tablea
+    tbb     [w1, w0]
+
+u_00:
+    b       entry_00
+u_01:
+    b       entry_01
+u_10:
+    b       entry_10
+u_11:
+    b       entry_11
 
 .align 4
 inner_2x2_loop:
-even_entry:
+entry_00:
     ldr.w	u0, [pU], #4
     ldr     w0, [pW]
     umaal   w0, k0, u0, v0
     umaal   k0, k1, u0, v1
     str.w	w0, [pW], #4
 
-odd_entry:
+entry_11:
+    ldr.w	u1, [pU], #4
+    ldr     w1, [pW]
+    umaal   w1, k0, u1, v0
+    umaal   k0, k1, u1, v1
+    str.w	w1, [pW], #4
+
+entry_10:
+    ldr.w	u0, [pU], #4
+    ldr     w0, [pW]
+    umaal   w0, k0, u0, v0
+    umaal   k0, k1, u0, v1
+    str.w	w0, [pW], #4
+
+entry_01:
     ldr.w	u1, [pU], #4
     ldr     w1, [pW]
     umaal   w1, k0, u1, v0
