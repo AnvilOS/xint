@@ -458,12 +458,19 @@ m4:
     ldr.w   tmp, pV
     ldmia   tmp!, { v0, v1, v2, v3 }
     str.w	tmp, pV
+
+    ldr.w   tmp, Un
+
     // Load k0, k1, k2, k3
     mov     k0, #0
     mov     k1, k0
     mov     k2, k0
     mov     k3, k0
-    b       xll_mul_m4_loop
+
+    tst     tmp, #1
+
+    beq.n   xll_mul_m4_loop
+    b       xll_mul_m4_loop_mid
 
 .align 4
 xll_mul_m4_loop:
@@ -473,13 +480,21 @@ xll_mul_m4_loop:
     umaal   k0, k1, uu, v1
     umaal   k1, k2, uu, v2
     umaal   k2, k3, uu, v3
-    cmp	    Ulim, pU
     str.w	ww, [pW], #4
-    bne.n   xll_mul_m4_loop
+xll_mul_m4_loop_mid:
+    ldr.w	uu, [pU], #4
+    mov     ww, #0 
+    umaal   ww, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    umaal   k1, k2, uu, v2
+    umaal   k2, k3, uu, v3
+    str.w	ww, [pW], #4
+    cmp	    pU, Ulim
+    blt.n   xll_mul_m4_loop
     stmia   pW!, { k0, k1, k2, k3 }
-//   b       xll_mul_ma4_outer
+    b       xll_mul_ma4_outer
 
-//.align 4
+.align 4
 xll_mul_ma4_outer:
     // Check whether we've reached Vlim, use k0 as a temp
     ldr.w   k0, pV
@@ -487,15 +502,16 @@ xll_mul_ma4_outer:
     cmp	    k0, tmp
     beq     xll_mul_done
 
+    // Load v0, v1, v2, v3
+    ldmia   k0!, { v0, v1, v2, v3 }
+    str.w	k0, pV
+
     // Move W and U back Un places
     ldr.w   tmp, Un
     subs    pW, pW, tmp, lsl #2
     subs    pU, pU, tmp, lsl #2
 
-    // Load v0, v1, v2, v3
-    ldr.w   tmp, pV
-    ldmia   tmp!, { v0, v1, v2, v3 }
-    str.w	tmp, pV
+    tst     tmp, #1
 
     // Set k0, k1, k2, k3 to 0
     mov     k0, #0
@@ -503,7 +519,9 @@ xll_mul_ma4_outer:
     mov     k2, k0
     mov     k3, k0
 
-    b       xll_mul_ma4_loop
+    beq.n   xll_mul_ma4_loop
+    b       xll_mul_ma4_loop_mid
+
 .align 4
 xll_mul_ma4_loop:
     ldr.w	uu, [pU], #4
@@ -512,9 +530,19 @@ xll_mul_ma4_loop:
     umaal   k0, k1, uu, v1
     umaal   k1, k2, uu, v2
     umaal   k2, k3, uu, v3
-    cmp	    Ulim, pU
     str.w	ww, [pW], #4
-    bne.n   xll_mul_ma4_loop
+    
+xll_mul_ma4_loop_mid:
+    ldr.w	uu, [pU], #4
+    ldr.w	tmp, [pW]
+    umaal   tmp, k0, uu, v0
+    umaal   k0, k1, uu, v1
+    umaal   k1, k2, uu, v2
+    umaal   k2, k3, uu, v3
+    str.w	tmp, [pW], #4
+    
+    cmp	    pU, Ulim
+    blt.n   xll_mul_ma4_loop
  
     stmia   pW!, { k0, k1, k2, k3 }
     b       xll_mul_ma4_outer
@@ -540,221 +568,6 @@ xll_mul_done:
 #undef Vn
 #undef Un
 #undef pV
-#undef Vlim
-
-.align 4
-u_tablea:
-    .byte ((u_00a-u_00a)/2)
-    .byte ((u_01a-u_00a)/2)
-    .byte ((u_10a-u_00a)/2)
-    .byte ((u_11a-u_00a)/2)
-
-.align 4
-u_table:
-    .byte ((u_00-u_00)/2)
-    .byte ((u_01-u_00)/2)
-    .byte ((u_10-u_00)/2)
-    .byte ((u_11-u_00)/2)
-
-@void xll_mul_2x2(xword_t *W, const xword_t *U, size_t Un, const xword_t *V, size_t Vn)
-.global xll_mul_2x2
-xll_mul_2x2:
-
-#define pW r0
-#define pU r1
-#define Un r2
-#define pV r3
-#define ent r4
-#define Ulim r5
-#define v0 r6
-#define v1 r7
-#define w0 r8
-#define w1 r9
-#define k0 r10
-#define k1 r11
-#define u0 r12
-#define u1 lr
-#define Vn [sp, #40]
-#define Vlim [sp, #0]
-
-    stmdb	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, lr }
-    subs    sp, sp, #4
-
-    // Calculate Vlim and Ulim
-    ldr.w   k0, Vn
-    add.w	k1, pV, k0, lsl #2
-    str.w   k1, Vlim
-    add.w	Ulim, pU, Un, lsl #2
-
-    // k0 still contains Vn
-    tst     k0, #1
-    beq.n   even_v
-    
-    // Vn is odd so do a single row v
- odd_v:
-    // Load v0
-    ldr.w   v0, [pV], #4
-    // Zero k0
-    mov     k0, #0
-
-odd_v_loop:
-    ldr.w	u0, [pU], #4
-    mov     w0, #0 
-    umaal   w0, k0, u0, v0
-    str.w	w0, [pW], #4
-    cmp	    Ulim, pU
-    bne.n   odd_v_loop
-    str.W   k0, [pW], #4
-    b       outer_2x2_loop
-
-    // Vn is even so do 2 rows at once
-even_v:
-   // Load v0, v1
-    ldr.w   v0, [pV], #4
-    ldr.w   v1, [pV], #4
-    // Zero k0, k1
-    mov     k0, #0
-    mov     k1, k0
-
-    mov     w0, Un
-    and     w0, #3
-    adr.w   w1, u_tablea
-    tbb     [w1, w0]
-
-u_00a:
-    b       entry_00a
-u_01a:
-    b       entry_01a
-u_10a:
-    b       entry_10a
-u_11a:
-    b       entry_11a
-
-.align 4
-even_v_loop:
-entry_00a:
-    ldr.w	u0, [pU], #4
-    mov     w0, #0
-    umaal   w0, k0, u0, v0
-    umaal   k0, k1, u0, v1
-    str.w	w0, [pW], #4
-
-entry_11a:
-    ldr.w	u1, [pU], #4
-    mov     w1, #0
-    umaal   w1, k0, u1, v0
-    umaal   k0, k1, u1, v1
-    str.w	w1, [pW], #4
-
-entry_10a:
-    ldr.w	u0, [pU], #4
-    mov     w0, #0
-    umaal   w0, k0, u0, v0
-    umaal   k0, k1, u0, v1
-    str.w	w0, [pW], #4
-
-entry_01a:
-    ldr.w	u1, [pU], #4
-    mov     w1, #0
-    umaal   w1, k0, u1, v0
-    umaal   k0, k1, u1, v1
-    str.w	w1, [pW], #4
-
-    cmp	    Ulim, pU
-    bne.n   even_v_loop
-    
-    str.W   k0, [pW], #4
-    str.W   k1, [pW], #4
-    b       outer_2x2_loop
-
-.align 4
-outer_2x2_loop:
-    ldr.W   k0, Vlim
-    cmp	    pV, k0
-    beq     outer_2x2_loop_done
-
-    // Move W and U back Un places
-    subs    pW, pW, Un, lsl #2
-    subs    pU, pU, Un, lsl #2
-
-    // Load v0, v1
-    ldr.W   v0, [pV], #4
-    ldr.W   v1, [pV], #4
-
-    // Zero k0, k1
-    mov     k0, #0
-    mov     k1, k0
-
-    mov     w0, Un
-    and     w0, #3
-    adr.w   w1, u_tablea
-    tbb     [w1, w0]
-
-u_00:
-    b       entry_00
-u_01:
-    b       entry_01
-u_10:
-    b       entry_10
-u_11:
-    b       entry_11
-
-.align 4
-inner_2x2_loop:
-entry_00:
-    ldr.w	u0, [pU], #4
-    ldr     w0, [pW]
-    umaal   w0, k0, u0, v0
-    umaal   k0, k1, u0, v1
-    str.w	w0, [pW], #4
-
-entry_11:
-    ldr.w	u1, [pU], #4
-    ldr     w1, [pW]
-    umaal   w1, k0, u1, v0
-    umaal   k0, k1, u1, v1
-    str.w	w1, [pW], #4
-
-entry_10:
-    ldr.w	u0, [pU], #4
-    ldr     w0, [pW]
-    umaal   w0, k0, u0, v0
-    umaal   k0, k1, u0, v1
-    str.w	w0, [pW], #4
-
-entry_01:
-    ldr.w	u1, [pU], #4
-    ldr     w1, [pW]
-    umaal   w1, k0, u1, v0
-    umaal   k0, k1, u1, v1
-    str.w	w1, [pW], #4
-
-    cmp	    Ulim, pU
-    bne.n   inner_2x2_loop
-
-    str.W   k0, [pW], #4
-    str.W   k1, [pW], #4
-    b       outer_2x2_loop
-
-outer_2x2_loop_done:
-    adds    sp, sp, #4
-    ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, r10, r11, pc }
-
-#undef pW
-#undef pU
-#undef Un
-#undef pV
-#undef ent
-#undef Ulim
-#undef v0
-#undef v1
-#undef w0
-#undef w1
-#undef k0
-#undef k1
-#undef u0
-#undef u1
-#undef Vn
 #undef Vlim
 
 @void xll_squ_asm(xword_t *W, const xword_t *U, int Un);
