@@ -8,7 +8,7 @@
 #include "test_harness.h"
 #include "time_stamp.h"
 
-static const xword_t u[] =
+xword_t u[] =
 {
 #if defined XDWORD_MAX
     0x747def71,
@@ -71,7 +71,7 @@ static const xword_t u[] =
 #endif
 };
 
-static const xword_t v[] =
+xword_t v[] =
 {   
 #if defined XDWORD_MAX
     0x4549ee93,
@@ -134,6 +134,7 @@ static const xword_t v[] =
 #endif
 };
 
+#define MINUV 2
 #define MAXUV 23
 xword_t w_c[2*MAXUV];
 xword_t w_asm[2*MAXUV];
@@ -143,18 +144,18 @@ xword_t w_sq_asm[2*MAXUV];
 
 TEST_GROUP(ll_mul)
 
-#define TRACE printf
+#define TRACE(...)
+//#define TRACE printf
 
 TEST(ll_mul, mul_asm)
 {
     int errors = 0;
     int cmp;
     STAMP_VARS();
-    size_t sz = sizeof(u)/sizeof(u[0]);
     TRACE("        MUL C  MUL A  MUL2x2\n");
-    for (int Vn=2; Vn<=MAXUV; ++Vn)
+    for (int Vn=MINUV; Vn<=MAXUV; ++Vn)
     {
-        for (int Un=2; Un<=MAXUV; ++Un)
+        for (int Un=MINUV; Un<=MAXUV; ++Un)
         {
             TRACE(" %2dx%2d:", Un, Vn);
             __disable_irq();
@@ -173,17 +174,14 @@ TEST(ll_mul, mul_asm)
             cmp = xll_cmp(w_c, w_asm, Un+Vn);
             if (cmp) ++errors;
             TRACE("%c", cmp ? '*' : ' ');
-#endif
-#if defined XINT_USE_MUL_ASM
+            if (Un == 8 && Un == Vn) {
             __disable_irq();
-            STAMP_BEFORE();;
-            xll_mul_2x2(w_2x2, u, Un, v, Vn);
+                STAMP_BEFORE();
+                uECC_vli_mult(w_asm, u, v, Un);
             STAMP_AFTER();
             __enable_irq();
-            TRACE("%6lu", STAMP_DIFF());
-            cmp = xll_cmp(w_c, w_2x2, Un+Vn);
-            if (cmp) ++errors;
-            TRACE("%c", cmp ? '*' : ' ');
+                TRACE("%7lu", STAMP_DIFF());
+            }
 #endif
             TRACE("\n");
         }
