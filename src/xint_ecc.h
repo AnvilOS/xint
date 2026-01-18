@@ -32,8 +32,6 @@ struct xint_ecc_curve_s
     const xword_t *Gy;
     const xword_t *n;
     const xword_t *h;
-    void (*point_add)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t q, const xint_ecc_point_jacobian_t p, const struct xint_ecc_curve_s curve);
-    void (*point_double)(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const struct xint_ecc_curve_s curve);
     void (*xint_mod_fast)(xword_t *w, xword_t *u);
 };
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;

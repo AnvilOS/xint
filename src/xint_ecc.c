@@ -35,8 +35,6 @@ const xint_ecc_curve_t p224 =
     p224_Gy,
     p224_n,
     p224_h,
-    0,
-    0,
     xint_mod_fast_224
 };
 
@@ -58,8 +56,6 @@ const xint_ecc_curve_t p256 =
     p256_Gy,
     p256_n,
     p256_h,
-    0,
-    0,
     xint_mod_fast_256
 };
 
@@ -81,8 +77,6 @@ const xint_ecc_curve_t p384 =
     p384_Gy,
     p384_n,
     p384_h,
-    0,
-    0,
     xint_mod_fast_384
 };
 
@@ -105,8 +99,6 @@ const xint_ecc_curve_t p521 =
     p521_Gy,
     p521_n,
     p521_h,
-    0,
-    0,
     xint_mod_fast_521
 };
 
@@ -453,26 +445,6 @@ void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
         xll_div(q, u, c->p, m, n);
     }
     xll_move(w, u, c->nwords);
-}
-
-static int extend(xint_t x, int new_size)
-{
-    if (new_size > x->capacity)
-    {
-        void *new_mem = realloc(x->data, sizeof(xword_t) * new_size);
-        if (new_mem == NULL)
-        {
-            return -1;
-        }
-        for (int i=x->size; i<new_size; ++i)
-        {
-            ((xword_t *)new_mem)[i] = 0;
-        }
-        x->capacity = new_size;
-        x->data = new_mem;
-    }
-    x->size = x->size < 0 ? -new_size : new_size;
-    return 0;
 }
 
 static void inline xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
