@@ -525,29 +525,32 @@ static void inline xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_cur
     c->xint_mod_fast(w, tmp);
 }
 
-void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_ecc_curve_t *c)
+void from_jacobian(xint_t wx, xint_t wy, const xword_t *ux, const xword_t *uy, const xword_t *uz, const xint_ecc_curve_t *c)
 {
     // Convert back to affine
     xint_t X = XINT_INIT_VAL;
     xint_t Y = XINT_INIT_VAL;
     xint_t P = XINT_INIT_VAL;
+    xint_t UZ = XINT_INIT_VAL;
     P->size = c->nwords;
     P->data = c->p;
+    UZ->size = c->nwords;
+    UZ->data = uz;
     xint_t z_inv = XINT_INIT_VAL;
-    xint_mod_inverse(z_inv, u->z, P);
+    xint_mod_inverse(z_inv, UZ, P);
     
     xint_copy(X, z_inv);
     xint_mod_sqr(X->data, X->data, c);
-    xint_mod_mul(X->data, X->data, u->x->data, c);
+    xint_mod_mul(X->data, X->data, ux, c);
     
     xint_copy(Y, z_inv);
     xint_mod_sqr(Y->data, Y->data, c);
     xint_mod_mul(Y->data, Y->data, z_inv->data, c);
-    xint_mod_mul(Y->data, Y->data, u->y->data, c);
+    xint_mod_mul(Y->data, Y->data, uy, c);
     
-    xint_copy(w->x, X);
-    xint_copy(w->y, Y);
-    w->is_at_infinity = 0;
+    xint_copy(wx, X);
+    xint_copy(wy, Y);
+    //w->is_at_infinity = 0;
 }
 
 void ecc_zaddu(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t *c)
@@ -718,7 +721,6 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
     // 3P = ZADDU(P', 2P)
     ecc_dblu(Rx[1-bit], Ry[1-bit], Rz[1-bit], Rx[bit], Ry[bit], Rz[bit], c);
     ecc_zaddu(Rx[bit], Ry[bit], Rz[0], Rx[1-bit], Ry[1-bit], c);
-    //memcpy(Rz[0], Rz[bit], c.nwords*XWORD_BITS/8);
 
     for (int i=2; i<nbits; ++i)
     {
@@ -726,18 +728,8 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
         ecc_zdau(Rx[1-bit], Ry[1-bit], Rz[0], Rx[bit], Ry[bit], c);
     }
 
-    xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
-    extend(Rj->x, c->nwords);
-    extend(Rj->y, c->nwords);
-    extend(Rj->z, c->nwords);
-    xll_move(Rj->x->data, Rx[0], c->nwords);
-    xll_move(Rj->y->data, Ry[0], c->nwords);
-    xll_move(Rj->z->data, Rz[0], c->nwords);
-
-    from_jacobian(R, Rj, c);
+    from_jacobian(R->x, R->y, Rx[0], Ry[0], Rz[0], c);
     xint_delete(k);
-    xint_point_jacobian_delete(Rj);
 }
 
 #if 0
