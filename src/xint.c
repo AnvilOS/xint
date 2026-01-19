@@ -871,12 +871,6 @@ void xint_div_q(xint_t q, const xint_t u, const xint_t v)
 
 void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
-    // As per Knuth's algorithm D
-    // u[0] to u[m+n-1]
-    // v[0] to v[n-1]
-    // q[0] to q[m]
-    // r[0] to r[n-1]
-    
     // Algortihm D doesn't work for vn <= 1
     int Un = XINT_ABS(u->size);
     int Vn = XINT_ABS(v->size);
@@ -920,25 +914,73 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 
     int n = Vn;
     int m = Un - Vn;
+    int norm = 0;
+    xword_t *V = v->data;
+    xword_t *R = NULL;
+    xword_t *Q = NULL;
+    int free_v = 0;
+    int free_r = 0;
+    int free_q = 0;
 
-    xint_copy(r, u); // r may sometimes grow
+    // Check the normalisation situation
+    int bit_shift = (XWORD_BITS-1) - get_highest_bit(v->data[v->size-1]);
+    if (bit_shift && 2 * m > n)
+    {
+        // We should normalise
+        norm = 1;
+    }
+    
+    // If we need to normalise or v will be trashed, make a copy of v
+    if (norm || v == r || v == q)
+    {
+        V = ALLOC_XWORDS(n);
+        norm ? x_lshift(V, v->data, n, bit_shift) : xll_move(V, v->data, n);
+        free_v = 1;
+    }
 
-    // Increase the size of R by one
-    FAST_RESIZE(r, m + n + 1);
-    r->data[m + n] = 0;
+    // In some cases we probably don't need to create an R but for now...
+    if (1)
+    {
+        R = ALLOC_XWORDS(m+n+1);
+        R[m+n] = norm ? x_lshift(R, u->data, m+n, bit_shift) : (xll_move(R, u->data, m+n), 0);
+        free_r = 1;
+    }
 
-    if (q)
+    if (q == 0)
+    {
+        // We can save an alloc by putting Q at the top of R
+        Q = R + n;
+    }
+    else
     {
         FAST_RESIZE(q, m + 1);
         assert(XINT_ABS(q->size) == m + 1);
+        Q = q->data;
     }
 
-    assert(XINT_ABS(r->size) == m + n + 1);
-    assert(XINT_ABS(v->size) == n);
+    //assert(XINT_ABS(r->size) == m + n + 1);
+    //assert(XINT_ABS(v->size) == n);
     
-    xll_div(q?q->data:r->data + n, r->data, v->data, m, n);
+    xll_div(Q, R, V, m, n);
 
-    resize(r, n);
+    if (r != NULL)
+    {
+        FAST_RESIZE(r, n);
+        norm ? x_rshift(r->data, R, n, bit_shift) : xll_move(r->data, R, n);
+    }
+
+    if (free_v)
+    {
+        FREE_XWORDS(V);
+    }
+    if (free_r)
+    {
+        FREE_XWORDS(R);
+    }
+    if (free_q)
+    {
+        FREE_XWORDS(Q);
+    }
 
     if (q)
     {

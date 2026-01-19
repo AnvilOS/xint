@@ -38,6 +38,9 @@ do { \
     (__b) = t; \
 } while (0)
 
+#define ALLOC_XWORDS(__a) (xword_t *)malloc((__a) * sizeof(xword_t))
+#define FREE_XWORDS(__a) free((__a))
+
 #if defined XDWORD_MUL
 #define mul_1_1(__k, __w, __u, __v) \
 do { \
