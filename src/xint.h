@@ -14,25 +14,23 @@
 #endif
 
 #if XWORD_SIZE == __SIZEOF_INT__
-
 typedef unsigned int xword_t;
-
 #elif XWORD_SIZE == __SIZEOF_LONG__
-
 typedef unsigned long xword_t;
-
 #elif XWORD_SIZE == __SIZEOF_LONG_LONG__
-
 typedef unsigned long long xword_t;
-
 #endif
 
-#if XWORD_SIZE < __SIZEOF_LONG__
+#if XWORD_SIZE <= __SIZEOF_LONG__
+#define XWORD_HOLDS_LONG
+#endif
+
+#if 2*XWORD_SIZE == __SIZEOF_LONG__
 typedef unsigned long xdword_t;
 #define XDWORD_MAX ((xdword_t)-1)
 #define XDWORD_MUL
 //#define XDWORD_DIV
-#elif XWORD_SIZE < __SIZEOF_LONG_LONG__
+#elif 2*XWORD_SIZE == __SIZEOF_LONG_LONG__
 typedef unsigned long long xdword_t;
 #define XDWORD_MAX ((xdword_t)-1)
 #define XDWORD_MUL
@@ -115,13 +113,13 @@ void xint_mul_long(xint_t w, const xint_t u, long v);
 void xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
 
 // Division and modulus functions
+void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v);
-xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
-int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v);
-xword_t xint_mod(xint_t r, const xint_t u, const xint_t v);
-int xint_mod_1(xword_t *r, const xint_t u, xword_t v);
+void xint_div_ulong(xint_t q, xword_t *r, const xint_t u, xword_t v);
+void xint_mod(xint_t r, const xint_t u, const xint_t v);
+void xint_mod_ulong(xword_t *r, const xint_t u, xword_t v);
 
 // Bit manipulation
 int xint_highest_bit_num(const xint_t x);

@@ -55,7 +55,7 @@ int xint_is_prime(const xint_t n)
             }
         }
         xword_t r;
-        xint_mod_1(&r, n, primes[i]);
+        xint_mod_ulong(&r, n, primes[i]);
         if (r == 0)
         {
             return 0;

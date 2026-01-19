@@ -831,7 +831,7 @@ void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v)
     int Vs = v->size >= 0;
     xint_div_trunc(q, r, u, v);
     int Rs = r->size >= 0;
-    if (Rs != Vs)
+    if (Rs != Vs && r->size != 0)
     {
         // floor =  u/v - (u%v!=0 && (u^v)<0);
         xint_sub_ulong(q, q, 1);
@@ -844,7 +844,7 @@ void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v)
     int Vs = v->size >= 0;
     xint_div_trunc(q, r, u, v);
     int Rs = r->size >= 0;
-    if (Rs != Vs)
+    if (Rs == Vs)
     {
         //ceil u/v + (u%v!=0 && (u^v)>0);
         xint_add_ulong(q, q, 1);
@@ -852,15 +852,24 @@ void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v)
     }
 }
 
-xword_t xint_mod(xint_t r, const xint_t u, const xint_t v)
+void xint_mod(xint_t r, const xint_t u, const xint_t v)
 {
     xint_t q = XINT_INIT_VAL;
     xint_is_pos(v) ? xint_div_floor(q, r, u, v) : xint_div_ceil(q, r, u, v);
     xint_delete(q);
-    return 0;
 }
 
-xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
+void xint_div_r(xint_t r, const xint_t u, const xint_t v)
+{
+    xint_div(0, r, u, v);
+}
+
+void xint_div_q(xint_t q, const xint_t u, const xint_t v)
+{
+    xint_div(q, 0, u, v);
+}
+
+void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
     // As per Knuth's algorithm D
     // u[0] to u[m+n-1]
@@ -875,7 +884,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     {
         // Use the algorithm from exercise 16
         xword_t rem;
-        xint_div_1(q, &rem, u, v->data[0]);
+        xint_div_ulong(q, &rem, u, v->data[0]);
         if (rem)
         {
             resize(r, 1);
@@ -885,7 +894,7 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         {
             r->size = 0;
         }
-        return 0;
+        return;
     }
 
     int cmp = xint_cmpa(u, v);
@@ -899,14 +908,14 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
                 q->data[0] = 1;
             }
             r->size = 0;
-            return 0;
+            return;
         }
         if (q)
         {
             q->size = 0;
         }
         xint_copy(r, u);
-        return 0;
+        return;
     }
 
     int n = Vn;
@@ -915,12 +924,12 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     xint_copy(r, u); // r may sometimes grow
 
     // Increase the size of R by one
-    resize(r, m + n + 1);
+    FAST_RESIZE(r, m + n + 1);
     r->data[m + n] = 0;
 
     if (q)
     {
-        resize(q, m + 1);
+        FAST_RESIZE(q, m + 1);
         assert(XINT_ABS(q->size) == m + 1);
     }
 
@@ -936,40 +945,54 @@ xword_t xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         trim_zeroes(q);
     }
     trim_zeroes(r);
-
-    return 0;
 }
 
-int xint_div_1(xint_t q, xword_t *r, const xint_t u, xword_t v)
+void xint_div_ulong(xint_t q, xword_t *r, const xint_t u, unsigned long v)
 {
     // This is from Knuth's recommended exercise 16
     if (v == 0)
     {
-        return -1;
+        return;
     }
     int Un = XINT_ABS(u->size);
+    int Us = u->size >= 0;
     if (q)
     {
-        resize(q, Un);
+        FAST_RESIZE(q, Un);
     }
     *r = x_div_1(q?q->data:0, u->data, v, Un);
     if (q)
     {
         trim_zeroes(q);
     }
-    return 0;
+    if (Us != 1)
+    {
+        xint_set_neg(q);
+    }
+    if (q->size < 0)
+    {
+        *r = -*r;
+    }
 }
 
-int xint_mod_1(xword_t *r, const xint_t u, xword_t v)
+void xint_div_long(xint_t q, xword_t *r, const xint_t u, unsigned long v)
+{
+    xint_div_ulong(q, r, u, XINT_ABS(v));
+    if (v < 0)
+    {
+        xint_chs(q);
+    }
+}
+
+void xint_mod_ulong(xword_t *r, const xint_t u, xword_t v)
 {
     // This is from Knuth's recommended exercise 16
     if (v == 0)
     {
-        return -1;
+        return;
     }
     int Un = xint_size(u);
     *r = x_div_1(0, u->data, v, Un);
-    return 0;
 }
 
 // Bitwise functions

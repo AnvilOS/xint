@@ -25,7 +25,7 @@ void xint_to_buf(unsigned char *buf, int len, xint_t u)
 
 void xint_print_raw(const char *label, const xint_t u)
 {
-    printf("%s = [ ", label);
+    printf("%s = %c [ ", label, u->size<0?'-':'+');
     for (long j=xint_size(u)-1; j>=0; --j)
     {
         printf(XWORD_BITS==32?"%08x":"%016lx", u->data[j]);
@@ -81,6 +81,7 @@ char *xint_to_string(const xint_t u, int base)
 
     xint_init(TEMP);
     xint_copy(TEMP, u);
+    TEMP->size = abs(TEMP->size);
 
     // Figure out how much space we need
     size_t needed;
@@ -109,7 +110,7 @@ char *xint_to_string(const xint_t u, int base)
     while (1)
     {
         xword_t ch;
-        xint_div_1(TEMP, &ch, TEMP, base);
+        xint_div_ulong(TEMP, &ch, TEMP, base);
         if (ch >= 0 && ch <= 9)
         {
             str[n] = ch + '0';

@@ -160,10 +160,11 @@ static inline int get_highest_bit(const xword_t word)
 {
     if (word)
     {
-        if (sizeof(xword_t) == 8)
-            return (XWORD_BITS - 1) - __builtin_clzl(word);
-        else
-            return (XWORD_BITS - 1) - __builtin_clz(word);
+#if XWORD_SIZE == __SIZEOF_LONG__
+        return (XWORD_BITS - 1) - __builtin_clzl(word);
+#else
+        return (XWORD_BITS - 1) - __builtin_clz(word);
+#endif
     }
     return -1;
 }
