@@ -155,9 +155,9 @@ loop_mul_add_4:
 
 
 @xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
-.global xll_add
+.global xll_add_asm
 .align 4
-xll_add:
+xll_add_asm:
 
     @ r0: W 
     @ r1: U
@@ -195,9 +195,9 @@ xll_add_done:
     bx      lr 
 
 @xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
-.global xll_add_1
+.global xll_add_1_asm
 .align 4
-xll_add_1:
+xll_add_1_asm:
 
     @ r0: W 
     @ r1: U
@@ -243,9 +243,9 @@ xll_add_1_done:
     bx      lr 
 
 @xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
-.global xll_sub
+.global xll_sub_asm
 .align 4
-xll_sub:
+xll_sub_asm:
 
     @ r0: W 
     @ r1: U
@@ -283,9 +283,9 @@ xll_sub_done:
     bx      lr 
 
 @xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
-.global xll_sub_1
+.global xll_sub_1_asm
 .align 4
-xll_sub_1:
+xll_sub_1_asm:
 
     @ r0: W 
     @ r1: U
@@ -760,7 +760,7 @@ sq_xll_mul_ma4_loop:
     umaal   k2, k3, uu, v3
     cmp	    Ulim, pU
     str.w	ww, [pW], #4
-    bne.n   sq_xll_mul_ma4_loop
+    blt.n   sq_xll_mul_ma4_loop
 
     stmia   pW!, { k0, k1, k2, k3 }
 

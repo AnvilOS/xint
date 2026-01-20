@@ -5,8 +5,36 @@
 #include "xint.h"
 
 #if defined __arm__
+#define XINT_USE_ADD_ASM
+#define XINT_USE_ADD_1_ASM
+#define XINT_USE_SUB_ASM
+#define XINT_USE_SUB_1_ASM
 #define XINT_USE_MUL_ASM
 #define XINT_USE_SQU_ASM
+#endif
+
+#if defined XINT_USE_ADD_ASM
+#define xll_add xll_add_asm
+#else
+#define xll_add xll_add_c
+#endif
+
+#if defined XINT_USE_ADD_1_ASM
+#define xll_add_1 xll_add_1_asm
+#else
+#define xll_add_1 xll_add_1_c
+#endif
+
+#if defined XINT_USE_SUB_ASM
+#define xll_sub xll_sub_asm
+#else
+#define xll_sub xll_sub_c
+#endif
+
+#if defined XINT_USE_SUB_1_ASM
+#define xll_sub_1 xll_sub_1_asm
+#else
+#define xll_sub_1 xll_sub_1_c
 #endif
 
 #if defined XINT_USE_MUL_ASM

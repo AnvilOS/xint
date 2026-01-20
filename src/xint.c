@@ -1167,8 +1167,7 @@ xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
     return 0;
 }
 
-#if !defined __arm__
-xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
+xword_t xll_add_c(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
     // W[] = U[] + V[]
     // This function will work if any or all of the xints are
@@ -1191,10 +1190,8 @@ xword_t xll_add(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
     // Return Wn
     return k;
 }
-#endif
 
-#if !defined __arm__
-xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
+xword_t xll_add_1_c(xword_t *W, const xword_t *U, const xword_t v, size_t n)
 {
     // W[] = U[] + v
     XLL_ASSERT(n != 0);
@@ -1207,10 +1204,8 @@ xword_t xll_add_1(xword_t *W, const xword_t *U, const xword_t v, size_t n)
     }
     return k;
 }
-#endif
 
-#if !defined __arm__
-xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
+xword_t xll_sub_c(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
 {
     XLL_ASSERT(n != 0);
     // This function will work if any or all of the xints are
@@ -1232,10 +1227,8 @@ xword_t xll_sub(xword_t *W, const xword_t *U, const xword_t *V, size_t n)
     }
     return b;
 }
-#endif
 
-#if !defined __arm__
-xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
+xword_t xll_sub_1_c(xword_t *W, const xword_t *U, xword_t v, size_t n)
 {
     XLL_ASSERT(n != 0);
     xword_t b = v;
@@ -1247,7 +1240,6 @@ xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n)
     }
     return b;
 }
-#endif
 
 #define UMAAL(__a, __b, __c, __d) \
 { \
