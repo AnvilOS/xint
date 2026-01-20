@@ -46,7 +46,7 @@ TEST(signed_arith, simple)
 // (-8, +3) (-2, -2) (-3, +1) (-2, -2) (-3, +1)
 // (-8, -3) (+2, -2) (+2, -2) (+3, +1) (+3, +1)
 
-TEST(signed_arith, div)
+TEST(signed_arith, div_trunc)
 {
     xint_t u = XINT_INIT_VAL;
     xint_t v = XINT_INIT_VAL;
@@ -55,37 +55,42 @@ TEST(signed_arith, div)
     
     xint_assign_str(u, "80000000000000000000000000000000000000000", 10);
     xint_assign_str(v, "30000000000000000000000000000000000000000", 10);
+    
     xint_div_trunc(q, r, u, v);
-    xint_print("u", u);
-    xint_print("v", v);
-    xint_print("q", q);
-    xint_print("r", r);
+    ASSERT_TRUE(xint_is_pos(u));
+    ASSERT_TRUE(xint_is_pos(v));
+    ASSERT_TRUE(xint_is_pos(q));
+    ASSERT_TRUE(xint_is_pos(r));
+    
     xint_chs(v);
     xint_div_trunc(q, r, u, v);
-    xint_print("u", u);
-    xint_print("v", v);
-    xint_print("q", q);
-    xint_print("r", r);
+    ASSERT_TRUE(xint_is_pos(u));
+    ASSERT_TRUE(xint_is_neg(v));
+    ASSERT_TRUE(xint_is_neg(q));
+    ASSERT_TRUE(xint_is_pos(r));
+    
     xint_chs(u);
     xint_chs(v);
     xint_div_trunc(q, r, u, v);
-    xint_print("u", u);
-    xint_print("v", v);
-    xint_print("q", q);
-    xint_print("r", r);
+    ASSERT_TRUE(xint_is_neg(u));
+    ASSERT_TRUE(xint_is_pos(v));
+    ASSERT_TRUE(xint_is_neg(q));
+    ASSERT_TRUE(xint_is_neg(r));
+    
     xint_chs(v);
     xint_div_trunc(q, r, u, v);
-    xint_print("u", u);
-    xint_print("v", v);
-    xint_print("q", q);
-    xint_print("r", r);
+    ASSERT_TRUE(xint_is_neg(u));
+    ASSERT_TRUE(xint_is_neg(v));
+    ASSERT_TRUE(xint_is_pos(q));
+    ASSERT_TRUE(xint_is_neg(r));
+
     END_TEST(signed_arith);
 }
 
 int test_signed(void)
 {
     CALL_TEST(signed_arith, simple);
-    CALL_TEST(signed_arith, div);
+    CALL_TEST(signed_arith, div_trunc);
 
     END_TEST_GROUP(signed_arith);
     
