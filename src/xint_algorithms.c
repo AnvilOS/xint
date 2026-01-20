@@ -181,7 +181,6 @@ void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t
 {
     // Knuths Algorithm X (Extended Euclid’s algorithm)
     xint_t q = XINT_INIT_VAL;
-    xint_t r = XINT_INIT_VAL;
     
     xint_t t1 = XINT_INIT_VAL;
     xint_t t2 = XINT_INIT_VAL;
@@ -214,7 +213,7 @@ void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t
         
         // X3. [Divide, subtract.]
         // Set q ← ⌊u3/v3⌋, and then set
-        xint_div(q, r, u3, v3);
+        xint_div_q(q, u3, v3);
         
         // (t1, t2, t3) ← (u1, u2, u3) − (v1, v2, v3) q
         xint_mul(t1, v1, q);
@@ -243,7 +242,6 @@ void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t
     xint_swap(gcd, u3);
     
     xint_delete(q);
-    xint_delete(r);
 
     xint_delete(t1);
     xint_delete(t2);
@@ -256,6 +254,29 @@ void xint_gcd_ext(xint_t gcd, xint_t ud, xint_t vd, const xint_t u, const xint_t
     xint_delete(v1);
     xint_delete(v2);
     xint_delete(v3);
+}
+
+int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
+{
+    xint_t gcd = XINT_INIT_VAL;
+    xint_t ud = XINT_INIT_VAL;
+    xint_t vd = XINT_INIT_VAL;
+    int ret = 0;
+
+    xint_gcd_ext(gcd, ud, vd, u, v);
+    if (xint_cmp_ulong(gcd, 1) == 0)
+    {
+        if (xint_is_neg(ud))
+        {
+            xint_add(ud, ud, v);
+        }
+        xint_copy(w, ud);
+        ret = 1;
+    }
+    xint_delete(gcd);
+    xint_delete(ud);
+    xint_delete(vd);
+    return ret;
 }
 
 void xint_sqrt(xint_t w, xint_t r, const xint_t s)

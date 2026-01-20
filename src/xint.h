@@ -21,7 +21,7 @@ typedef unsigned long xword_t;
 typedef unsigned long long xword_t;
 #endif
 
-#if XWORD_SIZE <= __SIZEOF_LONG__
+#if XWORD_SIZE >= __SIZEOF_LONG__
 #define XWORD_HOLDS_LONG
 #endif
 
@@ -114,6 +114,8 @@ void xint_muladd_ulong(xint_t w, xint_t u, unsigned long m, unsigned long a);
 
 // Division and modulus functions
 void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
+void xint_div_q(xint_t q, const xint_t u, const xint_t v);
+void xint_div_r(xint_t r, const xint_t u, const xint_t v);
 void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v);

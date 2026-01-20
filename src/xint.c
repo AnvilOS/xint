@@ -886,18 +886,21 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
                 xint_set_neg(q);
             }
         }
-        if (rem)
+        if (r)
         {
-            FAST_RESIZE(r, 1);
-            r->data[0] = rem;
-            if (Uneg)
+            if (rem)
             {
-                xint_set_neg(r);
+                FAST_RESIZE(r, 1);
+                r->data[0] = rem;
+                if (Uneg)
+                {
+                    xint_set_neg(r);
+                }
             }
-        }
-        else
-        {
-            r->size = 0;
+            else
+            {
+                r->size = 0;
+            }
         }
         return;
     }
@@ -911,15 +914,25 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
             {
                 resize(q, 1);
                 q->data[0] = 1;
+                if (Qneg)
+                {
+                    xint_set_neg(q);
+                }
             }
-            r->size = 0;
+            if (r)
+            {
+                r->size = 0;
+            }
             return;
         }
         if (q)
         {
             q->size = 0;
         }
-        xint_copy(r, u);
+        if (r)
+        {
+            xint_copy(r, u);
+        }
         return;
     }
 
@@ -1007,6 +1020,15 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
 
 void xint_div_ulong(xint_t q, xword_t *r, const xint_t u, unsigned long v)
 {
+#if !defined XWORD_HOLDS_LONG
+    if (v > XWORD_MAX)
+    {
+        xint_t vv = XINT_INIT_VAL;
+        xint_assign_ulong(vv, v);
+        xint_div(q, r, u, vv);
+        return;
+    }
+#endif
     // This is from Knuth's recommended exercise 16
     if (v == 0)
     {

@@ -41,8 +41,6 @@ extern const xint_ecc_curve_t p256;
 extern const xint_ecc_curve_t p384;
 extern const xint_ecc_curve_t p521;
 
-int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v);
-
 void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
 
 void xint_mod_fast_224(xword_t *w, xword_t *u);

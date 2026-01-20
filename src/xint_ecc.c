@@ -102,29 +102,6 @@ const xint_ecc_curve_t p521 =
     xint_mod_fast_521
 };
 
-int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
-{
-    xint_t gcd = XINT_INIT_VAL;
-    xint_t ud = XINT_INIT_VAL;
-    xint_t vd = XINT_INIT_VAL;
-    int ret = 0;
-
-    xint_gcd_ext(gcd, ud, vd, u, v);
-    if (xint_cmp_ulong(gcd, 1) == 0)
-    {
-        if (xint_is_neg(ud))
-        {
-            xint_add(ud, ud, v);
-        }
-        xint_copy(w, ud);
-        ret = 1;
-    }
-    xint_delete(gcd);
-    xint_delete(ud);
-    xint_delete(vd);
-    return ret;
-}
-
 void xint_point_init(xint_ecc_point_t p)
 {
     p->is_at_infinity = 1;
@@ -144,50 +121,6 @@ void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p)
     r->is_at_infinity = p->is_at_infinity;
     xint_copy(r->x, p->x);
     xint_copy(r->y, p->y);
-}
-
-void xint_point_jacobian_init(xint_ecc_point_jacobian_t p)
-{
-    p->is_at_infinity = 1;
-    xint_init(p->x);
-    xint_init(p->y);
-    xint_init(p->z);
-}
-
-void xint_point_jacobian_delete(xint_ecc_point_jacobian_t p)
-{
-    p->is_at_infinity = 1;
-    xint_delete(p->x);
-    xint_delete(p->y);
-    xint_delete(p->z);
-}
-
-void xint_point_jacobian_copy(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p)
-{
-    r->is_at_infinity = p->is_at_infinity;
-    xint_copy(r->x, p->x);
-    xint_copy(r->y, p->y);
-    xint_copy(r->z, p->z);
-}
-
-void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p)
-{
-    xint_point_copy(r, p);
-    xint_chs(r->y);
-}
-
-static void trim(xint_t u)
-{
-    int Un = XINT_ABS(u->size);
-    for (int j=Un-1; j>=0; --j)
-    {
-        if (u->data[j] != 0)
-        {
-            u->size = j + 1;
-            return;
-        }
-    }
-    u->size = 0;
 }
 
 void xint_mod_fast_224(xword_t *w, xword_t *u)
