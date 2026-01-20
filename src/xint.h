@@ -117,9 +117,9 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v);
 void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v);
-void xint_div_ulong(xint_t q, xword_t *r, const xint_t u, xword_t v);
+void xint_div_ulong(xint_t q, xword_t *r, const xint_t u, unsigned long v);
 void xint_mod(xint_t r, const xint_t u, const xint_t v);
-void xint_mod_ulong(xword_t *r, const xint_t u, xword_t v);
+void xint_mod_ulong(xword_t *r, const xint_t u, unsigned long v);
 
 // Bit manipulation
 int xint_highest_bit_num(const xint_t x);

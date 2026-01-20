@@ -812,24 +812,13 @@ int xint_highest_bit_num(const xint_t x)
 
 void xint_div_trunc(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
-    int Us = u->size >= 0;
-    int Vs = v->size >= 0;
     xint_div(q, r, u, v);
-    if (Us != Vs)
-    {
-        xint_set_neg(q);
-    }
-    int Qs = q->size >= 0;
-    if (Qs != Vs)
-    {
-        xint_set_neg(r);
-    }
 }
 
 void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
     int Vs = v->size >= 0;
-    xint_div_trunc(q, r, u, v);
+    xint_div(q, r, u, v);
     int Rs = r->size >= 0;
     if (Rs != Vs && r->size != 0)
     {
@@ -842,7 +831,7 @@ void xint_div_floor(xint_t q, xint_t r, const xint_t u, const xint_t v)
 void xint_div_ceil(xint_t q, xint_t r, const xint_t u, const xint_t v)
 {
     int Vs = v->size >= 0;
-    xint_div_trunc(q, r, u, v);
+    xint_div(q, r, u, v);
     int Rs = r->size >= 0;
     if (Rs == Vs)
     {
@@ -874,15 +863,37 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     // Algortihm D doesn't work for vn <= 1
     int Un = XINT_ABS(u->size);
     int Vn = XINT_ABS(v->size);
+    int Uneg = u->size < 0;
+    int Vneg = v->size < 0;
+    int Qneg = Uneg != Vneg;
     if (Vn <= 1)
     {
-        // Use the algorithm from exercise 16
-        xword_t rem;
-        xint_div_ulong(q, &rem, u, v->data[0]);
+        // This is from Knuth's recommended exercise 16
+        if (v == 0)
+        {
+            return;
+        }
+        if (q)
+        {
+            FAST_RESIZE(q, Un);
+        }
+        xword_t rem = xll_div_1(q?q->data:0, u->data, v->data[0], Un);
+        if (q)
+        {
+            trim_zeroes(q);
+            if (Qneg)
+            {
+                xint_set_neg(q);
+            }
+        }
         if (rem)
         {
-            resize(r, 1);
+            FAST_RESIZE(r, 1);
             r->data[0] = rem;
+            if (Uneg)
+            {
+                xint_set_neg(r);
+            }
         }
         else
         {
@@ -958,15 +969,26 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
         Q = q->data;
     }
 
-    //assert(XINT_ABS(r->size) == m + n + 1);
-    //assert(XINT_ABS(v->size) == n);
-    
     xll_div(Q, R, V, m, n);
 
     if (r != NULL)
     {
         FAST_RESIZE(r, n);
         norm ? x_rshift(r->data, R, n, bit_shift) : xll_move(r->data, R, n);
+        trim_zeroes(r);
+        if (Uneg)
+        {
+            xint_set_neg(r);
+        }
+    }
+
+    if (q != NULL)
+    {
+        trim_zeroes(q);
+        if (Qneg)
+        {
+            xint_set_neg(q);
+        }
     }
 
     if (free_v)
@@ -981,12 +1003,6 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     {
         FREE_XWORDS(Q);
     }
-
-    if (q)
-    {
-        trim_zeroes(q);
-    }
-    trim_zeroes(r);
 }
 
 void xint_div_ulong(xint_t q, xword_t *r, const xint_t u, unsigned long v)
@@ -1002,7 +1018,7 @@ void xint_div_ulong(xint_t q, xword_t *r, const xint_t u, unsigned long v)
     {
         FAST_RESIZE(q, Un);
     }
-    *r = x_div_1(q?q->data:0, u->data, v, Un);
+    *r = xll_div_1(q?q->data:0, u->data, v, Un);
     if (q)
     {
         trim_zeroes(q);
@@ -1026,7 +1042,7 @@ void xint_div_long(xint_t q, xword_t *r, const xint_t u, unsigned long v)
     }
 }
 
-void xint_mod_ulong(xword_t *r, const xint_t u, xword_t v)
+void xint_mod_ulong(xword_t *r, const xint_t u, unsigned long v)
 {
     // This is from Knuth's recommended exercise 16
     if (v == 0)
@@ -1034,7 +1050,7 @@ void xint_mod_ulong(xword_t *r, const xint_t u, xword_t v)
         return;
     }
     int Un = xint_size(u);
-    *r = x_div_1(0, u->data, v, Un);
+    *r = xll_div_1(0, u->data, v, Un);
 }
 
 // Bitwise functions
@@ -1452,7 +1468,7 @@ void xll_div(xword_t *Q, xword_t *R, const xword_t *V, int m, int n)
     // Not needed
 }
 
-xword_t x_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
+xword_t xll_div_1(xword_t *Q, const xword_t *U, xword_t V, int n)
 {
     // Renamed Knuth's W to Q
     // S1. [Set r = 0, j = n - 1]
