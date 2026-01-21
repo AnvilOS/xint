@@ -229,7 +229,7 @@ void xint_mod_fast_256(xword_t *w, xword_t *A)
     xword_t tmp_data[8];
     xll_zero(w, p256.nwords);
 
-#if XDWORD_MAX
+#if XWORD_BITS == 32
 #define TMP_BUILDER(__t7, __t6, __t5, __t4, __t3, __t2, __t1, __t0) \
     tmp_data[7] = __t7; \
     tmp_data[6] = __t6; \
@@ -276,7 +276,7 @@ void xint_mod_fast_256(xword_t *w, xword_t *A)
     // D4
     TMP_BUILDER(A[13], 0, A[11], A[10], A[9], 0, A[15], A[14]);
     k -= xll_sub(w, w, tmp_data, p256.nwords);
-#else
+#elif XWORD_BITS == 64
 #define SHR(__a) ((__a)>>(XWORD_BITS/2))
 #define HI(__a) ((__a)&0xffffffff00000000ULL)
 #define SHL(__a) ((__a)<<(XWORD_BITS/2))
@@ -324,7 +324,8 @@ void xint_mod_fast_256(xword_t *w, xword_t *A)
     // D4
     TMP_BUILDER(HI(A[6]), A[5], HI(A[4]), A[7]);
     k -= xll_sub(w, w, tmp_data, p256.nwords);
-
+#else
+#error Only 32 and 64 bits supported
 #endif
 
     while (k < 0)
