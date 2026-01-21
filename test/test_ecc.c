@@ -67,14 +67,18 @@ TEST(ecc, k_generation)
     // order:
     // q = 0x4000000000000000000020108A2E0CC0D99F8A5EF
     // qlen = 163 bits
-    char *q_str = "0x4000000000000000000020108A2E0CC0D99F8A5EF";
-    int qlen = 163;
+    char *q_str =
+    //"0x4000000000000000000020108A2E0CC0D99F8A5EF";
+    "0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551";
+    int qlen = 256;
     xint_t q_int = XINT_INIT_VAL;
     xint_assign_str(q_int, q_str, 0);
    
     // private key:
     // x = 0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F
-    char *x = "0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F";
+    char *x =
+    //"0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F";
+    "0xC9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721";
 
     // public key:
     // Ux = 0x79AEE090DB05EC252D5CB4452F356BE198A4FF96F
@@ -82,99 +86,26 @@ TEST(ecc, k_generation)
 
     // Input message = "sample"
     char *m = "sample";
-        
-    // a.  Process m through the hash function H
-    int hlen = 32;
-    uint8_t h1[hlen];
-    sha256_calc(h1, (uint8_t *)m, strlen(m));
-
-    xint_t h1_int = XINT_INIT_VAL;
-    xint_from_bin(h1_int, h1, 32);
-    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - 163);
-
-    xint_t v_int = XINT_INIT_VAL;
-    xint_assign_str(v_int, x, 0);
-
-    xint_t z2_int = XINT_INIT_VAL;
-    xint_mod(z2_int, h1_int, q_int);
     
-    int rolen = (qlen + 7) >> 3;
-    int rlen = rolen * 8;
-        
-    // b. V = 0x01 0x01 0x01 ... 0x01 vlen = 8*ceil(hlen/8)
-    uint8_t V[(hlen / 8 ) * 8];
-    memset(V, 0x01, sizeof(V));
-        
-    // c. K = 0x00 0x00 0x00 ... 0x00
-    uint8_t K[(hlen / 8 ) * 8];
-    memset(K, 0x00, sizeof(K));
-
-    // d. K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
-    uint8_t tmp_vec[100];
-    memset(tmp_vec, 0, sizeof(tmp_vec));
-    memcpy(tmp_vec, V, sizeof(V));
-    tmp_vec[32] = 0x00;
-    xint_to_buf(tmp_vec + 33, 21, v_int);
-    xint_to_buf(tmp_vec + 54, 21, z2_int);
-    hmac_calc(K, K, sizeof(K), tmp_vec, 75);
-
-    // e. V = HMAC_K(V)
-    hmac_calc(V, K, sizeof(K), V, sizeof(V));
-
-    // f. K = HMAC_K(V || 0x01 || int2octets(x) || bits2octets(h1))
-    memset(tmp_vec, 0, sizeof(tmp_vec));
-    memcpy(tmp_vec, V, 32);
-    tmp_vec[32] = 0x01;
-    xint_to_buf(tmp_vec + 33, 21, v_int);
-    xint_to_buf(tmp_vec + 54, 21, z2_int);
-    hmac_calc(K, K, sizeof(K), tmp_vec, 75);
-
-    // g. V = HMAC_K(V)
-    hmac_calc(V, K, sizeof(K), V, sizeof(V));
-
-    // h.
     xint_t k = XINT_INIT_VAL;
-    while (1)
-    {
-        // 1.  Set T to the empty sequence length tlen
-        uint8_t T[100];
-        int tlen = 0;
-        // 2.  While tlen < qlen, do the following:
-        while (tlen < qlen)
-        {
-            // V = HMAC_K(V)
-            // T = T || V
-            hmac_calc(V, K, sizeof(K), V, sizeof(V));
-            memcpy(T + tlen, V, sizeof(V));
-            tlen += sizeof(V) * 8;
-        }
-            
-        // 3.  Compute:
-        // k = bits2int(T)
-        xint_from_bin(k, T, 32);
-        xint_rshift(k, k, xint_size(k) * XWORD_BITS - 163);
-        
-        // If 1 <= k <= q-1 done
-        if (xint_cmp_ulong(k, 1) >= 0 && xint_cmp(k, q_int) < 0)
-        {
-            break;
-        }
-        else
-        {
-            // else compute:
-            // K = HMAC_K(V || 0x00)
-            // V = HMAC_K(V)
-            uint8_t tmpV[33];
-            memcpy(tmpV, V, sizeof(V));
-            tmpV[32] = 0x00;
-            hmac_calc(K, K, sizeof(K), tmpV, sizeof(tmpV));
-            hmac_calc(V, K, sizeof(K), V, sizeof(V));
-        }
-    }
-    
+    ecc_gen_deterministic_k(k, m, x, q_int, qlen);
+
+    xint_print_hex("k", k);
+
     char *k_str = xint_to_string(k, 16);
     ASSERT_EQ(0, strcasecmp(k_str, "23AF4074C90A02B3FE61D286D5C87F425E6BDD81B"));
     free(k_str);
+    
+    xint_assign_str(k, "0xA6E3C57DD01ABE90086538398355DD4C3B17AA873382B0F24D6129493D8AAD60", 0);
+    
+    xint_ecc_point_t R;
+    xint_point_init(R);
+    xint_ecc_mul_scalar(R, p256.Gx, p256.Gy, k, &p256);
+    
+    xint_print_hex("r", R->x);
+    xint_print_hex("s", R->y);
+
+    
     
     END_TEST(ecc);
 }

@@ -6,6 +6,9 @@
 #include "xint_bitwise.h"
 #include "xint_algorithms.h"
 
+#include "sha256.h"
+#include "hmac.h"
+
 #include <string.h>
 #include <assert.h>
 
@@ -638,7 +641,6 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
     xint_delete(k);
 }
 
-#if 0
 int xint_ecc_sign_det(char *sig, char *key, char *digest, int digest_len, xint_ecc_curve_t c)
 {
     return 0;
@@ -649,16 +651,16 @@ int xint_ecc_verify(         )
     return 0;
 }
 
-void ecc_gen_deterministic_k(char *m, char *x, xint_t q_int, int qlen)
+void ecc_gen_deterministic_k(xint_t k, char *m, char *x, xint_t q_int, int qlen)
 {
     // a.  Process m through the hash function H
-    int hlen = 32;
+    static const int hlen = 32;
     uint8_t h1[hlen];
     sha256_calc(h1, (uint8_t *)m, strlen(m));
 
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, h1, 32);
-    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - 163);
+    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - qlen);
 
     xint_t v_int = XINT_INIT_VAL;
     xint_assign_str(v_int, x, 0);
@@ -682,9 +684,9 @@ void ecc_gen_deterministic_k(char *m, char *x, xint_t q_int, int qlen)
     memset(tmp_vec, 0, sizeof(tmp_vec));
     memcpy(tmp_vec, V, sizeof(V));
     tmp_vec[32] = 0x00;
-    xint_to_buf(tmp_vec + 33, 21, v_int);
-    xint_to_buf(tmp_vec + 54, 21, z2_int);
-    hmac_calc(K, K, sizeof(K), tmp_vec, 75);
+    xint_to_buf(tmp_vec + 33, rolen, v_int);
+    xint_to_buf(tmp_vec + 33 + rolen, rolen, z2_int);
+    hmac_calc(K, K, sizeof(K), tmp_vec, 33 + rolen + rolen);
 
     // e. V = HMAC_K(V)
     hmac_calc(V, K, sizeof(K), V, sizeof(V));
@@ -693,15 +695,14 @@ void ecc_gen_deterministic_k(char *m, char *x, xint_t q_int, int qlen)
     memset(tmp_vec, 0, sizeof(tmp_vec));
     memcpy(tmp_vec, V, 32);
     tmp_vec[32] = 0x01;
-    xint_to_buf(tmp_vec + 33, 21, v_int);
-    xint_to_buf(tmp_vec + 54, 21, z2_int);
-    hmac_calc(K, K, sizeof(K), tmp_vec, 75);
+    xint_to_buf(tmp_vec + 33, rolen, v_int);
+    xint_to_buf(tmp_vec + 33 + rolen, rolen, z2_int);
+    hmac_calc(K, K, sizeof(K), tmp_vec, 33 + rolen + rolen);
 
     // g. V = HMAC_K(V)
     hmac_calc(V, K, sizeof(K), V, sizeof(V));
 
     // h.
-    xint_t k = XINT_INIT_VAL;
     while (1)
     {
         // 1.  Set T to the empty sequence length tlen
@@ -720,7 +721,7 @@ void ecc_gen_deterministic_k(char *m, char *x, xint_t q_int, int qlen)
         // 3.  Compute:
         // k = bits2int(T)
         xint_from_bin(k, T, 32);
-        xint_rshift(k, k, xint_size(k) * XWORD_BITS - 163);
+        xint_rshift(k, k, xint_size(k) * XWORD_BITS - qlen);
         
         // If 1 <= k <= q-1 done
         if (xint_cmp_ulong(k, 1) >= 0 && xint_cmp(k, q_int) < 0)
@@ -739,11 +740,4 @@ void ecc_gen_deterministic_k(char *m, char *x, xint_t q_int, int qlen)
             hmac_calc(V, K, sizeof(K), V, sizeof(V));
         }
     }
-
-//    char *k_str = xint_to_string(k, 16);
-//    ASSERT_EQ(0, strcasecmp(k_str, "23AF4074C90A02B3FE61D286D5C87F425E6BDD81B"));
-//    free(k_str);
-//
-//    END_TEST(ecc);
 }
-#endif

@@ -56,6 +56,6 @@ void xint_point_add(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t
 void xint_point_double(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p, const xint_ecc_curve_t *c);
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k, const xint_ecc_curve_t *c);
 void xint_ecc_mul_scalar_joye(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
-void ecc_gen_deterministic_k(char *m, char *x, xint_t q_int, int qlen);
+void ecc_gen_deterministic_k(xint_t k, char *m, char *x, xint_t q_int, int qlen);
 
 #endif // XINT_ECC_H
