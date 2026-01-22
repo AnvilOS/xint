@@ -9,15 +9,35 @@
 #include "xint_algorithms.h"
 #include "xint_internal.h"
 
+#include "time_stamp.h"
+
 #include "sha256.h"
 #include "hmac.h"
 
 #include <string.h>
 
-#define CLK_START clock_t start, end; start = clock();
-#define CLK_END   end = clock(); \
-            double time_consumed = (double)(end - start) * 1000 / CLOCKS_PER_SEC; \
-            printf(" (%.0f ms)\n\n", time_consumed);
+static int test_equality(const xint_t x, char *p)
+{
+    xint_t y = XINT_INIT_VAL;
+    xint_assign_str(y, p, 0);
+    int ret = xint_cmp(x, y);
+    xint_delete(y);
+    return ret;
+}
+
+static int test_equality_ex(const xword_t *x, int xn, char *p)
+{
+    xint_t y = XINT_INIT_VAL;
+    xint_assign_str(y, p, 0);
+    if (xn != y->size)
+    {
+        return -1;
+    }
+    int ret = xll_cmp(x, y->data, xn);
+    xint_delete(y);
+    return ret;
+}
+
 
 TEST_GROUP(ecc);
 
@@ -67,18 +87,14 @@ TEST(ecc, k_generation)
     // order:
     // q = 0x4000000000000000000020108A2E0CC0D99F8A5EF
     // qlen = 163 bits
-    char *q_str =
-    //"0x4000000000000000000020108A2E0CC0D99F8A5EF";
-    "0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551";
-    int qlen = 256;
+    char *q_str = "0x4000000000000000000020108A2E0CC0D99F8A5EF";
+    int qlen = 163;
     xint_t q_int = XINT_INIT_VAL;
     xint_assign_str(q_int, q_str, 0);
    
     // private key:
     // x = 0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F
-    char *x =
-    //"0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F";
-    "0xC9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721";
+    char *x = "0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F";
 
     // public key:
     // Ux = 0x79AEE090DB05EC252D5CB4452F356BE198A4FF96F
@@ -90,22 +106,88 @@ TEST(ecc, k_generation)
     xint_t k = XINT_INIT_VAL;
     ecc_gen_deterministic_k(k, m, x, q_int, qlen);
 
-    xint_print_hex("k", k);
-
     char *k_str = xint_to_string(k, 16);
     ASSERT_EQ(0, strcasecmp(k_str, "23AF4074C90A02B3FE61D286D5C87F425E6BDD81B"));
     free(k_str);
     
-    xint_assign_str(k, "0xA6E3C57DD01ABE90086538398355DD4C3B17AA873382B0F24D6129493D8AAD60", 0);
+    END_TEST(ecc);
+}
+
+TEST(ecc, rfc_6979)
+{
+    // From test case for P256 in RFC 6979
+    char *q = "0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551";
+    int qlen = 256;
+   
+    // private key:
+    char *x = "0xC9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721";
+
+    // public key:
+    char *Ux_exp = "0x60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6";
+    char *Uy_exp = "0x7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299";
     
-    xint_ecc_point_t R;
-    xint_point_init(R);
-    xint_ecc_mul_scalar(R, p256.Gx, p256.Gy, k, &p256);
+    // Input message = "sample"
+    char *m = "sample";
     
-    xint_print_hex("r", R->x);
-    xint_print_hex("s", R->y);
+    // Expected values
+    char *k_exp = "0xA6E3C57DD01ABE90086538398355DD4C3B17AA873382B0F24D6129493D8AAD60";
+    char *r_exp = "0xEFD48B2AACB6A8FD1140DD9CD45E81D69D2C877B56AAF991C34D0EA84EAF3716";
+    char *s_exp = "0xF7CB1C942D657C41D436C7A1B6E29F65F3E900DBB9AFF4064DC4AB2F843ACDA8";
+
+    // Check the public key
+    xint_t priv = XINT_INIT_VAL;
+    xint_assign_str(priv, x, 0);
+    xint_ecc_point_t pub;
+    xint_point_init(pub);
+    xint_ecc_get_public_key(pub, priv, &p256);
+    ASSERT_EQ(0, test_equality(pub->x, Ux_exp));
+    ASSERT_EQ(0, test_equality(pub->y, Uy_exp));
+    
+    // Check that we generate the correct k
+    xint_t q_int = XINT_INIT_VAL;
+    xint_assign_str(q_int, q, 0);
+    xint_t k = XINT_INIT_VAL;
+    ecc_gen_deterministic_k(k, m, x, q_int, qlen);
+    ASSERT_EQ(0, test_equality(k, k_exp));
+              
+    xint_ecc_point_t sig;
+    xint_point_init(sig);
+    xint_ecc_mul_scalar(sig, p256.Gx, p256.Gy, k, &p256);
+
+    // Invert k
+    xint_t k_inv = XINT_INIT_VAL;
+    xint_t N = XINT_INIT_VAL;
+    N->size = p256.nwords;
+    N->data = p256.n;
+    xint_mod_inverse(k_inv, k, N);
+    
+    xint_t test = XINT_INIT_VAL;
+    xint_mul(test, k, k_inv);
+    xint_mod(test, test, N);
+
+    static const int hlen = 32;
+    uint8_t h1[hlen];
+    sha256_calc(h1, (uint8_t *)m, strlen(m));
+    xint_t h1_int = XINT_INIT_VAL;
+    xint_from_bin(h1_int, h1, 32);
+    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - qlen);
+    xint_mod(h1_int, h1_int, q_int);
 
     
+    
+    xint_t acc = XINT_INIT_VAL;
+
+    xint_mul(acc, sig->x, priv);
+    xint_mod(acc, acc, N);
+    xint_add(acc, h1_int, acc);
+    xint_mod(acc, acc, N);
+    xint_mul(acc, k_inv, acc);
+    xint_mod(acc, acc, N);
+    
+    xint_copy(sig->y, acc);
+        
+    ASSERT_EQ(0, test_equality(sig->x, r_exp));
+    ASSERT_EQ(0, test_equality(sig->y, s_exp));
     
     END_TEST(ecc);
 }
@@ -166,28 +248,6 @@ TEST(ecc, gen_det_k)
     END_TEST(ecc)
 }
 
-int test_equality(const xint_t x, char *p)
-{
-    xint_t y = XINT_INIT_VAL;
-    xint_assign_str(y, p, 0);
-    int ret = xint_cmp(x, y);
-    xint_delete(y);
-    return ret;
-}
-
-int test_equality_ex(const xword_t *x, int xn, char *p)
-{
-    xint_t y = XINT_INIT_VAL;
-    xint_assign_str(y, p, 0);
-    if (xn != y->size)
-    {
-        return -1;
-    }
-    int ret = xll_cmp(x, y->data, xn);
-    xint_delete(y);
-    return ret;
-}
-
 TEST(ecc, curve_p224)
 {
     // Check the curve parameters
@@ -232,10 +292,14 @@ TEST(ecc, curve_p256)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    CLK_START
+    STAMP_VARS();
+    __disable_irq();
+    STAMP_BEFORE();
     for (int i=0; i<512; ++i)
     xint_ecc_mul_scalar(R, p256.Gx, p256.Gy, x, &p256);
-    CLK_END
+    STAMP_AFTER();
+    __enable_irq();
+    printf("xint_ecc_mult : %u\n", STAMP_DIFF());
     
     ASSERT_EQ(0, test_equality(R->x, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F"));
     ASSERT_EQ(0, test_equality(R->y, "0x3CE76603264661EA2F602DF7B4510BBC9ED939233C553EA5F42FB3F1338174B5"));
@@ -304,6 +368,7 @@ int test_ecc(void)
     CALL_TEST(ecc, hmac1);
     CALL_TEST(ecc, hmac2);
     CALL_TEST(ecc, k_generation);
+    CALL_TEST(ecc, rfc_6979);
     CALL_TEST(ecc, gen_det_k);
     CALL_TEST(ecc, simple_gcd_and_inverse);
     CALL_TEST(ecc, curve_p224);

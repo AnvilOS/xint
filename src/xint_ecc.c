@@ -741,3 +741,10 @@ void ecc_gen_deterministic_k(xint_t k, char *m, char *x, xint_t q_int, int qlen)
         }
     }
 }
+
+int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_curve_t *c)
+{
+    // Try and generate the public key
+    xint_ecc_mul_scalar(pub, c->Gx, c->Gy, priv, c);
+    return 1;
+}

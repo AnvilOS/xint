@@ -194,9 +194,8 @@ TEST(ll_mul, mul_asm)
 TEST(ll_mul, squ_asm)
 {
     STAMP_VARS();
-    size_t sz = sizeof(u)/sizeof(u[0]);
     TRACE("        MUL C  SQU C  MUL A  SQU A\n");
-    for (int Un=2; Un<=sz; ++Un)
+    for (int Un=MINUV; Un<=MAXUV; ++Un)
     {
         TRACE(" %2dx%2d:", Un, Un);
         __disable_irq();
@@ -244,7 +243,7 @@ TEST(ll_mul, squ_asm)
 int test_ll_mul(void)
 {
     CALL_TEST(ll_mul, mul_asm);
-//    CALL_TEST(ll_mul, squ_asm);
+    CALL_TEST(ll_mul, squ_asm);
 
     END_TEST_GROUP(ll_mul);
 }
