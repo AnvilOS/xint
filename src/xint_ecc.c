@@ -20,6 +20,27 @@
 
 #define CURVE_WORDS(__nbits) (((__nbits-1)/XWORD_BITS)+1)
 
+const xword_t k163_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
+const xword_t k163_a[]  = { X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFE), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
+const xword_t k163_b[]  = { X(0x2355FFB4, 0x270B3943), X(0xD7BFD8BA, 0x5044B0B7), X(0xF5413256, 0x0C04B3AB), 0xB4050A85 };
+const xword_t k163_Gx[] = { X(0x115C1D21, 0x343280D6), X(0x56C21122, 0x4A03C1D3), X(0x321390B9, 0x6BB4BF7F), 0xB70E0CBD };
+const xword_t k163_Gy[] = { X(0x85007E34, 0x44D58199), X(0x5A074764, 0xCD4375A0), X(0x4C22DFE6, 0xB5F723FB), 0xBD376388 };
+const xword_t k163_n[]  = { X(0x99f8a5ef, 0xa2e0cc0d), X(0x00020108, 0x00000000), X(0x00000000, 0x04) };
+const xword_t k163_h[]  = { 0x01 };
+const xint_ecc_curve_t k163 =
+{
+    163,
+    CURVE_WORDS(163),
+    k163_p,
+    k163_a,
+    k163_b,
+    k163_Gx,
+    k163_Gy,
+    k163_n,
+    k163_h,
+    xint_mod_fast_k163
+};
+
 const xword_t p224_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
 const xword_t p224_a[]  = { X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFE), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
 const xword_t p224_b[]  = { X(0x2355FFB4, 0x270B3943), X(0xD7BFD8BA, 0x5044B0B7), X(0xF5413256, 0x0C04B3AB), 0xB4050A85 };
@@ -124,6 +145,11 @@ void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p)
     r->is_at_infinity = p->is_at_infinity;
     xint_copy(r->x, p->x);
     xint_copy(r->y, p->y);
+}
+
+void xint_mod_fast_k163(xword_t *w, xword_t *u)
+{
+    xint_mod_std(w, u, &k163);
 }
 
 void xint_mod_fast_224(xword_t *w, xword_t *u)
@@ -641,29 +667,17 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
     xint_delete(k);
 }
 
-int xint_ecc_sign_det(char *sig, char *key, char *digest, int digest_len, xint_ecc_curve_t c)
+void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, const xint_ecc_curve_t *c)
 {
-    return 0;
-}
-
-int xint_ecc_verify(         )
-{
-    return 0;
-}
-
-void ecc_gen_deterministic_k(xint_t k, char *m, char *x, xint_t q_int, int qlen)
-{
-    // a.  Process m through the hash function H
-    static const int hlen = 32;
-    uint8_t h1[hlen];
-    sha256_calc(h1, (uint8_t *)m, strlen(m));
-
+    // a.  The hash is readyjust convert to an xint
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, h1, 32);
-    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - qlen);
+    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - c->nbits);
 
-    xint_t v_int = XINT_INIT_VAL;
-    xint_assign_str(v_int, x, 0);
+    xint_t q_int = XINT_INIT_VAL;
+    int qlen = c->nbits;
+    q_int->size = c->nwords;
+    q_int->data = c->n;
 
     xint_t z2_int = XINT_INIT_VAL;
     xint_mod(z2_int, h1_int, q_int);
@@ -748,3 +762,48 @@ int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_cu
     xint_ecc_mul_scalar(pub, c->Gx, c->Gy, priv, c);
     return 1;
 }
+
+int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, const xint_ecc_curve_t *c)
+{
+    xint_t k = XINT_INIT_VAL;
+    ecc_gen_deterministic_k(k, digest, digest_len, priv, c);
+              
+    xint_ecc_point_t point;
+    xint_point_init(point);
+    xint_ecc_mul_scalar(point, c->Gx, c->Gy, k, c);
+
+    xint_t N = XINT_INIT_VAL;
+    N->size = p256.nwords;
+    N->data = p256.n;
+
+    // Invert k
+    xint_t k_inv = XINT_INIT_VAL;
+    xint_mod_inverse(k_inv, k, N);
+    
+    xint_t h1_int = XINT_INIT_VAL;
+    xint_from_bin(h1_int, digest, digest_len);
+    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - p256.nbits);
+    xint_mod(h1_int, h1_int, N);
+
+    xint_t acc = XINT_INIT_VAL;
+
+    xint_mul(acc, point->x, priv);
+    xint_mod(acc, acc, N);
+    xint_add(acc, h1_int, acc);
+    xint_mod(acc, acc, N);
+    xint_mul(acc, k_inv, acc);
+    xint_mod(acc, acc, N);
+    
+    xint_copy(point->y, acc);
+
+    xint_copy(sig->r, point->x);
+    xint_copy(sig->s, acc);
+   
+    return 0;
+}
+
+int xint_ecc_verify(         )
+{
+    return 0;
+}
+

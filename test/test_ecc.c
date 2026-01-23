@@ -95,6 +95,9 @@ TEST(ecc, k_generation)
     // private key:
     // x = 0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F
     char *x = "0x09A4D6792295A7F730FC3F2B49CBC0F62E862272F";
+    
+    xint_t x_int = XINT_INIT_VAL;
+    xint_assign_str(x_int, x, 0);
 
     // public key:
     // Ux = 0x79AEE090DB05EC252D5CB4452F356BE198A4FF96F
@@ -104,7 +107,10 @@ TEST(ecc, k_generation)
     char *m = "sample";
     
     xint_t k = XINT_INIT_VAL;
-    ecc_gen_deterministic_k(k, m, x, q_int, qlen);
+    static const int hlen = 32;
+    uint8_t h1[hlen];
+    sha256_calc(h1, (uint8_t *)m, strlen(m));
+    ecc_gen_deterministic_k(k, h1, hlen, x_int, &k163);
 
     char *k_str = xint_to_string(k, 16);
     ASSERT_EQ(0, strcasecmp(k_str, "23AF4074C90A02B3FE61D286D5C87F425E6BDD81B"));
@@ -134,6 +140,9 @@ TEST(ecc, rfc_6979)
     char *r_exp = "0xEFD48B2AACB6A8FD1140DD9CD45E81D69D2C877B56AAF991C34D0EA84EAF3716";
     char *s_exp = "0xF7CB1C942D657C41D436C7A1B6E29F65F3E900DBB9AFF4064DC4AB2F843ACDA8";
 
+    // Check the q
+    ASSERT_EQ(0, test_equality_ex(p256.n, p224.nwords, q));
+
     // Check the public key
     xint_t priv = XINT_INIT_VAL;
     xint_assign_str(priv, x, 0);
@@ -143,52 +152,24 @@ TEST(ecc, rfc_6979)
     ASSERT_EQ(0, test_equality(pub->x, Ux_exp));
     ASSERT_EQ(0, test_equality(pub->y, Uy_exp));
     
-    // Check that we generate the correct k
-    xint_t q_int = XINT_INIT_VAL;
-    xint_assign_str(q_int, q, 0);
-    xint_t k = XINT_INIT_VAL;
-    ecc_gen_deterministic_k(k, m, x, q_int, qlen);
-    ASSERT_EQ(0, test_equality(k, k_exp));
-              
-    xint_ecc_point_t sig;
-    xint_point_init(sig);
-    xint_ecc_mul_scalar(sig, p256.Gx, p256.Gy, k, &p256);
-
-    // Invert k
-    xint_t k_inv = XINT_INIT_VAL;
-    xint_t N = XINT_INIT_VAL;
-    N->size = p256.nwords;
-    N->data = p256.n;
-    xint_mod_inverse(k_inv, k, N);
-    
-    xint_t test = XINT_INIT_VAL;
-    xint_mul(test, k, k_inv);
-    xint_mod(test, test, N);
-
+    // Calc the hash
     static const int hlen = 32;
     uint8_t h1[hlen];
     sha256_calc(h1, (uint8_t *)m, strlen(m));
-    xint_t h1_int = XINT_INIT_VAL;
-    xint_from_bin(h1_int, h1, 32);
-    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - qlen);
-    xint_mod(h1_int, h1_int, q_int);
+    
+    // Check that we generate the correct k
+    xint_t k = XINT_INIT_VAL;
+    ecc_gen_deterministic_k(k, h1, 32, priv, &p256);
+    ASSERT_EQ(0, test_equality(k, k_exp));
 
-    
-    
-    xint_t acc = XINT_INIT_VAL;
+    // Check the sig
+    xint_ecc_sig_t signature;
+    xint_init(signature->r);
+    xint_init(signature->s);
+    xint_ecc_sign_det(signature, h1, hlen, priv, &p256);
+    ASSERT_EQ(0, test_equality(signature->r, r_exp));
+    ASSERT_EQ(0, test_equality(signature->s, s_exp));
 
-    xint_mul(acc, sig->x, priv);
-    xint_mod(acc, acc, N);
-    xint_add(acc, h1_int, acc);
-    xint_mod(acc, acc, N);
-    xint_mul(acc, k_inv, acc);
-    xint_mod(acc, acc, N);
-    
-    xint_copy(sig->y, acc);
-        
-    ASSERT_EQ(0, test_equality(sig->x, r_exp));
-    ASSERT_EQ(0, test_equality(sig->y, s_exp));
-    
     END_TEST(ecc);
 }
 
