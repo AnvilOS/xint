@@ -135,7 +135,7 @@ xword_t v[] =
 };
 
 #define MINUV 2
-#define MAXUV 23
+#define MAXUV 32
 xword_t w_c[2*MAXUV];
 xword_t w_asm[2*MAXUV];
 xword_t w_2x2[2*MAXUV];
@@ -218,19 +218,17 @@ TEST(ll_mul, squ_asm)
         STAMP_AFTER();
         __enable_irq();
         TRACE("%6lu", STAMP_DIFF());
+        long ddd = STAMP_DIFF();
         TRACE("%c", xll_cmp(w_c, w_asm, 2*Un) ? '*' : ' ');
 #endif
 #if defined XINT_USE_MUL_ASM
-        if (((Un % 2) == 0))
-        {
-            __disable_irq();
-            STAMP_BEFORE();
-            xll_squ_asm(w_sq_asm, u, Un);
-            STAMP_AFTER();
-            __enable_irq();
-            TRACE("%6lu", STAMP_DIFF());
-            TRACE("%c", xll_cmp(w_c, w_sq_asm, 2*Un) ? '*' : ' ');
-        }
+        __disable_irq();
+        STAMP_BEFORE();
+        xll_squ_asm(w_sq_asm, u, Un);
+        STAMP_AFTER();
+        __enable_irq();
+        TRACE("%6lu %d", STAMP_DIFF(), ddd - STAMP_DIFF());
+        TRACE("%c", xll_cmp(w_c, w_sq_asm, 2*Un) ? '*' : ' ');
 #endif
         TRACE("\n");
     }
