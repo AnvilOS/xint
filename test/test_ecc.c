@@ -141,7 +141,7 @@ TEST(ecc, rfc_6979)
     char *s_exp = "0xF7CB1C942D657C41D436C7A1B6E29F65F3E900DBB9AFF4064DC4AB2F843ACDA8";
 
     // Check the q
-    ASSERT_EQ(0, test_equality_ex(p256.n, p224.nwords, q));
+    ASSERT_EQ(0, test_equality_ex(p256.n, p256.nwords, q));
 
     // Check the public key
     xint_t priv = XINT_INIT_VAL;

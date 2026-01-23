@@ -669,18 +669,16 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
 
 void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, const xint_ecc_curve_t *c)
 {
-    // a.  The hash is readyjust convert to an xint
-    xint_t h1_int = XINT_INIT_VAL;
-    xint_from_bin(h1_int, h1, 32);
-    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - c->nbits);
-
     xint_t q_int = XINT_INIT_VAL;
     int qlen = c->nbits;
     q_int->size = c->nwords;
     q_int->data = c->n;
 
-    xint_t z2_int = XINT_INIT_VAL;
-    xint_mod(z2_int, h1_int, q_int);
+    // a.  The hash is readyjust convert to an xint
+    xint_t h1_int = XINT_INIT_VAL;
+    xint_from_bin(h1_int, h1, 32);
+    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - c->nbits);
+    xint_mod(h1_int, h1_int, q_int);
 
     int rolen = (qlen + 7) >> 3;
     int rlen = rolen * 8;
@@ -699,7 +697,7 @@ void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, cons
     memcpy(tmp_vec, V, sizeof(V));
     tmp_vec[32] = 0x00;
     xint_to_buf(tmp_vec + 33, rolen, v_int);
-    xint_to_buf(tmp_vec + 33 + rolen, rolen, z2_int);
+    xint_to_buf(tmp_vec + 33 + rolen, rolen, h1_int);
     hmac_calc(K, K, sizeof(K), tmp_vec, 33 + rolen + rolen);
 
     // e. V = HMAC_K(V)
@@ -710,7 +708,7 @@ void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, cons
     memcpy(tmp_vec, V, 32);
     tmp_vec[32] = 0x01;
     xint_to_buf(tmp_vec + 33, rolen, v_int);
-    xint_to_buf(tmp_vec + 33 + rolen, rolen, z2_int);
+    xint_to_buf(tmp_vec + 33 + rolen, rolen, h1_int);
     hmac_calc(K, K, sizeof(K), tmp_vec, 33 + rolen + rolen);
 
     // g. V = HMAC_K(V)
@@ -754,6 +752,7 @@ void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, cons
             hmac_calc(V, K, sizeof(K), V, sizeof(V));
         }
     }
+    xint_delete(h1_int);
 }
 
 int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_curve_t *c)
@@ -785,20 +784,20 @@ int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len,
     xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - p256.nbits);
     xint_mod(h1_int, h1_int, N);
 
-    xint_t acc = XINT_INIT_VAL;
-
-    xint_mul(acc, point->x, priv);
-    xint_mod(acc, acc, N);
-    xint_add(acc, h1_int, acc);
-    xint_mod(acc, acc, N);
-    xint_mul(acc, k_inv, acc);
-    xint_mod(acc, acc, N);
+    xint_mul(point->y, point->x, priv);
+    xint_mod(point->y, point->y, N);
+    xint_add(point->y, h1_int, point->y);
+    xint_mod(point->y, point->y, N);
+    xint_mul(point->y, k_inv, point->y);
+    xint_mod(point->y, point->y, N);
     
-    xint_copy(point->y, acc);
-
     xint_copy(sig->r, point->x);
-    xint_copy(sig->s, acc);
-   
+    xint_copy(sig->s, point->y);
+    
+    xint_delete(k);
+    xint_delete(k_inv);
+    xint_delete(h1_int);
+
     return 0;
 }
 
