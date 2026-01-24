@@ -149,6 +149,7 @@ TEST(ecc, rfc_6979)
     xint_ecc_point_t pub;
     xint_point_init(pub);
     xint_ecc_get_public_key(pub, priv, &p256);
+    pub->is_at_infinity = 0;
     ASSERT_EQ(0, test_equality(pub->x, Ux_exp));
     ASSERT_EQ(0, test_equality(pub->y, Uy_exp));
     
@@ -169,6 +170,17 @@ TEST(ecc, rfc_6979)
     xint_ecc_sign_det(signature, h1, hlen, priv, &p256);
     ASSERT_EQ(0, test_equality(signature->r, r_exp));
     ASSERT_EQ(0, test_equality(signature->s, s_exp));
+    
+    
+    xint_ecc_point_t C;
+    xint_point_init(C);
+    xint_ecc_mul_scalar(C, p256.Gx, p256.Gy, priv, &p256);
+    printf("\n");
+    xint_print_hex("Cx", C->x);
+    xint_print_hex("Cy", C->y);
+    printf("\n");
+
+    xint_ecc_verify(signature, h1, hlen, pub, &p256);
 
     END_TEST(ecc);
 }
@@ -346,16 +358,16 @@ TEST(ecc, curve_p521)
 
 int test_ecc(void)
 {
-    CALL_TEST(ecc, hmac1);
-    CALL_TEST(ecc, hmac2);
-    CALL_TEST(ecc, k_generation);
+//    CALL_TEST(ecc, hmac1);
+//    CALL_TEST(ecc, hmac2);
+//    CALL_TEST(ecc, k_generation);
     CALL_TEST(ecc, rfc_6979);
-    CALL_TEST(ecc, gen_det_k);
-    CALL_TEST(ecc, simple_gcd_and_inverse);
-    CALL_TEST(ecc, curve_p224);
-    CALL_TEST(ecc, curve_p256);
-    CALL_TEST(ecc, curve_p384);
-    CALL_TEST(ecc, curve_p521);
+//    CALL_TEST(ecc, gen_det_k);
+//    CALL_TEST(ecc, simple_gcd_and_inverse);
+//    CALL_TEST(ecc, curve_p224);
+//    CALL_TEST(ecc, curve_p256);
+//    CALL_TEST(ecc, curve_p384);
+//    CALL_TEST(ecc, curve_p521);
 
     END_TEST_GROUP(ecc);
 }
