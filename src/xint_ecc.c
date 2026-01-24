@@ -879,6 +879,42 @@ void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, con
     }
 }
 
+void xint_mod_add_ex(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+{
+    xint_add(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_sub_ex(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+{
+    xint_sub(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_mul_ex(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+{
+    xint_mul(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_mul_ulong_ex(xint_t w, const xint_t u, unsigned long v, const xint_t m)
+{
+    xint_mul_ulong(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_lshift_ex(xint_t w, const xint_t u, int nbits, const xint_t m)
+{
+    xint_lshift(w, u, nbits);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_sqr_ex(xint_t w, const xint_t u, const xint_t m)
+{
+    xint_sqr(w, u);
+    xint_mod(w, w, m);
+}
+
 void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
 {
     xint_t diffy = XINT_INIT_VAL;
@@ -899,27 +935,18 @@ void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, 
         return;
     }
 
-    xint_sub(diffy, q->y, p->y);
-    xint_mod(diffy, diffy, m);
-    xint_sub(diffx, q->x, p->x);
-    xint_mod(diffx, diffx, m);
+    xint_mod_sub_ex(diffy, q->y, p->y, m);
+    xint_mod_sub_ex(diffx, q->x, p->x, m);
     xint_mod_inverse(diffx, diffx, m);
-    xint_mul(lambda, diffy, diffx);
-    xint_mod(lambda, lambda, m);
+    xint_mod_mul_ex(lambda, diffy, diffx, m);
 
-    xint_sqr(xr, lambda);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, p->x);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, q->x);
-    xint_mod(xr, xr, m);
+    xint_mod_sqr_ex(xr, lambda, m);
+    xint_mod_sub_ex(xr, xr, p->x, m);
+    xint_mod_sub_ex(xr, xr, q->x, m);
 
-    xint_sub(yr, p->x, xr);
-    xint_mod(yr, yr, m);
-    xint_mul(yr, yr, lambda);
-    xint_mod(yr, yr, m);
-    xint_sub(yr, yr, p->y);
-    xint_mod(yr, yr, m);
+    xint_mod_sub_ex(yr, p->x, xr, m);
+    xint_mod_mul_ex(yr, yr, lambda, m);
+    xint_mod_sub_ex(yr, yr, p->y, m);
 
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
@@ -933,32 +960,21 @@ void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t 
     xint_t xr = XINT_INIT_VAL;
     xint_t yr = XINT_INIT_VAL;
 
-    xint_sqr(tmp, p->x);
-    xint_mod(tmp, tmp, m);
-    xint_mul_ulong(tmp, tmp, 3);
-    xint_mod(tmp, tmp, m);
-    xint_add(tmp, tmp, a);
-    xint_mod(tmp, tmp, m);
+    xint_mod_sqr_ex(tmp, p->x, m);
+    xint_mod_mul_ulong_ex(tmp, tmp, 3, m);
+    xint_mod_add_ex(tmp, tmp, a, m);
 
     xint_lshift(lambda, p->y, 1);
-    xint_mod(lambda, lambda, m);
     xint_mod_inverse(lambda, lambda, m);
-    xint_mul(lambda, tmp, lambda);
-    xint_mod(lambda, lambda, m);
+    xint_mod_mul_ex(lambda, tmp, lambda, m);
 
-    xint_sqr(xr, lambda);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, p->x);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, p->x);
-    xint_mod(xr, xr, m);
+    xint_mod_sqr_ex(xr, lambda, m);
+    xint_mod_sub_ex(xr, xr, p->x, m);
+    xint_mod_sub_ex(xr, xr, p->x, m);
 
-    xint_sub(tmp, p->x, xr);
-    xint_mod(tmp, tmp, m);
-    xint_mul(yr, tmp, lambda);
-    xint_mod(yr, yr, m);
-    xint_sub(yr, yr, p->y);
-    xint_mod(yr, yr, m);
+    xint_mod_sub_ex(tmp, p->x, xr, m);
+    xint_mod_mul_ex(yr, tmp, lambda, m);
+    xint_mod_sub_ex(yr, yr, p->y, m);
 
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
@@ -968,4 +984,261 @@ void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t 
     xint_delete(lambda);
     xint_delete(xr);
     xint_delete(yr);
+}
+
+void xint_point_jacobian_init(xint_ecc_point_jacobian_t p)
+{
+    p->is_at_infinity = 1;
+    xint_init(p->x);
+    xint_init(p->y);
+    xint_init(p->z);
+}
+
+void xint_point_jacobian_delete(xint_ecc_point_jacobian_t p)
+{
+    p->is_at_infinity = 1;
+    xint_delete(p->x);
+    xint_delete(p->y);
+    xint_delete(p->z);
+}
+
+void xint_point_jacobian_copy(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p)
+{
+    r->is_at_infinity = p->is_at_infinity;
+    xint_copy(r->x, p->x);
+    xint_copy(r->y, p->y);
+    xint_copy(r->z, p->z);
+}
+
+void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u)
+{
+    xint_copy(w->x, u->x);
+    xint_copy(w->y, u->y);
+    xint_assign_ulong(w->z, 1);
+    w->is_at_infinity = u->is_at_infinity;
+}
+
+void from_jacobian_ex(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_t p)
+{
+    // Convert back to affine
+    xint_t X = XINT_INIT_VAL;
+    xint_t Y = XINT_INIT_VAL;
+    xint_t z_inv = XINT_INIT_VAL;
+    xint_mod_inverse(z_inv, u->z, p);
+    
+    xint_copy(X, z_inv);
+    xint_mod_sqr_ex(X, X, p);
+    xint_mod_mul_ex(X, X, u->x, p);
+    
+    xint_copy(Y, z_inv);
+    xint_mod_sqr_ex(Y, Y, p);
+    xint_mod_mul_ex(Y, Y, z_inv, p);
+    xint_mod_mul_ex(Y, Y, u->y, p);
+    
+    xint_copy(w->x, X);
+    xint_copy(w->y, Y);
+    w->is_at_infinity = 0;
+}
+
+void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_t m)
+{
+    // 13M + 4S
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj);
+
+    if (Pj->is_at_infinity)
+    {
+        xint_point_jacobian_copy(Rjx, Qj);
+        return;
+    }
+    
+    if (Qj->is_at_infinity)
+    {
+        xint_point_jacobian_copy(Rjx, Pj);
+        return;
+    }
+    
+    // Use algorithm from Wikibooks
+    xint_t U1 = XINT_INIT_VAL;
+    xint_t U2 = XINT_INIT_VAL;
+    xint_t S1 = XINT_INIT_VAL;
+    xint_t S2 = XINT_INIT_VAL;
+    xint_t H = XINT_INIT_VAL;
+    xint_t R = XINT_INIT_VAL;
+    
+#define x1 Pj->x
+#define y1 Pj->y
+#define z1 Pj->z
+#define x2 Qj->x
+#define y2 Qj->y
+#define z2 Qj->z
+#define x3 Rj->x
+#define y3 Rj->y
+#define z3 Rj->z
+    
+    // U1 = x1.z2^2 - use H as a scratch for z2^2
+    xint_mod_sqr_ex(H, z2, m);
+    xint_mod_mul_ex(U1, H, x1, m);
+    
+    // U2 = x2.z1^2 - use R as a scratch for z1^2
+    xint_mod_sqr_ex(R, z1, m);
+    xint_mod_mul_ex(U2, R, x2, m);
+    
+    // S1 = y1.z2^3
+    xint_mod_mul_ex(S1, H, z2, m);
+    xint_mod_mul_ex(S1, S1, y1, m);
+    
+    // S2 = y2.z1^3
+    xint_mod_mul_ex(S2, R, z1, m);
+    xint_mod_mul_ex(S2, S2, y2, m);
+    
+    if (xint_cmp(U1, U2) == 0)
+    {
+        if (xint_cmp(S1, S2) != 0)
+        {
+            return; // inf
+        }
+        else
+        {
+            return; // double
+        }
+    }
+    // H = U2 - U1
+    xint_sub(H, U2, U1);
+    // R = S2 - S1
+    xint_sub(R, S2, S1);
+    
+    // Calc H^2, H^3 and R^2
+    xint_t H2 = XINT_INIT_VAL;
+    xint_t H3 = XINT_INIT_VAL;
+    xint_mod_sqr_ex(H2, H, m);
+    xint_mod_mul_ex(H3, H2, H, m);
+    xint_t R2 = XINT_INIT_VAL;
+    xint_mod_sqr_ex(R2, R, m);
+    
+    // X3 = R^2 - H^3 - 2.U1.H^2
+    xint_mod_mul_ex(x3, U1, H2, m);
+    xint_mod_mul_ulong_ex(x3, x3, 2, m);
+    xint_mod_sub_ex(x3, R2, x3, m);
+    xint_mod_sub_ex(x3, x3, H3, m);
+    
+    // Y3 = R.(U1.H^2 - X3) - S1.H^3
+    xint_mod_mul_ex(y3, U1, H2, m);
+    xint_mod_sub_ex(y3, y3, x3, m);
+    xint_mod_mul_ex(y3, y3, R, m);
+    // use z3 as temp S1 . H3
+    xint_mod_mul_ex(z3, S1, H3, m);
+    xint_mod_sub_ex(y3, y3, z3, m);
+    
+    // Z3 = H.Z1.Z2
+    xint_mod_mul_ex(z3, H, z1, m);
+    xint_mod_mul_ex(z3, z3, z2, m);
+    
+    xint_point_jacobian_copy(Rjx, Rj);
+    Rjx->is_at_infinity = 0;
+    
+    xint_point_jacobian_delete(Rj);
+    
+    xint_delete (U1);
+    xint_delete (U2);
+    xint_delete (S1);
+    xint_delete (S2);
+    xint_delete (H);
+    xint_delete (R);
+}
+
+void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_t m)
+{
+    // 4M + 6S
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj);
+
+    if (Pj->is_at_infinity)
+    {
+        xint_point_jacobian_copy(Rjx, Pj);
+        return;
+    }
+
+    // Use algorithm from Wikibooks
+    xint_t S = XINT_INIT_VAL;
+    xint_t M = XINT_INIT_VAL;
+    xint_t tmp = XINT_INIT_VAL;
+    
+    // M = 3.x1^2 + a.z1^4
+    xint_mod_sqr_ex(M, x1, m);
+    xint_mod_mul_ulong_ex(M, M, 3, m);
+    xint_mod_sqr_ex(tmp, z1, m);
+    xint_mod_sqr_ex(tmp, tmp, m);
+    xint_mod_mul_ex(tmp, tmp, a, m);
+    xint_mod_add_ex(M, M, tmp, m);
+    
+    // S = 4.x1.y1^2
+    xint_mod_sqr_ex(tmp, y1, m);
+    xint_mod_mul_ex(S, tmp, x1, m);
+    xint_mod_mul_ulong_ex(S, S, 4, m);
+    
+    // x3 = M^2 - 2.S
+    xint_mod_sqr_ex(x3, M, m);
+    xint_mod_sub_ex(x3, x3, S, m);
+    xint_mod_sub_ex(x3, x3, S, m);
+    
+    // y3 = M.(S - x3) - 8.y^4
+    xint_mod_sub_ex(y3, S, x3, m);
+    xint_mod_mul_ex(y3, y3, M, m);
+    xint_mod_sqr_ex(tmp, tmp, m);
+    xint_mod_mul_ulong_ex(tmp, tmp, 8, m);
+    xint_mod_sub_ex(y3, y3, tmp, m);
+    
+    // z3 = 2.y1.z1
+    xint_copy(z3, y1);
+    xint_mod_mul_ex(z3, z3, z1, m);
+    xint_mod_mul_ulong_ex(z3, z3, 2, m);
+    
+    xint_point_jacobian_copy(Rjx, Rj);
+    Rjx->is_at_infinity = 0;
+
+    xint_point_jacobian_delete(Rj);
+
+    xint_delete(S);
+    xint_delete(M);
+    xint_delete(tmp);
+}
+
+void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c)
+{
+    xint_t a = XINT_INIT_VAL;
+    xint_t p = XINT_INIT_VAL;
+    a->size = c->nwords;
+    a->data = c->a;
+    p->size = c->nwords;
+    p->data = c->p;
+#if 1
+    xint_ecc_point_jacobian_t TMPj;
+    xint_point_jacobian_init(TMPj);
+    to_jacobian(TMPj, P);
+
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj);
+    for (int i=0; i<c->nbits; ++i)
+    {
+        if (xint_get_bit(k, i) == 1)
+        {
+            xint_point_add_jacobian(Rj, Rj, TMPj, p);
+        }
+        xint_point_double_jacobian(TMPj, TMPj, a, p);
+    }
+    from_jacobian_ex(R, Rj, p);
+#else
+    xint_ecc_point_jacobian_t Rj[2];
+    xint_point_jacobian_init(Rj[0]);
+    xint_point_jacobian_init(Rj[1]);
+    to_jacobian(Rj[1], P);
+    for (int i=0; i<c->nbits; ++i)
+    {
+        int bit = xint_get_bit(k, i);
+        xint_point_double_jacobian(Rj[1-bit], Rj[1-bit], a, p);
+        xint_point_add_jacobian(Rj[1-bit], Rj[1-bit], Rj[bit], p);
+    }
+    from_jacobian_ex(R, Rj[0], p);
+#endif
 }

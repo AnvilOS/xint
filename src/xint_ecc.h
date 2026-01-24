@@ -67,4 +67,15 @@ void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, con
 void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m);
 void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m);
 
+struct ecc_point_jacobian
+{
+    int is_at_infinity;
+    xint_t x;
+    xint_t y;
+    xint_t z;
+};
+typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
+
+void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
+
 #endif // XINT_ECC_H

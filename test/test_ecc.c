@@ -389,6 +389,36 @@ TEST(ecc, plain_scalar_multiply)
     END_TEST(ecc);
 }
 
+TEST(ecc, jacobian_scalar_multiply)
+{
+    xint_t x = XINT_INIT_VAL;
+    xint_assign_str(x, "7A1A7E52797FC8CAAA435D2A4DACE39158504BF204FBE19F14DBB427FAEE50AE", 16);
+
+    xint_ecc_point_t R;
+    xint_point_init(R);
+
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    G->is_at_infinity = 0;
+    G->x->size = p256.nwords;
+    G->x->data = p256.Gx;
+    G->y->size = p256.nwords;
+    G->y->data = p256.Gy;
+
+    STAMP_VARS();
+    __disable_irq();
+    STAMP_BEFORE();
+    for (int i=0; i<512; ++i)
+    xint_ecc_mul_scalar_jacobian(R, G, x, &p256);
+    STAMP_AFTER();
+    __enable_irq();
+    printf("xint_ecc_mul_scalar_jacobian : %u\n", STAMP_DIFF());
+    
+    ASSERT_EQ(0, test_equality(R->x, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F"));
+    ASSERT_EQ(0, test_equality(R->y, "0x3CE76603264661EA2F602DF7B4510BBC9ED939233C553EA5F42FB3F1338174B5"));
+
+    END_TEST(ecc);
+}
 
 int test_ecc(void)
 {
@@ -403,6 +433,7 @@ int test_ecc(void)
     CALL_TEST(ecc, curve_p384);
     CALL_TEST(ecc, curve_p521);
     CALL_TEST(ecc, plain_scalar_multiply);
+    CALL_TEST(ecc, jacobian_scalar_multiply);
 
     END_TEST_GROUP(ecc);
 }
