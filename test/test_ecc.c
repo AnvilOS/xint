@@ -175,16 +175,7 @@ TEST(ecc, rfc_6979)
     ASSERT_EQ(0, test_equality(signature->r, r_exp));
     ASSERT_EQ(0, test_equality(signature->s, s_exp));
     
-//    
-//    xint_ecc_point_t C;
-//    xint_point_init(C);
-//    xint_ecc_mul_scalar(C, p256.Gx, p256.Gy, priv, &p256);
-//    printf("\n");
-//    xint_print_hex("Cx", C->x);
-//    xint_print_hex("Cy", C->y);
-//    printf("\n");
-//
-    xint_ecc_verify(signature, h1, hlen, pub, &p256);
+    ASSERT_EQ(1, xint_ecc_verify(signature, h1, hlen, pub, &p256));
 
     END_TEST(ecc);
 }

@@ -851,161 +851,53 @@ void xint_point_add_p(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p
     r->is_at_infinity = 0;
 }
 
-void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t a, xint_t m)
-{
-    xint_t sumy = XINT_INIT_VAL;
-    xint_t sumx = XINT_INIT_VAL;
-    xint_t lambda = XINT_INIT_VAL;
-    xint_t xr = XINT_INIT_VAL;
-    xint_t yr = XINT_INIT_VAL;
-    
-    if (p->is_at_infinity)
-    {
-        xint_point_copy(r, q);
-        return;
-    }
-
-    if (q->is_at_infinity)
-    {
-        xint_point_copy(r, p);
-        return;
-    }
-
-    xint_add(sumy, p->y, q->y);
-    xint_add(sumx, p->x, q->x);
-    xint_mod_inverse(sumx, sumx, m);
-    xint_mul(lambda, sumy, sumx);
-        
-    xint_sqr(xr, lambda);
-    xint_add(xr, xr, lambda);
-    xint_add(xr, xr, p->x);
-    xint_add(xr, xr, q->x);
-    xint_add(xr, xr, a);
-
-    xint_add(yr, p->x, xr);
-    xint_mul(yr, yr, lambda);
-    xint_add(yr, yr, xr);
-    xint_add(yr, yr, p->y);
-
-    xint_mod(r->x, xr, m);
-    xint_mod(r->y, yr, m);
-}
-
 int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_ecc_point_t pub, const xint_ecc_curve_t *c)
 {
     xint_t N = XINT_INIT_VAL;
     N->size = p256.nwords;
     N->data = p256.n;
-    xint_t A = XINT_INIT_VAL;
     xint_t P = XINT_INIT_VAL;
     P->size = c->nwords;
     P->data = c->p;
-    A->size = c->nwords;
-    A->data = c->a;
 
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, digest, digest_len);
     xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - p256.nbits);
     xint_mod(h1_int, h1_int, N);
-    xint_print_hex("h1", h1_int);
 
     // Inverse of s
     xint_t s_inv = XINT_INIT_VAL;
     xint_mod_inverse(s_inv, sig->s, N);
-    xint_print_hex("s_inv", s_inv);
-    printf("================================================================\n");
-
-//    xint_t inv_chk = XINT_INIT_VAL;
-//    xint_mul(inv_chk, sig->s, s_inv);
-//    xint_mod(inv_chk, inv_chk, N);
-    //xint_print_hex("inv_chk", inv_chk);
 
     // u1 = z * inv_s
     xint_t u1 = XINT_INIT_VAL;
     xint_mul(u1, h1_int, s_inv);
     xint_mod(u1, u1, N);
 
-    // u2 = z * inv_s
+    // u2 = r * inv_s
     xint_t u2 = XINT_INIT_VAL;
     xint_mul(u2, sig->r, s_inv);
     xint_mod(u2, u2, N);
     
-    char *priv = "0xC9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721";
-    xint_t mmm = XINT_INIT_VAL;
-    xint_assign_str(mmm, priv, 0);
-    xint_mul(mmm, mmm, sig->r);
-    xint_add(mmm, mmm, h1_int);
-    xint_mul(mmm, mmm, s_inv);
-    xint_mod(mmm, mmm, N);
     xint_ecc_point_t p1;
     xint_point_init(p1);
-    xint_ecc_mul_scalar(p1, c->Gx, c->Gy, mmm, c);
-    xint_print_hex("Cx", p1->x);
-    xint_print_hex("Cy", p1->y);
-    printf("================================================================\n");
-    
-    xint_assign_str(mmm, priv, 0);
-    xint_mul(mmm, mmm, u2);
-    xint_add(mmm, mmm, u1);
-    xint_mod(mmm, mmm, N);
     xint_ecc_point_t p2;
     xint_point_init(p2);
-    xint_ecc_mul_scalar(p2, c->Gx, c->Gy, mmm, c);
-    xint_print_hex("Cx", p2->x);
-    xint_print_hex("Cy", p2->y);
-    printf("================================================================\n");
-
     xint_ecc_point_t p3;
     xint_point_init(p3);
     p1->is_at_infinity = 0;
     p2->is_at_infinity = 0;
 
     xint_ecc_mul_scalar(p1, c->Gx, c->Gy, u1, c);
-    xint_assign_str(mmm, priv, 0);
-    xint_mul(mmm, mmm, u2);
-    xint_mod(mmm, mmm, N);
-    xint_ecc_mul_scalar(p2, c->Gx, c->Gy, mmm, c);
+    xint_ecc_mul_scalar(p2, pub->x->data, pub->y->data, u2, c);
     xint_point_add_p(p3, p2, p1, P);
     xint_print_hex("Cx", p3->x);
     xint_print_hex("Cy", p3->y);
-    printf("================================================================\n");
-
     
-
-
-    
-//    xint_ecc_point_t p2;
-//    xint_point_init(p2);
-//    char *k = "0xA6E3C57DD01ABE90086538398355DD4C3B17AA873382B0F24D6129493D8AAD60";
-//    xint_t kkk = XINT_INIT_VAL;
-//    xint_assign_str(kkk, k, 0);
-//    xint_ecc_mul_scalar(p2, c->Gx, c->Gy, kkk, c);
-//
-//    xint_print_hex("Cx", p2->x);
-//    xint_print_hex("Cy", p2->y);
-
-
-//    xint_ecc_point_t p2;
-//    xint_point_init(p2);
-//    xint_ecc_point_t p3;
-//    xint_point_init(p3);
-    //xint_ecc_mul_scalar(p1, c->Gx, c->Gy, u1, c);
-//    xint_ecc_mul_scalar(p2, pub->x->data, pub->y->data, u2, c);
-//    xint_print_hex("Qx", pub->x);
-//    xint_print_hex("Qy", pub->y);
-//    p1->is_at_infinity = 0;
-//    p2->is_at_infinity = 0;
-
-
-//    xint_point_add(p3, p1, p2, A, P);
-//    xint_print_hex("Cx", p3->x);
-//    xint_print_hex("Cy", p3->y);
-//
-//    xint_print_hex(" n", N);
-//    xint_print_hex("x1", p3->x);
-//    xint_print_hex(" r", sig->r);
-//    xint_print_hex(" s", sig->s);
-
+    if (xint_cmp(p3->x, sig->r) == 0)
+    {
+        return 1;
+    }
     return 0;
 }
 
