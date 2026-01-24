@@ -805,52 +805,6 @@ int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len,
     return 0;
 }
 
-void xint_point_add_p(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
-{
-    xint_t diffy = XINT_INIT_VAL;
-    xint_t diffx = XINT_INIT_VAL;
-    xint_t lambda = XINT_INIT_VAL;
-    xint_t xr = XINT_INIT_VAL;
-    xint_t yr = XINT_INIT_VAL;
-    
-    if (p->is_at_infinity)
-    {
-        xint_point_copy(r, q);
-        return;
-    }
-
-    if (q->is_at_infinity)
-    {
-        xint_point_copy(r, p);
-        return;
-    }
-
-    xint_sub(diffy, q->y, p->y);
-    xint_mod(diffy, diffy, m);
-    xint_sub(diffx, q->x, p->x);
-    xint_mod(diffx, diffx, m);
-    xint_mod_inverse(diffx, diffx, m);
-    xint_mul(lambda, diffy, diffx);
-    xint_mod(lambda, lambda, m);
-        
-    xint_sqr(xr, lambda);
-    xint_sub(xr, xr, p->x);
-    xint_mod(xr, xr, m);
-    xint_sub(xr, xr, q->x);
-    xint_mod(xr, xr, m);
-
-    xint_sub(yr, p->x, xr);
-    xint_mod(yr, yr, m);
-    xint_mul(yr, yr, lambda);
-    xint_mod(yr, yr, m);
-    xint_sub(yr, yr, p->y);
-    xint_mod(yr, yr, m);
-
-    xint_mod(r->x, xr, m);
-    xint_mod(r->y, yr, m);
-    r->is_at_infinity = 0;
-}
-
 int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_ecc_point_t pub, const xint_ecc_curve_t *c)
 {
     xint_t N = XINT_INIT_VAL;
@@ -890,9 +844,9 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
 
     xint_ecc_mul_scalar(p1, c->Gx, c->Gy, u1, c);
     xint_ecc_mul_scalar(p2, pub->x->data, pub->y->data, u2, c);
-    xint_point_add_p(p3, p2, p1, P);
-    xint_print_hex("Cx", p3->x);
-    xint_print_hex("Cy", p3->y);
+    xint_point_add(p3, p2, p1, P);
+    //xint_print_hex("Cx", p3->x);
+    //xint_print_hex("Cy", p3->y);
     
     if (xint_cmp(p3->x, sig->r) == 0)
     {
@@ -901,3 +855,117 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
     return 0;
 }
 
+void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c)
+{
+    xint_ecc_point_t TMP;
+    xint_point_init(TMP);
+    xint_point_copy(TMP, P);
+    xint_t a = XINT_INIT_VAL;
+    xint_t p = XINT_INIT_VAL;
+    a->size = c->nwords;
+    a->data = c->a;
+    p->size = c->nwords;
+    p->data = c->p;
+    xint_assign_zero(R->x);
+    xint_assign_zero(R->y);
+    R->is_at_infinity = 1;
+    for (int i=0; i<c->nbits; ++i)
+    {
+        if (xint_get_bit(k, i) == 1)
+        {
+            xint_point_add(R, R, TMP, p);
+        }
+        xint_point_double(TMP, TMP, a, p);
+    }
+}
+
+void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
+{
+    xint_t diffy = XINT_INIT_VAL;
+    xint_t diffx = XINT_INIT_VAL;
+    xint_t lambda = XINT_INIT_VAL;
+    xint_t xr = XINT_INIT_VAL;
+    xint_t yr = XINT_INIT_VAL;
+    
+    if (p->is_at_infinity)
+    {
+        xint_point_copy(r, q);
+        return;
+    }
+
+    if (q->is_at_infinity)
+    {
+        xint_point_copy(r, p);
+        return;
+    }
+
+    xint_sub(diffy, q->y, p->y);
+    xint_mod(diffy, diffy, m);
+    xint_sub(diffx, q->x, p->x);
+    xint_mod(diffx, diffx, m);
+    xint_mod_inverse(diffx, diffx, m);
+    xint_mul(lambda, diffy, diffx);
+    xint_mod(lambda, lambda, m);
+
+    xint_sqr(xr, lambda);
+    xint_mod(xr, xr, m);
+    xint_sub(xr, xr, p->x);
+    xint_mod(xr, xr, m);
+    xint_sub(xr, xr, q->x);
+    xint_mod(xr, xr, m);
+
+    xint_sub(yr, p->x, xr);
+    xint_mod(yr, yr, m);
+    xint_mul(yr, yr, lambda);
+    xint_mod(yr, yr, m);
+    xint_sub(yr, yr, p->y);
+    xint_mod(yr, yr, m);
+
+    xint_mod(r->x, xr, m);
+    xint_mod(r->y, yr, m);
+    r->is_at_infinity = 0;
+}
+
+void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
+{
+    xint_t tmp = XINT_INIT_VAL;
+    xint_t lambda = XINT_INIT_VAL;
+    xint_t xr = XINT_INIT_VAL;
+    xint_t yr = XINT_INIT_VAL;
+
+    xint_sqr(tmp, p->x);
+    xint_mod(tmp, tmp, m);
+    xint_mul_ulong(tmp, tmp, 3);
+    xint_mod(tmp, tmp, m);
+    xint_add(tmp, tmp, a);
+    xint_mod(tmp, tmp, m);
+
+    xint_lshift(lambda, p->y, 1);
+    xint_mod(lambda, lambda, m);
+    xint_mod_inverse(lambda, lambda, m);
+    xint_mul(lambda, tmp, lambda);
+    xint_mod(lambda, lambda, m);
+
+    xint_sqr(xr, lambda);
+    xint_mod(xr, xr, m);
+    xint_sub(xr, xr, p->x);
+    xint_mod(xr, xr, m);
+    xint_sub(xr, xr, p->x);
+    xint_mod(xr, xr, m);
+
+    xint_sub(tmp, p->x, xr);
+    xint_mod(tmp, tmp, m);
+    xint_mul(yr, tmp, lambda);
+    xint_mod(yr, yr, m);
+    xint_sub(yr, yr, p->y);
+    xint_mod(yr, yr, m);
+
+    xint_mod(r->x, xr, m);
+    xint_mod(r->y, yr, m);
+    r->is_at_infinity = 0;
+    
+    xint_delete(tmp);
+    xint_delete(lambda);
+    xint_delete(xr);
+    xint_delete(yr);
+}
