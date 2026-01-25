@@ -410,7 +410,7 @@ void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
     xll_move(w, u, c->nwords);
 }
 
-static void inline xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
+static void inline xint_ecc_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t k = xll_add(w, u, v, c->nwords);
     if (k || xll_cmp(w, c->p, c->nwords) >= 0)
@@ -419,7 +419,7 @@ static void inline xint_mod_add(xword_t *w, const xword_t *u, const xword_t *v, 
     }
 }
 
-static void inline xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
+static void inline xint_ecc_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t b = xll_sub(w, u, v, c->nwords);
     if (b)
@@ -428,14 +428,14 @@ static void inline xint_mod_sub(xword_t *w, const xword_t *u, const xword_t *v, 
     }
 }
 
-static void inline xint_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
+static void inline xint_ecc_mod_mul(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
     xll_mul(tmp, u, c->nwords, v, c->nwords);
     c->xint_mod_fast(w, tmp);
 }
 
-static void inline xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_curve_t *c)
+static void inline xint_ecc_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, const xint_ecc_curve_t *c)
 {
     xword_t k = xll_mul_1(w, u, c->nwords, v);
     while (k > 0 || xll_cmp(w, c->p, c->nwords) >= 0)
@@ -444,7 +444,7 @@ static void inline xint_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t v, c
     }
 }
 
-static void inline xint_mod_lshift(xword_t *w, const xword_t *u, int nbits, const xint_ecc_curve_t *c)
+static void inline xint_ecc_mod_lshift(xword_t *w, const xword_t *u, int nbits, const xint_ecc_curve_t *c)
 {
     xword_t k = x_lshift(w, u, c->nwords, nbits);
     while (k > 0 || xll_cmp(w, c->p, c->nwords) >= 0)
@@ -453,7 +453,7 @@ static void inline xint_mod_lshift(xword_t *w, const xword_t *u, int nbits, cons
     }
 }
 
-static void inline xint_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t *c)
+static void inline xint_ecc_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
     xll_squ(tmp, u, c->nwords);
@@ -475,13 +475,13 @@ void from_jacobian(xint_t wx, xint_t wy, const xword_t *ux, const xword_t *uy, c
     xint_mod_inverse(z_inv, UZ, P);
     
     xint_copy(X, z_inv);
-    xint_mod_sqr(X->data, X->data, c);
-    xint_mod_mul(X->data, X->data, ux, c);
+    xint_ecc_mod_sqr(X->data, X->data, c);
+    xint_ecc_mod_mul(X->data, X->data, ux, c);
     
     xint_copy(Y, z_inv);
-    xint_mod_sqr(Y->data, Y->data, c);
-    xint_mod_mul(Y->data, Y->data, z_inv->data, c);
-    xint_mod_mul(Y->data, Y->data, uy, c);
+    xint_ecc_mod_sqr(Y->data, Y->data, c);
+    xint_ecc_mod_mul(Y->data, Y->data, z_inv->data, c);
+    xint_ecc_mod_mul(Y->data, Y->data, uy, c);
     
     xint_copy(wx, X);
     xint_copy(wy, Y);
@@ -492,22 +492,22 @@ void ecc_zaddu(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, 
 {
     xword_t T6[c->nwords];
     
-    xint_mod_sub(T6, T1, T4, c);
-    xint_mod_mul(T3, T3, T6, c);
-    xint_mod_sqr(T6, T6, c);
-    xint_mod_mul(T1, T1, T6, c);
-    xint_mod_mul(T6, T6, T4, c);
+    xint_ecc_mod_sub(T6, T1, T4, c);
+    xint_ecc_mod_mul(T3, T3, T6, c);
+    xint_ecc_mod_sqr(T6, T6, c);
+    xint_ecc_mod_mul(T1, T1, T6, c);
+    xint_ecc_mod_mul(T6, T6, T4, c);
 
-    xint_mod_sub(T5, T2, T5, c);
-    xint_mod_sqr(T4, T5, c);
-    xint_mod_sub(T4, T4, T1, c);
-    xint_mod_sub(T4, T4, T6, c);
-    xint_mod_sub(T6, T1, T6, c);
+    xint_ecc_mod_sub(T5, T2, T5, c);
+    xint_ecc_mod_sqr(T4, T5, c);
+    xint_ecc_mod_sub(T4, T4, T1, c);
+    xint_ecc_mod_sub(T4, T4, T6, c);
+    xint_ecc_mod_sub(T6, T1, T6, c);
 
-    xint_mod_mul(T2, T2, T6, c);
-    xint_mod_sub(T6, T1, T4, c);
-    xint_mod_mul(T5, T5, T6, c);
-    xint_mod_sub(T5, T5, T2, c);
+    xint_ecc_mod_mul(T2, T2, T6, c);
+    xint_ecc_mod_sub(T6, T1, T4, c);
+    xint_ecc_mod_mul(T5, T5, T6, c);
+    xint_ecc_mod_sub(T5, T5, T2, c);
 }
 
 void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, const xint_ecc_curve_t *c)
@@ -517,64 +517,64 @@ void ecc_zdau(xword_t *T1, xword_t *T2, xword_t *T3, xword_t *T4, xword_t *T5, c
     xword_t T8[c->nwords];
 
     // 1
-    xint_mod_sub(T6, T1, T4, c);        // T6 = X1 - X2
-    xint_mod_sqr(T7, T6, c);            // T7 = (X1 - X2) ^2
-    xint_mod_mul(T1, T1, T7, c);        // T1 = X1 * (X1 - X2) ^ 2
-    xint_mod_mul(T4, T4, T7, c);        // T2 = X2 * (X1 - X2) ^ 2
-    xint_mod_sub(T5, T2, T5, c);        //
+    xint_ecc_mod_sub(T6, T1, T4, c);        // T6 = X1 - X2
+    xint_ecc_mod_sqr(T7, T6, c);            // T7 = (X1 - X2) ^2
+    xint_ecc_mod_mul(T1, T1, T7, c);        // T1 = X1 * (X1 - X2) ^ 2
+    xint_ecc_mod_mul(T4, T4, T7, c);        // T2 = X2 * (X1 - X2) ^ 2
+    xint_ecc_mod_sub(T5, T2, T5, c);        //
     
     // 6
-    xint_mod_sub(T8, T1, T4, c);
-    xint_mod_mul(T2, T2, T8, c);
-    xint_mod_lshift(T2, T2, 1, c);
-    xint_mod_sqr(T8, T5, c);
-    xint_mod_sub(T4, T8, T4, c);
+    xint_ecc_mod_sub(T8, T1, T4, c);
+    xint_ecc_mod_mul(T2, T2, T8, c);
+    xint_ecc_mod_lshift(T2, T2, 1, c);
+    xint_ecc_mod_sqr(T8, T5, c);
+    xint_ecc_mod_sub(T4, T8, T4, c);
     
     // 11
-    xint_mod_sub(T4, T4, T1, c);
-    xint_mod_sub(T4, T4, T1, c);
-    xint_mod_add(T6, T4, T6, c);
-    xint_mod_sqr(T6, T6, c);
-    xint_mod_sub(T6, T6, T7, c);
+    xint_ecc_mod_sub(T4, T4, T1, c);
+    xint_ecc_mod_sub(T4, T4, T1, c);
+    xint_ecc_mod_add(T6, T4, T6, c);
+    xint_ecc_mod_sqr(T6, T6, c);
+    xint_ecc_mod_sub(T6, T6, T7, c);
 
     // 16
-    xint_mod_sub(T5, T5, T4, c);
-    xint_mod_sqr(T5, T5, c);
-    xint_mod_sub(T5, T5, T8, c);
-    xint_mod_sub(T5, T5, T2, c);
-    xint_mod_sqr(T7, T4, c);
+    xint_ecc_mod_sub(T5, T5, T4, c);
+    xint_ecc_mod_sqr(T5, T5, c);
+    xint_ecc_mod_sub(T5, T5, T8, c);
+    xint_ecc_mod_sub(T5, T5, T2, c);
+    xint_ecc_mod_sqr(T7, T4, c);
     
     // 21
-    xint_mod_sub(T5, T5, T7, c);
-    xint_mod_lshift(T8, T7, 2, c);
-    xint_mod_sub(T6, T6, T7, c);
-    xint_mod_mul(T3, T3, T6, c);
-    xint_mod_mul(T6, T1, T8, c);
+    xint_ecc_mod_sub(T5, T5, T7, c);
+    xint_ecc_mod_lshift(T8, T7, 2, c);
+    xint_ecc_mod_sub(T6, T6, T7, c);
+    xint_ecc_mod_mul(T3, T3, T6, c);
+    xint_ecc_mod_mul(T6, T1, T8, c);
     
     // 26
-    xint_mod_add(T1, T1, T4, c);
-    xint_mod_mul(T8, T8, T1, c);
-    xint_mod_add(T7, T2, T5, c);
-    xint_mod_sub(T2, T5, T2, c);
-    xint_mod_sub(T1, T8, T6, c);
+    xint_ecc_mod_add(T1, T1, T4, c);
+    xint_ecc_mod_mul(T8, T8, T1, c);
+    xint_ecc_mod_add(T7, T2, T5, c);
+    xint_ecc_mod_sub(T2, T5, T2, c);
+    xint_ecc_mod_sub(T1, T8, T6, c);
 
     // 31
-    xint_mod_mul(T5, T5, T1, c);
-    xint_mod_add(T6, T6, T8, c);
-    xint_mod_sqr(T1, T2, c);
-    xint_mod_sub(T1, T1, T6, c);
-    xint_mod_sub(T4, T8, T1, c);
+    xint_ecc_mod_mul(T5, T5, T1, c);
+    xint_ecc_mod_add(T6, T6, T8, c);
+    xint_ecc_mod_sqr(T1, T2, c);
+    xint_ecc_mod_sub(T1, T1, T6, c);
+    xint_ecc_mod_sub(T4, T8, T1, c);
 
     // 36
-    xint_mod_mul(T2, T2, T4, c);
-    xint_mod_sub(T2, T2, T5, c);
-    xint_mod_sqr(T4, T7, c);
-    xint_mod_sub(T4, T4, T6, c);
-    xint_mod_sub(T8, T8, T4, c);
+    xint_ecc_mod_mul(T2, T2, T4, c);
+    xint_ecc_mod_sub(T2, T2, T5, c);
+    xint_ecc_mod_sqr(T4, T7, c);
+    xint_ecc_mod_sub(T4, T4, T6, c);
+    xint_ecc_mod_sub(T8, T8, T4, c);
 
     // 41
-    xint_mod_mul(T7, T7, T8, c);
-    xint_mod_sub(T5, T7, T5, c);
+    xint_ecc_mod_mul(T7, T7, T8, c);
+    xint_ecc_mod_sub(T5, T7, T5, c);
 }
 
 void ecc_dblu(xword_t *x3, xword_t *y3, xword_t *z3, xword_t *x1, xword_t *y1, xword_t *z1, const xint_ecc_curve_t *c)
@@ -587,34 +587,34 @@ void ecc_dblu(xword_t *x3, xword_t *y3, xword_t *z3, xword_t *x1, xword_t *y1, x
     xword_t tmp[c->nwords];
 
     // M = 3.x1^2 + a.z1^4
-    xint_mod_sqr(M, x1, c);
-    xint_mod_mul_ulong(M, M, 3, c);
-    xint_mod_sqr(tmp, z1, c);
-    xint_mod_sqr(tmp, tmp, c);
-    xint_mod_mul(tmp, tmp, c->a, c);
-    xint_mod_add(M, M, tmp, c);
+    xint_ecc_mod_sqr(M, x1, c);
+    xint_ecc_mod_mul_ulong(M, M, 3, c);
+    xint_ecc_mod_sqr(tmp, z1, c);
+    xint_ecc_mod_sqr(tmp, tmp, c);
+    xint_ecc_mod_mul(tmp, tmp, c->a, c);
+    xint_ecc_mod_add(M, M, tmp, c);
     
     // S = 4.x1.y1^2
-    xint_mod_sqr(tmp, y1, c);
-    xint_mod_mul(S, tmp, x1, c);
-    xint_mod_lshift(S, S, 2, c);
+    xint_ecc_mod_sqr(tmp, y1, c);
+    xint_ecc_mod_mul(S, tmp, x1, c);
+    xint_ecc_mod_lshift(S, S, 2, c);
     
     // x3 = M^2 - 2.S
-    xint_mod_sqr(x3, M, c);
-    xint_mod_sub(x3, x3, S, c);
-    xint_mod_sub(x3, x3, S, c);
+    xint_ecc_mod_sqr(x3, M, c);
+    xint_ecc_mod_sub(x3, x3, S, c);
+    xint_ecc_mod_sub(x3, x3, S, c);
     
     // y3 = M.(S - x3) - 8.y^4
-    xint_mod_sub(y3, S, x3, c);
-    xint_mod_mul(y3, y3, M, c);
-    xint_mod_sqr(tmp, tmp, c);
-    xint_mod_lshift(tmp, tmp, 3, c);
-    xint_mod_sub(y3, y3, tmp, c);
+    xint_ecc_mod_sub(y3, S, x3, c);
+    xint_ecc_mod_mul(y3, y3, M, c);
+    xint_ecc_mod_sqr(tmp, tmp, c);
+    xint_ecc_mod_lshift(tmp, tmp, 3, c);
+    xint_ecc_mod_sub(y3, y3, tmp, c);
     
     // z3 = 2.y1.z1
     xll_move(z3, y1, c->nwords);
-    xint_mod_mul(z3, z3, z1, c);
-    xint_mod_lshift(z3, z3, 1, c);
+    xint_ecc_mod_mul(z3, z3, z1, c);
+    xint_ecc_mod_lshift(z3, z3, 1, c);
     
     // Now update Pj
     xll_move(x1, S, c->nwords);
@@ -844,7 +844,7 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
 
     xint_ecc_mul_scalar(p1, c->Gx, c->Gy, u1, c);
     xint_ecc_mul_scalar(p2, pub->x->data, pub->y->data, u2, c);
-    xint_point_add(p3, p2, p1, P);
+    xint_ecc_point_add(p3, p2, p1, P);
     //xint_print_hex("Cx", p3->x);
     //xint_print_hex("Cy", p3->y);
     
@@ -873,49 +873,49 @@ void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, con
     {
         if (xint_get_bit(k, i) == 1)
         {
-            xint_point_add(R, R, TMP, p);
+            xint_ecc_point_add(R, R, TMP, p);
         }
-        xint_point_double(TMP, TMP, a, p);
+        xint_ecc_point_double(TMP, TMP, a, p);
     }
 }
 
-void xint_mod_add_ex(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+void xint_mod_add(xint_t w, const xint_t u, const xint_t v, const xint_t m)
 {
     xint_add(w, u, v);
     xint_mod(w, w, m);
 }
 
-void xint_mod_sub_ex(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+void xint_mod_sub(xint_t w, const xint_t u, const xint_t v, const xint_t m)
 {
     xint_sub(w, u, v);
     xint_mod(w, w, m);
 }
 
-void xint_mod_mul_ex(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+void xint_mod_mul(xint_t w, const xint_t u, const xint_t v, const xint_t m)
 {
     xint_mul(w, u, v);
     xint_mod(w, w, m);
 }
 
-void xint_mod_mul_ulong_ex(xint_t w, const xint_t u, unsigned long v, const xint_t m)
+void xint_mod_mul_ulong(xint_t w, const xint_t u, unsigned long v, const xint_t m)
 {
     xint_mul_ulong(w, u, v);
     xint_mod(w, w, m);
 }
 
-void xint_mod_lshift_ex(xint_t w, const xint_t u, int nbits, const xint_t m)
+void xint_mod_lshift(xint_t w, const xint_t u, int nbits, const xint_t m)
 {
     xint_lshift(w, u, nbits);
     xint_mod(w, w, m);
 }
 
-void xint_mod_sqr_ex(xint_t w, const xint_t u, const xint_t m)
+void xint_mod_sqr(xint_t w, const xint_t u, const xint_t m)
 {
     xint_sqr(w, u);
     xint_mod(w, w, m);
 }
 
-void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
+void xint_ecc_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m)
 {
     xint_t diffy = XINT_INIT_VAL;
     xint_t diffx = XINT_INIT_VAL;
@@ -935,18 +935,18 @@ void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, 
         return;
     }
 
-    xint_mod_sub_ex(diffy, q->y, p->y, m);
-    xint_mod_sub_ex(diffx, q->x, p->x, m);
+    xint_mod_sub(diffy, q->y, p->y, m);
+    xint_mod_sub(diffx, q->x, p->x, m);
     xint_mod_inverse(diffx, diffx, m);
-    xint_mod_mul_ex(lambda, diffy, diffx, m);
+    xint_mod_mul(lambda, diffy, diffx, m);
 
-    xint_mod_sqr_ex(xr, lambda, m);
-    xint_mod_sub_ex(xr, xr, p->x, m);
-    xint_mod_sub_ex(xr, xr, q->x, m);
+    xint_mod_sqr(xr, lambda, m);
+    xint_mod_sub(xr, xr, p->x, m);
+    xint_mod_sub(xr, xr, q->x, m);
 
-    xint_mod_sub_ex(yr, p->x, xr, m);
-    xint_mod_mul_ex(yr, yr, lambda, m);
-    xint_mod_sub_ex(yr, yr, p->y, m);
+    xint_mod_sub(yr, p->x, xr, m);
+    xint_mod_mul(yr, yr, lambda, m);
+    xint_mod_sub(yr, yr, p->y, m);
 
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
@@ -959,28 +959,28 @@ void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, 
     xint_delete(yr);
 }
 
-void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
+void xint_ecc_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
 {
     xint_t tmp = XINT_INIT_VAL;
     xint_t lambda = XINT_INIT_VAL;
     xint_t xr = XINT_INIT_VAL;
     xint_t yr = XINT_INIT_VAL;
 
-    xint_mod_sqr_ex(tmp, p->x, m);
-    xint_mod_mul_ulong_ex(tmp, tmp, 3, m);
-    xint_mod_add_ex(tmp, tmp, a, m);
+    xint_mod_sqr(tmp, p->x, m);
+    xint_mod_mul_ulong(tmp, tmp, 3, m);
+    xint_mod_add(tmp, tmp, a, m);
 
     xint_lshift(lambda, p->y, 1);
     xint_mod_inverse(lambda, lambda, m);
-    xint_mod_mul_ex(lambda, tmp, lambda, m);
+    xint_mod_mul(lambda, tmp, lambda, m);
 
-    xint_mod_sqr_ex(xr, lambda, m);
-    xint_mod_sub_ex(xr, xr, p->x, m);
-    xint_mod_sub_ex(xr, xr, p->x, m);
+    xint_mod_sqr(xr, lambda, m);
+    xint_mod_sub(xr, xr, p->x, m);
+    xint_mod_sub(xr, xr, p->x, m);
 
-    xint_mod_sub_ex(tmp, p->x, xr, m);
-    xint_mod_mul_ex(yr, tmp, lambda, m);
-    xint_mod_sub_ex(yr, yr, p->y, m);
+    xint_mod_sub(tmp, p->x, xr, m);
+    xint_mod_mul(yr, tmp, lambda, m);
+    xint_mod_sub(yr, yr, p->y, m);
 
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
@@ -1033,13 +1033,13 @@ void from_jacobian_ex(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, con
     xint_mod_inverse(z_inv, u->z, p);
     
     xint_copy(X, z_inv);
-    xint_mod_sqr_ex(X, X, p);
-    xint_mod_mul_ex(X, X, u->x, p);
+    xint_mod_sqr(X, X, p);
+    xint_mod_mul(X, X, u->x, p);
     
     xint_copy(Y, z_inv);
-    xint_mod_sqr_ex(Y, Y, p);
-    xint_mod_mul_ex(Y, Y, z_inv, p);
-    xint_mod_mul_ex(Y, Y, u->y, p);
+    xint_mod_sqr(Y, Y, p);
+    xint_mod_mul(Y, Y, z_inv, p);
+    xint_mod_mul(Y, Y, u->y, p);
     
     xint_copy(w->x, X);
     xint_copy(w->y, Y);
@@ -1087,20 +1087,20 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
 #define z3 Rj->z
     
     // U1 = x1.z2^2 - use H as a scratch for z2^2
-    xint_mod_sqr_ex(H, z2, m);
-    xint_mod_mul_ex(U1, H, x1, m);
+    xint_mod_sqr(H, z2, m);
+    xint_mod_mul(U1, H, x1, m);
     
     // U2 = x2.z1^2 - use R as a scratch for z1^2
-    xint_mod_sqr_ex(R, z1, m);
-    xint_mod_mul_ex(U2, R, x2, m);
+    xint_mod_sqr(R, z1, m);
+    xint_mod_mul(U2, R, x2, m);
     
     // S1 = y1.z2^3
-    xint_mod_mul_ex(S1, H, z2, m);
-    xint_mod_mul_ex(S1, S1, y1, m);
+    xint_mod_mul(S1, H, z2, m);
+    xint_mod_mul(S1, S1, y1, m);
     
     // S2 = y2.z1^3
-    xint_mod_mul_ex(S2, R, z1, m);
-    xint_mod_mul_ex(S2, S2, y2, m);
+    xint_mod_mul(S2, R, z1, m);
+    xint_mod_mul(S2, S2, y2, m);
     
     if (xint_cmp(U1, U2) == 0)
     {
@@ -1121,28 +1121,28 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
     // Calc H^2, H^3 and R^2
     xint_t H2 = XINT_INIT_VAL;
     xint_t H3 = XINT_INIT_VAL;
-    xint_mod_sqr_ex(H2, H, m);
-    xint_mod_mul_ex(H3, H2, H, m);
+    xint_mod_sqr(H2, H, m);
+    xint_mod_mul(H3, H2, H, m);
     xint_t R2 = XINT_INIT_VAL;
-    xint_mod_sqr_ex(R2, R, m);
+    xint_mod_sqr(R2, R, m);
     
     // X3 = R^2 - H^3 - 2.U1.H^2
-    xint_mod_mul_ex(x3, U1, H2, m);
-    xint_mod_mul_ulong_ex(x3, x3, 2, m);
-    xint_mod_sub_ex(x3, R2, x3, m);
-    xint_mod_sub_ex(x3, x3, H3, m);
+    xint_mod_mul(x3, U1, H2, m);
+    xint_mod_mul_ulong(x3, x3, 2, m);
+    xint_mod_sub(x3, R2, x3, m);
+    xint_mod_sub(x3, x3, H3, m);
     
     // Y3 = R.(U1.H^2 - X3) - S1.H^3
-    xint_mod_mul_ex(y3, U1, H2, m);
-    xint_mod_sub_ex(y3, y3, x3, m);
-    xint_mod_mul_ex(y3, y3, R, m);
+    xint_mod_mul(y3, U1, H2, m);
+    xint_mod_sub(y3, y3, x3, m);
+    xint_mod_mul(y3, y3, R, m);
     // use z3 as temp S1 . H3
-    xint_mod_mul_ex(z3, S1, H3, m);
-    xint_mod_sub_ex(y3, y3, z3, m);
+    xint_mod_mul(z3, S1, H3, m);
+    xint_mod_sub(y3, y3, z3, m);
     
     // Z3 = H.Z1.Z2
-    xint_mod_mul_ex(z3, H, z1, m);
-    xint_mod_mul_ex(z3, z3, z2, m);
+    xint_mod_mul(z3, H, z1, m);
+    xint_mod_mul(z3, z3, z2, m);
     
     xint_point_jacobian_copy(Rjx, Rj);
     Rjx->is_at_infinity = 0;
@@ -1179,34 +1179,34 @@ void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_po
     xint_t tmp = XINT_INIT_VAL;
     
     // M = 3.x1^2 + a.z1^4
-    xint_mod_sqr_ex(M, x1, m);
-    xint_mod_mul_ulong_ex(M, M, 3, m);
-    xint_mod_sqr_ex(tmp, z1, m);
-    xint_mod_sqr_ex(tmp, tmp, m);
-    xint_mod_mul_ex(tmp, tmp, a, m);
-    xint_mod_add_ex(M, M, tmp, m);
+    xint_mod_sqr(M, x1, m);
+    xint_mod_mul_ulong(M, M, 3, m);
+    xint_mod_sqr(tmp, z1, m);
+    xint_mod_sqr(tmp, tmp, m);
+    xint_mod_mul(tmp, tmp, a, m);
+    xint_mod_add(M, M, tmp, m);
     
     // S = 4.x1.y1^2
-    xint_mod_sqr_ex(tmp, y1, m);
-    xint_mod_mul_ex(S, tmp, x1, m);
-    xint_mod_mul_ulong_ex(S, S, 4, m);
+    xint_mod_sqr(tmp, y1, m);
+    xint_mod_mul(S, tmp, x1, m);
+    xint_mod_mul_ulong(S, S, 4, m);
     
     // x3 = M^2 - 2.S
-    xint_mod_sqr_ex(x3, M, m);
-    xint_mod_sub_ex(x3, x3, S, m);
-    xint_mod_sub_ex(x3, x3, S, m);
+    xint_mod_sqr(x3, M, m);
+    xint_mod_sub(x3, x3, S, m);
+    xint_mod_sub(x3, x3, S, m);
     
     // y3 = M.(S - x3) - 8.y^4
-    xint_mod_sub_ex(y3, S, x3, m);
-    xint_mod_mul_ex(y3, y3, M, m);
-    xint_mod_sqr_ex(tmp, tmp, m);
-    xint_mod_mul_ulong_ex(tmp, tmp, 8, m);
-    xint_mod_sub_ex(y3, y3, tmp, m);
+    xint_mod_sub(y3, S, x3, m);
+    xint_mod_mul(y3, y3, M, m);
+    xint_mod_sqr(tmp, tmp, m);
+    xint_mod_mul_ulong(tmp, tmp, 8, m);
+    xint_mod_sub(y3, y3, tmp, m);
     
     // z3 = 2.y1.z1
     xint_copy(z3, y1);
-    xint_mod_mul_ex(z3, z3, z1, m);
-    xint_mod_mul_ulong_ex(z3, z3, 2, m);
+    xint_mod_mul(z3, z3, z1, m);
+    xint_mod_mul_ulong(z3, z3, 2, m);
     
     xint_point_jacobian_copy(Rjx, Rj);
     Rjx->is_at_infinity = 0;
