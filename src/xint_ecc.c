@@ -951,6 +951,12 @@ void xint_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, 
     xint_mod(r->x, xr, m);
     xint_mod(r->y, yr, m);
     r->is_at_infinity = 0;
+
+    xint_delete(diffx);
+    xint_delete(diffy);
+    xint_delete(lambda);
+    xint_delete(xr);
+    xint_delete(yr);
 }
 
 void xint_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m)
@@ -1038,14 +1044,15 @@ void from_jacobian_ex(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, con
     xint_copy(w->x, X);
     xint_copy(w->y, Y);
     w->is_at_infinity = 0;
+
+    xint_delete(X);
+    xint_delete(Y);
+    xint_delete(z_inv);
 }
 
 void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_t m)
 {
     // 13M + 4S
-    xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
-
     if (Pj->is_at_infinity)
     {
         xint_point_jacobian_copy(Rjx, Qj);
@@ -1058,6 +1065,9 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
         return;
     }
     
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj);
+
     // Use algorithm from Wikibooks
     xint_t U1 = XINT_INIT_VAL;
     xint_t U2 = XINT_INIT_VAL;
@@ -1145,19 +1155,23 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
     xint_delete (S2);
     xint_delete (H);
     xint_delete (R);
+
+    xint_delete (H2);
+    xint_delete (H3);
+    xint_delete (R2);
 }
 
 void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_t m)
 {
     // 4M + 6S
-    xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
-
     if (Pj->is_at_infinity)
     {
         xint_point_jacobian_copy(Rjx, Pj);
         return;
     }
+
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj);
 
     // Use algorithm from Wikibooks
     xint_t S = XINT_INIT_VAL;
@@ -1228,6 +1242,8 @@ void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, 
         xint_point_double_jacobian(TMPj, TMPj, a, p);
     }
     from_jacobian_ex(R, Rj, p);
+    xint_point_jacobian_delete(TMPj);
+    xint_point_jacobian_delete(Rj);
 #else
     xint_ecc_point_jacobian_t Rj[2];
     xint_point_jacobian_init(Rj[0]);
@@ -1240,5 +1256,7 @@ void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, 
         xint_point_add_jacobian(Rj[1-bit], Rj[1-bit], Rj[bit], p);
     }
     from_jacobian_ex(R, Rj[0], p);
+    xint_point_jacobian_delete(Rj[0]);
+    xint_point_jacobian_delete(Rj[1]);
 #endif
 }

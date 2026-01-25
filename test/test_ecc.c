@@ -148,7 +148,13 @@ TEST(ecc, rfc_6979)
     xint_assign_str(priv, x, 0);
     xint_ecc_point_t pub;
     xint_point_init(pub);
+    STAMP_VARS();
+    __disable_irq();
+    STAMP_BEFORE();
     xint_ecc_get_public_key(pub, priv, &p256);
+    STAMP_AFTER();
+    __enable_irq();
+    printf("xint_ecc_get_public_key : %u\n", STAMP_DIFF());
     pub->is_at_infinity = 0;
     ASSERT_EQ(0, test_equality(pub->x, Ux_exp));
     ASSERT_EQ(0, test_equality(pub->y, Uy_exp));
@@ -167,7 +173,13 @@ TEST(ecc, rfc_6979)
     xint_ecc_sig_t signature;
     xint_init(signature->r);
     xint_init(signature->s);
+    //STAMP_VARS();
+    __disable_irq();
+    STAMP_BEFORE();
     xint_ecc_sign_det(signature, h1, hlen, priv, &p256);
+    STAMP_AFTER();
+    __enable_irq();
+    printf("xint_ecc_sign_det : %u\n", STAMP_DIFF());
     printf("Calculated\n");
     xint_print_hex("sigR", signature->r);
     xint_print_hex("sigS", signature->s);
@@ -175,7 +187,7 @@ TEST(ecc, rfc_6979)
     ASSERT_EQ(0, test_equality(signature->r, r_exp));
     ASSERT_EQ(0, test_equality(signature->s, s_exp));
     
-    STAMP_VARS();
+    //STAMP_VARS();
     __disable_irq();
     STAMP_BEFORE();
     for (int i=0; i<512; ++i)
@@ -377,7 +389,7 @@ TEST(ecc, plain_scalar_multiply)
     STAMP_VARS();
     __disable_irq();
     STAMP_BEFORE();
-    for (int i=0; i<512; ++i)
+    //for (int i=0; i<512; ++i)
     xint_ecc_mul_scalar_plain(R, G, x, &p256);
     STAMP_AFTER();
     __enable_irq();
