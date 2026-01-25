@@ -77,5 +77,6 @@ struct ecc_point_jacobian
 typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
 
 void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
+void xint_ecc_mul_scalar_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c);
 
 #endif // XINT_ECC_H

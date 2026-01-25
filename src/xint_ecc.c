@@ -833,21 +833,15 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
     xint_mul(u2, sig->r, s_inv);
     xint_mod(u2, u2, N);
     
-    xint_ecc_point_t p1;
-    xint_point_init(p1);
-    xint_ecc_point_t p2;
-    xint_point_init(p2);
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    G->x->size = c->nwords;
+    G->x->data = c->Gx;
+    G->y->size = c->nwords;
+    G->y->data = c->Gy;
     xint_ecc_point_t p3;
     xint_point_init(p3);
-    p1->is_at_infinity = 0;
-    p2->is_at_infinity = 0;
-
-    xint_ecc_mul_scalar(p1, c->Gx, c->Gy, u1, c);
-    xint_ecc_mul_scalar(p2, pub->x->data, pub->y->data, u2, c);
-    xint_ecc_point_add(p3, p2, p1, P);
-    //xint_print_hex("Cx", p3->x);
-    //xint_print_hex("Cy", p3->y);
-    
+    xint_ecc_mul_scalar_shamir(p3, pub, G, u1, u2, c);
     if (xint_cmp(p3->x, sig->r) == 0)
     {
         return 1;
@@ -1227,6 +1221,26 @@ void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, 
     p->size = c->nwords;
     p->data = c->p;
 #if 1
+    // Left to right
+    xint_ecc_point_jacobian_t TMPj;
+    xint_point_jacobian_init(TMPj);
+    to_jacobian(TMPj, P);
+
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj);
+    for (int i=c->nbits-1; i>=0; --i)
+    {
+        xint_point_double_jacobian(Rj, Rj, a, p);
+        if (xint_get_bit(k, i) == 1)
+        {
+            xint_point_add_jacobian(Rj, Rj, TMPj, p);
+        }
+    }
+    from_jacobian_ex(R, Rj, p);
+    xint_point_jacobian_delete(TMPj);
+    xint_point_jacobian_delete(Rj);
+#elif 0
+    // Right to left
     xint_ecc_point_jacobian_t TMPj;
     xint_point_jacobian_init(TMPj);
     to_jacobian(TMPj, P);
@@ -1259,4 +1273,55 @@ void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, 
     xint_point_jacobian_delete(Rj[0]);
     xint_point_jacobian_delete(Rj[1]);
 #endif
+}
+
+void xint_ecc_mul_scalar_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c)
+{
+    xint_t a = XINT_INIT_VAL;
+    xint_t p = XINT_INIT_VAL;
+    a->size = c->nwords;
+    a->data = c->a;
+    p->size = c->nwords;
+    p->data = c->p;
+    
+    xint_ecc_point_jacobian_t Gj;
+    xint_point_jacobian_init(Gj);
+    to_jacobian(Gj, G);
+    Gj->is_at_infinity = 0;
+
+    xint_ecc_point_jacobian_t Sj;
+    xint_point_jacobian_init(Sj);
+    to_jacobian(Sj, S);
+    Sj->is_at_infinity = 0;
+
+    xint_ecc_point_jacobian_t Bj;
+    xint_point_jacobian_init(Bj);
+    xint_point_add_jacobian(Bj, Gj, Sj, p);
+
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj);
+
+    // Left to right because it's easier to do the Shamir trick
+    for (int i=c->nbits-1; i>=0; --i)
+    {
+        xint_point_double_jacobian(Rj, Rj, a, p);
+        int bits = xint_get_bit(u2, i) << 1 | xint_get_bit(u1, i);
+        if (bits == 3)
+        {
+            xint_point_add_jacobian(Rj, Rj, Bj, p);
+        }
+        else if (bits == 2)
+        {
+            xint_point_add_jacobian(Rj, Rj, Sj, p);
+        }
+        else if (bits == 1)
+        {
+            xint_point_add_jacobian(Rj, Rj, Gj, p);
+        }
+    }
+    from_jacobian_ex(R, Rj, p);
+    xint_point_jacobian_delete(Gj);
+    xint_point_jacobian_delete(Sj);
+    xint_point_jacobian_delete(Bj);
+    xint_point_jacobian_delete(Rj);
 }
