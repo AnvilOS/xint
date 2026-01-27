@@ -76,6 +76,8 @@ struct ecc_point_jacobian
     int nwords;
 };
 typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
+void xint_point_jacobian_init(xint_ecc_point_jacobian_t p, int nwords);
+void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_ecc_curve_t *c);
 
 void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
 void xint_ecc_mul_scalar_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c);
