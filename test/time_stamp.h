@@ -8,7 +8,7 @@
 #define STAMP_VARS() clock_t start, end;
 #define STAMP_BEFORE() start = clock();
 #define STAMP_AFTER() end = clock();
-#define STAMP_DIFF() ((end - start) * 1000 / CLOCKS_PER_SEC)
+#define STAMP_DIFF() ((unsigned)((end - start) * 1000 / CLOCKS_PER_SEC))
 #else
 #include "stm32u5xx_hal.h"
 #define STAMP_VARS() unsigned long before; unsigned long after;

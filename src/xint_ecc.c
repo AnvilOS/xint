@@ -453,6 +453,15 @@ static void inline xint_ecc_mod_lshift(xword_t *w, const xword_t *u, int nbits, 
     }
 }
 
+static void inline xint_ecc_mod_rshift(xword_t *w, const xword_t *u, int nbits, const xint_ecc_curve_t *c)
+{
+    xword_t k = x_rshift(w, u, c->nwords, nbits);
+    while (k > 0 || xll_cmp(w, c->p, c->nwords) >= 0)
+    {
+        k -= xll_sub(w, w, c->p, c->nwords);
+    }
+}
+
 static void inline xint_ecc_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc_curve_t *c)
 {
     xword_t tmp[40];
@@ -986,35 +995,39 @@ void xint_ecc_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xin
     xint_delete(yr);
 }
 
-void xint_point_jacobian_init(xint_ecc_point_jacobian_t p)
+void xint_point_jacobian_init(xint_ecc_point_jacobian_t p, int nwords)
 {
+    p->x = (xword_t *)malloc(nwords * sizeof(xword_t));
+    p->y = (xword_t *)malloc(nwords * sizeof(xword_t));
+    p->z = (xword_t *)malloc(nwords * sizeof(xword_t));
     p->is_at_infinity = 1;
-    xint_init(p->x);
-    xint_init(p->y);
-    xint_init(p->z);
+    p->nwords = nwords;
 }
 
 void xint_point_jacobian_delete(xint_ecc_point_jacobian_t p)
 {
     p->is_at_infinity = 1;
-    xint_delete(p->x);
-    xint_delete(p->y);
-    xint_delete(p->z);
+    free(p->x);
+    free(p->y);
+    free(p->z);
 }
 
 void xint_point_jacobian_copy(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p)
 {
     r->is_at_infinity = p->is_at_infinity;
-    xint_copy(r->x, p->x);
-    xint_copy(r->y, p->y);
-    xint_copy(r->z, p->z);
+    xll_move(r->x, p->x, r->nwords);
+    xll_move(r->y, p->y, r->nwords);
+    xll_move(r->z, p->z, r->nwords);
 }
 
 void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u)
 {
-    xint_copy(w->x, u->x);
-    xint_copy(w->y, u->y);
-    xint_assign_ulong(w->z, 1);
+    xll_zero(w->x, w->nwords);
+    xll_zero(w->y, w->nwords);
+    xll_zero(w->z, w->nwords);
+    xll_move(w->x, u->x->data, u->x->size);
+    xll_move(w->y, u->y->data, u->y->size);
+    w->z[0] = 1;
     w->is_at_infinity = u->is_at_infinity;
 }
 
@@ -1024,16 +1037,30 @@ void from_jacobian_ex(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, con
     xint_t X = XINT_INIT_VAL;
     xint_t Y = XINT_INIT_VAL;
     xint_t z_inv = XINT_INIT_VAL;
-    xint_mod_inverse(z_inv, u->z, p);
+
+    xint_t u_x = XINT_INIT_VAL;
+    FAST_RESIZE(u_x, u->nwords);
+    xll_move(u_x->data, u->x, u->nwords);
+    trim_zeroes(u_x);
+    xint_t u_y = XINT_INIT_VAL;
+    FAST_RESIZE(u_y, u->nwords);
+    xll_move(u_y->data, u->y, u->nwords);
+    trim_zeroes(u_y);
+    xint_t u_z = XINT_INIT_VAL;
+    FAST_RESIZE(u_z, u->nwords);
+    xll_move(u_z->data, u->z, u->nwords);
+    trim_zeroes(u_z);
+
+    xint_mod_inverse(z_inv, u_z, p);
     
     xint_copy(X, z_inv);
     xint_mod_sqr(X, X, p);
-    xint_mod_mul(X, X, u->x, p);
+    xint_mod_mul(X, X, u_x, p);
     
     xint_copy(Y, z_inv);
     xint_mod_sqr(Y, Y, p);
     xint_mod_mul(Y, Y, z_inv, p);
-    xint_mod_mul(Y, Y, u->y, p);
+    xint_mod_mul(Y, Y, u_y, p);
     
     xint_copy(w->x, X);
     xint_copy(w->y, Y);
@@ -1058,9 +1085,6 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
         xint_point_jacobian_copy(Rjx, Pj);
         return;
     }
-    
-//    xint_ecc_point_jacobian_t Rj;
-//    xint_point_jacobian_init(Rj);
 
     // Use algorithm from Wikibooks
     xword_t U1[10];
@@ -1069,56 +1093,25 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
     xword_t S2[10];
     xword_t H[10];
     xword_t R[10];
-    
-//#define x1 Pj->x
-//#define y1 Pj->y
-//#define z1 Pj->z
-//#define x2 Qj->x
-//#define y2 Qj->y
-//#define z2 Qj->z
-//#define x3 Rj->x
-//#define y3 Rj->y
-//#define z3 Rj->z
-    
-    xword_t x1[10];
-    xll_zero(x1, 10);
-    xll_move(x1, Pj->x->data, Pj->x->size);
-    xword_t y1[10];
-    xll_zero(y1, 10);
-    xll_move(y1, Pj->y->data, Pj->y->size);
-    xword_t z1[10];
-    xll_zero(z1, 10);
-    xll_move(z1, Pj->z->data, Pj->z->size);
-
-    xword_t x2[10];
-    xll_zero(x2, 10);
-    xll_move(x2, Qj->x->data, Qj->x->size);
-    xword_t y2[10];
-    xll_zero(y2, 10);
-    xll_move(y2, Qj->y->data, Qj->y->size);
-    xword_t z2[10];
-    xll_zero(z2, 10);
-    xll_move(z2, Qj->z->data, Qj->z->size);
-
     xword_t x3[10];
     xword_t y3[10];
     xword_t z3[10];
     
     // U1 = x1.z2^2 - use H as a scratch for z2^2
-    xint_ecc_mod_sqr(H, z2, c);
-    xint_ecc_mod_mul(U1, H, x1, c);
+    xint_ecc_mod_sqr(H, Qj->z, c);
+    xint_ecc_mod_mul(U1, H, Pj->x, c);
     
     // U2 = x2.z1^2 - use R as a scratch for z1^2
-    xint_ecc_mod_sqr(R, z1, c);
-    xint_ecc_mod_mul(U2, R, x2, c);
+    xint_ecc_mod_sqr(R, Pj->z, c);
+    xint_ecc_mod_mul(U2, R, Qj->x, c);
     
     // S1 = y1.z2^3
-    xint_ecc_mod_mul(S1, H, z2, c);
-    xint_ecc_mod_mul(S1, S1, y1, c);
+    xint_ecc_mod_mul(S1, H, Qj->z, c);
+    xint_ecc_mod_mul(S1, S1, Pj->y, c);
     
     // S2 = y2.z1^3
-    xint_ecc_mod_mul(S2, R, z1, c);
-    xint_ecc_mod_mul(S2, S2, y2, c);
+    xint_ecc_mod_mul(S2, R, Pj->z, c);
+    xint_ecc_mod_mul(S2, S2, Qj->y, c);
     
     if (xll_cmp(U1, U2, c->nwords) == 0)
     {
@@ -1139,12 +1132,9 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
     // Calc H^2, H^3 and R^2
     xword_t H2[10];
     xword_t H3[10];
-    //xint_t H2 = XINT_INIT_VAL;
-    //xint_t H3 = XINT_INIT_VAL;
     xint_ecc_mod_sqr(H2, H, c);
     xint_ecc_mod_mul(H3, H2, H, c);
     xword_t R2[10];
-//    xint_t R2 = XINT_INIT_VAL;
     xint_ecc_mod_sqr(R2, R, c);
     
     // X3 = R^2 - H^3 - 2.U1.H^2
@@ -1162,48 +1152,14 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
     xint_ecc_mod_sub(y3, y3, z3, c);
     
     // Z3 = H.Z1.Z2
-    xint_ecc_mod_mul(z3, H, z1, c);
-    xint_ecc_mod_mul(z3, z3, z2, c);
-    
-    FAST_RESIZE(Rjx->x, c->nwords);
-    xll_move(Rjx->x->data, x3, c->nwords);
-    trim_zeroes(Rjx->x);
-    FAST_RESIZE(Rjx->y, c->nwords);
-    xll_move(Rjx->y->data, y3, c->nwords);
-    trim_zeroes(Rjx->y);
-    FAST_RESIZE(Rjx->z, c->nwords);
-    xll_move(Rjx->z->data, z3, c->nwords);
-    trim_zeroes(Rjx->z);
+    xint_ecc_mod_mul(z3, H, Pj->z, c);
+    xint_ecc_mod_mul(z3, z3, Qj->z, c);
+
+    xll_move(Rjx->x, x3, c->nwords);
+    xll_move(Rjx->y, y3, c->nwords);
+    xll_move(Rjx->z, z3, c->nwords);
     Rjx->is_at_infinity = 0;
-
-    
-//    xint_point_jacobian_copy(Rjx, Rj);
-//    Rjx->is_at_infinity = 0;
-//    
-//    xint_point_jacobian_delete(Rj);
-    
-//    xint_delete (U1);
-//    xint_delete (U2);
-//    xint_delete (S1);
-//    xint_delete (S2);
-//    xint_delete (H);
-//    xint_delete (R);
-//
-//    xint_delete (H2);
-//    xint_delete (H3);
-//    xint_delete (R2);
 }
-
-#undef x1
-#undef y1
-#undef z1
-#undef x2
-#undef y2
-#undef z2
-#undef x3
-#undef y3
-#undef z3
-
 
 void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_t a, const xint_ecc_curve_t *c)
 {
@@ -1213,35 +1169,83 @@ void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_po
         xint_point_jacobian_copy(Rjx, Pj);
         return;
     }
+    
+#if 1
+    xword_t T1[10];
+    xword_t T2[10];
+    xword_t T3[10];
+    xword_t T4[10];
+    xword_t T5[10];
 
+    xword_t outx[10];
+    xword_t outy[10];
+    xword_t outz[10];
+    
+    xll_move(T1, Pj->x, Pj->nwords);
+    xll_move(T2, Pj->y, Pj->nwords);
+    xll_move(T3, Pj->z, Pj->nwords);
+    
+    xint_ecc_mod_sqr(T4, T2, c);        // T4 = Y^2
+    xint_ecc_mod_mul(T5, T1, T4, c);    // T5 = X.Y^2
+#if !defined LAMBDA_2
+    xint_ecc_mod_mul_ulong(T5, T5, 4, c);// T5 = 4.X.Y^2 = S***
+#endif
+    xint_ecc_mod_sqr(T4, T4, c);        // T4 = Y^4
+#if !defined LAMBDA_2
+    xint_ecc_mod_mul_ulong(T4, T4, 8, c);// T4 = 8.Y^4
+#endif
+    xint_ecc_mod_mul(T2, T2, T3, c);    // T2 = Y.Z
+#if !defined LAMBDA_2
+    xint_ecc_mod_mul_ulong(T2, T2, 2, c);// T2 = 2.Y.Z
+#endif
+    xint_ecc_mod_sqr(T3, T3, c);        // T3 = Z^2
+
+    xint_ecc_mod_add(T1, T1, T3, c);    // T1 = X + Z^2
+    xint_ecc_mod_add(T3, T3, T3, c);    // T3 = 2.Z^2
+    xint_ecc_mod_sub(T3, T1, T3, c);    // T3 = X - Z^2
+    xint_ecc_mod_mul(T1, T1, T3, c);    // T1 = X^2 - Z^4
+    
+    xint_ecc_mod_add(T3, T1, T1, c);    // T3 = 2.(X^2 - Z^4)
+    xint_ecc_mod_add(T1, T1, T3, c);    // T1 = 3.(X^2 - Z^4) = M***
+
+#if defined LAMBDA_2
+xint_ecc_mod_rshift(T1, T1, 1, c);
+#endif
+    xint_ecc_mod_sqr(T3, T1, c);        // T3 = M^2
+    xint_ecc_mod_sub(T3, T3, T5, c);    // T3 = M^2 - S
+
+    xint_ecc_mod_sub(T3, T3, T5, c);    // T3 = M^2 - 2.S = X3***
+    xint_ecc_mod_sub(T5, T5, T3, c);    // T5 = S - X'
+    xint_ecc_mod_mul(T1, T1, T5, c);    // T1 = M.(S - X')
+    xint_ecc_mod_sub(T1, T1, T4, c);    // T1 = M.(S - X') - 8.Y^4
+
+    xll_move(outx, T3, Pj->nwords);
+    xll_move(outy, T1, Pj->nwords);
+    xll_move(outz, T2, Pj->nwords);
+    xll_move(Rjx->x, outx, Pj->nwords);
+    xll_move(Rjx->y, outy, Pj->nwords);
+    xll_move(Rjx->z, outz, Pj->nwords);
+    Rjx->is_at_infinity = 0;
+#else
     // Use algorithm from Wikibooks
     xword_t S[10];
     xword_t M[10];
     xword_t tmp[10];
-    xword_t x1[10];
-    xll_zero(x1, 10);
-    xll_move(x1, Pj->x->data, Pj->x->size);
-    xword_t y1[10];
-    xll_zero(y1, 10);
-    xll_move(y1, Pj->y->data, Pj->y->size);
-    xword_t z1[10];
-    xll_zero(z1, 10);
-    xll_move(z1, Pj->z->data, Pj->z->size);
     xword_t x3[10];
     xword_t y3[10];
     xword_t z3[10];
 
     // M = 3.x1^2 + a.z1^4
-    xint_ecc_mod_sqr(M, x1, c);
+    xint_ecc_mod_sqr(M, Pj->x, c);
     xint_ecc_mod_mul_ulong(M, M, 3, c);
-    xint_ecc_mod_sqr(tmp, z1, c);
+    xint_ecc_mod_sqr(tmp, Pj->z, c);
     xint_ecc_mod_sqr(tmp, tmp, c);
     xint_ecc_mod_mul(tmp, tmp, c->a, c);
     xint_ecc_mod_add(M, M, tmp, c);
     
     // S = 4.x1.y1^2
-    xint_ecc_mod_sqr(tmp, y1, c);
-    xint_ecc_mod_mul(S, tmp, x1, c);
+    xint_ecc_mod_sqr(tmp, Pj->y, c);
+    xint_ecc_mod_mul(S, tmp, Pj->x, c);
     xint_ecc_mod_mul_ulong(S, S, 4, c);
     
     // x3 = M^2 - 2.S
@@ -1257,20 +1261,15 @@ void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_po
     xint_ecc_mod_sub(y3, y3, tmp, c);
     
     // z3 = 2.y1.z1
-    xll_move(z3, y1, c->nwords);
-    xint_ecc_mod_mul(z3, z3, z1, c);
+    xll_move(z3, Pj->y, c->nwords);
+    xint_ecc_mod_mul(z3, z3, Pj->z, c);
     xint_ecc_mod_mul_ulong(z3, z3, 2, c);
     
-    FAST_RESIZE(Rjx->x, c->nwords);
-    xll_move(Rjx->x->data, x3, c->nwords);
-    trim_zeroes(Rjx->x);
-    FAST_RESIZE(Rjx->y, c->nwords);
-    xll_move(Rjx->y->data, y3, c->nwords);
-    trim_zeroes(Rjx->y);
-    FAST_RESIZE(Rjx->z, c->nwords);
-    xll_move(Rjx->z->data, z3, c->nwords);
-    trim_zeroes(Rjx->z);
+    xll_move(Rjx->x, x3, c->nwords);
+    xll_move(Rjx->y, y3, c->nwords);
+    xll_move(Rjx->z, z3, c->nwords);
     Rjx->is_at_infinity = 0;
+#endif
 }
 
 void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c)
@@ -1284,11 +1283,11 @@ void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, 
 #if 1
     // Left to right
     xint_ecc_point_jacobian_t TMPj;
-    xint_point_jacobian_init(TMPj);
+    xint_point_jacobian_init(TMPj, c->nwords);
     to_jacobian(TMPj, P);
 
     xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
+    xint_point_jacobian_init(Rj, c->nwords);
     for (int i=c->nbits-1; i>=0; --i)
     {
         xint_point_double_jacobian(Rj, Rj, a, c);
@@ -1303,11 +1302,11 @@ void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, 
 #elif 0
     // Right to left
     xint_ecc_point_jacobian_t TMPj;
-    xint_point_jacobian_init(TMPj);
+    xint_point_jacobian_init(TMPj, c->nwords);
     to_jacobian(TMPj, P);
 
     xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
+    xint_point_jacobian_init(Rj, c->nwords);
     for (int i=0; i<c->nbits; ++i)
     {
         if (xint_get_bit(k, i) == 1)
@@ -1321,8 +1320,8 @@ void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, 
     xint_point_jacobian_delete(Rj);
 #else
     xint_ecc_point_jacobian_t Rj[2];
-    xint_point_jacobian_init(Rj[0]);
-    xint_point_jacobian_init(Rj[1]);
+    xint_point_jacobian_init(Rj[0], c->nwords);
+    xint_point_jacobian_init(Rj[1], c->nwords);
     to_jacobian(Rj[1], P);
     for (int i=0; i<c->nbits; ++i)
     {
@@ -1346,21 +1345,21 @@ void xint_ecc_mul_scalar_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, co
     p->data = c->p;
     
     xint_ecc_point_jacobian_t Gj;
-    xint_point_jacobian_init(Gj);
+    xint_point_jacobian_init(Gj, c->nwords);
     to_jacobian(Gj, G);
     Gj->is_at_infinity = 0;
 
     xint_ecc_point_jacobian_t Sj;
-    xint_point_jacobian_init(Sj);
+    xint_point_jacobian_init(Sj, c->nwords);
     to_jacobian(Sj, S);
     Sj->is_at_infinity = 0;
 
     xint_ecc_point_jacobian_t Bj;
-    xint_point_jacobian_init(Bj);
+    xint_point_jacobian_init(Bj, c->nwords);
     xint_point_add_jacobian(Bj, Gj, Sj, c);
 
     xint_ecc_point_jacobian_t Rj;
-    xint_point_jacobian_init(Rj);
+    xint_point_jacobian_init(Rj, c->nwords);
 
     // Left to right because it's easier to do the Shamir trick
     for (int i=c->nbits-1; i>=0; --i)

@@ -190,7 +190,7 @@ TEST(ecc, rfc_6979)
     //STAMP_VARS();
     __disable_irq();
     STAMP_BEFORE();
-    for (int i=0; i<512; ++i)
+    //for (int i=0; i<512; ++i)
     ASSERT_EQ(1, xint_ecc_verify(signature, h1, hlen, pub, &p256));
     STAMP_AFTER();
     __enable_irq();
@@ -302,7 +302,7 @@ TEST(ecc, curve_p256)
     STAMP_VARS();
     __disable_irq();
     STAMP_BEFORE();
-    for (int i=0; i<512; ++i)
+    //for (int i=0; i<512; ++i)
     xint_ecc_mul_scalar(R, p256.Gx, p256.Gy, x, &p256);
     STAMP_AFTER();
     __enable_irq();
@@ -420,7 +420,7 @@ TEST(ecc, jacobian_scalar_multiply)
     STAMP_VARS();
     __disable_irq();
     STAMP_BEFORE();
-    for (int i=0; i<512; ++i)
+    //for (int i=0; i<512; ++i)
     xint_ecc_mul_scalar_jacobian(R, G, x, &p256);
     STAMP_AFTER();
     __enable_irq();

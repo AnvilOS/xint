@@ -69,10 +69,11 @@ void xint_ecc_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xin
 
 struct ecc_point_jacobian
 {
+    xword_t *x;
+    xword_t *y;
+    xword_t *z;
     int is_at_infinity;
-    xint_t x;
-    xint_t y;
-    xint_t z;
+    int nwords;
 };
 typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
 
