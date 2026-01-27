@@ -69,6 +69,24 @@ do { \
 #define ALLOC_XWORDS(__a) (xword_t *)malloc((__a) * sizeof(xword_t))
 #define FREE_XWORDS(__a) free((__a))
 
+#define ALLOC_XWORDS_TMP(__a) (xword_t *)malloc((__a) * sizeof(xword_t))
+#define FREE_XWORDS_TMP(__a) free((__a))
+
+#define XINT_FROM_XWORDS(__x, __w, __s) \
+    do { \
+        FAST_RESIZE(__x, __s); \
+        xll_move((__x)->data, (__w), (__s)); \
+        trim_zeroes((__x)); \
+    } while (0)
+
+#define CONST_XINT_FROM_XWORDS(__x, __w, __s) \
+    do { \
+        (__x)->size = (__s); \
+        (__x)->data = (xword_t*)(__w); \
+        (__x)->size = trim_size((__x)); \
+    } while (0)
+
+
 #if defined XDWORD_MUL
 #define mul_1_1(__k, __w, __u, __v) \
 do { \
@@ -228,6 +246,19 @@ static void trim_zeroes(xint_t u)
         }
     }
     u->size = 0;
+}
+
+static int trim_size(xint_t u)
+{
+    int Un = XINT_ABS(u->size);
+    for (int j=Un-1; j>=0; --j)
+    {
+        if (u->data[j] != 0)
+        {
+            return j + 1;
+        }
+    }
+    return 0;
 }
 
 static int xll_cmp(const xword_t *U, const xword_t *V, int n)
