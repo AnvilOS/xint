@@ -1,4 +1,6 @@
 
+#include "cvt_vectors.h"
+
 #include "test_low_level.h"
 #include "test_init_ass.h"
 #include "test_cmp.h"
@@ -14,6 +16,7 @@
 
 int main(int argc, const char * argv[])
 {
+    cvt_vectors();
     test_low_level();
     test_init_ass();
     test_cmp();

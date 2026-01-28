@@ -8,6 +8,7 @@
 #include "xint_bitwise.h"
 #include "xint_algorithms.h"
 #include "xint_internal.h"
+#include "nist_vectors.h"
 
 #include "time_stamp.h"
 
@@ -432,6 +433,53 @@ TEST(ecc, jacobian_scalar_multiply)
     END_TEST(ecc);
 }
 
+TEST(ecc, nist)
+{
+    xint_t priv = XINT_INIT_VAL;
+    xint_ecc_point_t pub;
+    xint_point_init(pub);
+    for (int i=0; i<10; ++i)
+    {
+        xint_assign_str(priv, key_pairs_p_224[i].d, 0);
+        xint_ecc_get_public_key(pub, priv, &p224);
+        int resx = test_equality(pub->x, key_pairs_p_224[i].Qx);
+        int resy = test_equality(pub->y, key_pairs_p_224[i].Qy);
+        ASSERT_EQ(0, resx);
+        ASSERT_EQ(0, resy);
+    }
+    for (int i=0; i<10; ++i)
+    {
+        xint_assign_str(priv, key_pairs_p_256[i].d, 0);
+        xint_ecc_get_public_key(pub, priv, &p256);
+        int resx = test_equality(pub->x, key_pairs_p_256[i].Qx);
+        int resy = test_equality(pub->y, key_pairs_p_256[i].Qy);
+        ASSERT_EQ(0, resx);
+        ASSERT_EQ(0, resy);
+    }
+    for (int i=0; i<10; ++i)
+    {
+        xint_assign_str(priv, key_pairs_p_384[i].d, 0);
+        xint_ecc_get_public_key(pub, priv, &p384);
+        int resx = test_equality(pub->x, key_pairs_p_384[i].Qx);
+        int resy = test_equality(pub->y, key_pairs_p_384[i].Qy);
+        ASSERT_EQ(0, resx);
+        ASSERT_EQ(0, resy);
+    }
+    for (int i=0; i<10; ++i)
+    {
+        xint_assign_str(priv, key_pairs_p_521[i].d, 0);
+        xint_ecc_get_public_key(pub, priv, &p521);
+        int resx = test_equality(pub->x, key_pairs_p_521[i].Qx);
+        int resy = test_equality(pub->y, key_pairs_p_521[i].Qy);
+        ASSERT_EQ(0, resx);
+        ASSERT_EQ(0, resy);
+    }
+    xint_delete(priv);
+    xint_point_delete(pub);
+
+    END_TEST(ecc);
+}
+
 int test_ecc(void)
 {
     CALL_TEST(ecc, hmac1);
@@ -446,6 +494,7 @@ int test_ecc(void)
     CALL_TEST(ecc, curve_p521);
     CALL_TEST(ecc, plain_scalar_multiply);
     CALL_TEST(ecc, jacobian_scalar_multiply);
+    CALL_TEST(ecc, nist);
 
     END_TEST_GROUP(ecc);
 }
