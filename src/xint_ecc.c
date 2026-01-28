@@ -1049,7 +1049,6 @@ void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const 
 
 void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c)
 {
-    // 13M + 4S
     if (Pj->is_at_infinity)
     {
         xint_point_jacobian_copy(Rjx, Qj);
@@ -1062,78 +1061,53 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
         return;
     }
 
-    // Use algorithm from Wikibooks
-    xword_t U1[10];
-    xword_t U2[10];
-    xword_t S1[10];
-    xword_t S2[10];
-    xword_t H[10];
-    xword_t R[10];
-    xword_t x3[10];
-    xword_t y3[10];
-    xword_t z3[10];
-    
-    // U1 = x1.z2^2 - use H as a scratch for z2^2
-    xint_ecc_mod_sqr(H, Qj->z, c);
-    xint_ecc_mod_mul(U1, H, Pj->x, c);
-    
-    // U2 = x2.z1^2 - use R as a scratch for z1^2
-    xint_ecc_mod_sqr(R, Pj->z, c);
-    xint_ecc_mod_mul(U2, R, Qj->x, c);
-    
-    // S1 = y1.z2^3
-    xint_ecc_mod_mul(S1, H, Qj->z, c);
-    xint_ecc_mod_mul(S1, S1, Pj->y, c);
-    
-    // S2 = y2.z1^3
-    xint_ecc_mod_mul(S2, R, Pj->z, c);
-    xint_ecc_mod_mul(S2, S2, Qj->y, c);
-    
-    if (xll_cmp(U1, U2, c->nwords) == 0)
-    {
-        if (xll_cmp(S1, S2, c->nwords) != 0)
-        {
-            return; // inf
-        }
-        else
-        {
-            return; // double
-        }
-    }
-    // H = U2 - U1
-    xint_ecc_mod_sub(H, U2, U1, c);
-    // R = S2 - S1
-    xint_ecc_mod_sub(R, S2, S1, c);
-    
-    // Calc H^2, H^3 and R^2
-    xword_t H2[10];
-    xword_t H3[10];
-    xint_ecc_mod_sqr(H2, H, c);
-    xint_ecc_mod_mul(H3, H2, H, c);
-    xword_t R2[10];
-    xint_ecc_mod_sqr(R2, R, c);
-    
-    // X3 = R^2 - H^3 - 2.U1.H^2
-    xint_ecc_mod_mul(x3, U1, H2, c);
-    xint_ecc_mod_mul_ulong(x3, x3, 2, c);
-    xint_ecc_mod_sub(x3, R2, x3, c);
-    xint_ecc_mod_sub(x3, x3, H3, c);
-    
-    // Y3 = R.(U1.H^2 - X3) - S1.H^3
-    xint_ecc_mod_mul(y3, U1, H2, c);
-    xint_ecc_mod_sub(y3, y3, x3, c);
-    xint_ecc_mod_mul(y3, y3, R, c);
-    // use z3 as temp S1 . H3
-    xint_ecc_mod_mul(z3, S1, H3, c);
-    xint_ecc_mod_sub(y3, y3, z3, c);
-    
-    // Z3 = H.Z1.Z2
-    xint_ecc_mod_mul(z3, H, Pj->z, c);
-    xint_ecc_mod_mul(z3, z3, Qj->z, c);
+    xword_t T1[10];
+    xword_t T2[10];
+    xword_t T3[10];
+    xword_t T4[10];
+    xword_t T5[10];
+    xword_t T6[10];
+    xword_t T7[10];
 
-    xll_move(Rjx->x, x3, c->nwords);
-    xll_move(Rjx->y, y3, c->nwords);
-    xll_move(Rjx->z, z3, c->nwords);
+    xll_move(T1, Pj->x, Pj->nwords);
+    xll_move(T2, Pj->y, Pj->nwords);
+    xll_move(T3, Pj->z, Pj->nwords);
+    xll_move(T4, Qj->x, Qj->nwords);
+    xll_move(T5, Qj->y, Qj->nwords);
+    xll_move(T6, Qj->z, Qj->nwords);
+    
+    xint_ecc_mod_sqr(T7, T3, c);        // T7 = z1^2
+    xint_ecc_mod_mul(T4, T4, T7, c);    // T4 = x2.z1^2 = U2
+    xint_ecc_mod_mul(T5, T5, T3, c);    // T5 = y2.z1
+    xint_ecc_mod_mul(T5, T5, T7, c);    // T5 = y2.z1^3 = S2
+    xint_ecc_mod_sqr(T7, T6, c);        // T7 = z2^2z
+    
+    xint_ecc_mod_mul(T1, T1, T7, c);    // T1 = x1.z2^2 = U1
+    xint_ecc_mod_mul(T2, T2, T6, c);    // T2 = y1.z2
+    xint_ecc_mod_mul(T2, T2, T7, c);    // T2 = y1.z2^3 = S1
+    xint_ecc_mod_sub(T1, T1, T4, c);    // T1 = U1 - U2 = -H
+    xint_ecc_mod_mul(T3, T6, T3, c);    // T3 = z2.z
+    
+    xint_ecc_mod_mul(T3, T1, T3, c);    // T3 = -H.z1.z2 = Z3 ***
+    
+    xint_ecc_mod_sub(T2, T2, T5, c);    // T2 = S1 - S2 = -R
+    xint_ecc_mod_sqr(T7, T1, c);        // T7 = H^2
+    xint_ecc_mod_sqr(T6, T2, c);        // T6 = R^2
+    xint_ecc_mod_mul(T4, T4, T7, c);    // T4 = U2.H^2
+    xint_ecc_mod_mul(T1, T7, T1, c);    // T1 = -H^3
+
+    xint_ecc_mod_sub(T6, T6, T1, c);    // T6 = R^2 - (-H^3)
+    xint_ecc_mod_mul_ulong(T7, T4, 2, c); // T7 = 2.U2.H^2
+    xint_ecc_mod_sub(T6, T6, T7, c);    // T6 = R^2 - (-H^3) - 2.U2.H^2 = X3 ***
+    xint_ecc_mod_sub(T4, T4, T6, c);    // T4 = U2.H^2 - X3
+    xint_ecc_mod_mul(T2, T2, T4, c);    // T2 = -R(U2.H^2 - X3)
+
+    xint_ecc_mod_mul(T7, T5, T1, c);    // T7 = -S2.H^3
+    xint_ecc_mod_sub(T7, T2, T7 , c);   // T7 = -R(U2.H^2 - X3) - S2.H^3 = Y3 ***
+
+    xll_move(Rjx->x, T6, Pj->nwords);
+    xll_move(Rjx->y, T7, Pj->nwords);
+    xll_move(Rjx->z, T3, Pj->nwords);
     Rjx->is_at_infinity = 0;
 }
 
@@ -1152,10 +1126,6 @@ void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_po
     xword_t T4[10];
     xword_t T5[10];
 
-    xword_t outx[10];
-    xword_t outy[10];
-    xword_t outz[10];
-    
     xll_move(T1, Pj->x, Pj->nwords);
     xll_move(T2, Pj->y, Pj->nwords);
     xll_move(T3, Pj->z, Pj->nwords);
@@ -1194,12 +1164,9 @@ xint_ecc_mod_rshift(T1, T1, 1, c);
     xint_ecc_mod_mul(T1, T1, T5, c);    // T1 = M.(S - X')
     xint_ecc_mod_sub(T1, T1, T4, c);    // T1 = M.(S - X') - 8.Y^4
 
-    xll_move(outx, T3, Pj->nwords);
-    xll_move(outy, T1, Pj->nwords);
-    xll_move(outz, T2, Pj->nwords);
-    xll_move(Rjx->x, outx, Pj->nwords);
-    xll_move(Rjx->y, outy, Pj->nwords);
-    xll_move(Rjx->z, outz, Pj->nwords);
+    xll_move(Rjx->x, T3, Pj->nwords);
+    xll_move(Rjx->y, T1, Pj->nwords);
+    xll_move(Rjx->z, T2, Pj->nwords);
     Rjx->is_at_infinity = 0;
 }
 
