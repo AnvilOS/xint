@@ -3,6 +3,7 @@
 #define XINT_ECC_H
 
 #include "xint.h"
+#include "curves.h"
 
 struct ecc_point
 {
@@ -19,34 +20,7 @@ struct ecc_sig
 };
 typedef struct ecc_sig xint_ecc_sig_t[1];
 
-struct xint_ecc_curve_s
-{
-    unsigned nbits;
-    unsigned nwords;
-    const xword_t *p;
-    const xword_t *a;
-    const xword_t *b;
-    const xword_t *Gx;
-    const xword_t *Gy;
-    const xword_t *n;
-    const xword_t *h;
-    void (*xint_mod_fast)(xword_t *w, xword_t *u);
-};
-typedef struct xint_ecc_curve_s xint_ecc_curve_t;
-
-extern const xint_ecc_curve_t k163;
-extern const xint_ecc_curve_t p224;
-extern const xint_ecc_curve_t p256;
-extern const xint_ecc_curve_t p384;
-extern const xint_ecc_curve_t p521;
-
-void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
-
 void xint_mod_fast_k163(xword_t *w, xword_t *u);
-void xint_mod_fast_224(xword_t *w, xword_t *u);
-void xint_mod_fast_256(xword_t *w, xword_t *u);
-void xint_mod_fast_384(xword_t *w, xword_t *u);
-void xint_mod_fast_521(xword_t *w, xword_t *u);
 
 void xint_point_init(xint_ecc_point_t p);
 void xint_point_delete(xint_ecc_point_t p);
