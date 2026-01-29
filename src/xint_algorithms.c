@@ -279,6 +279,42 @@ int xint_mod_inverse(xint_t w, const xint_t u, const xint_t v)
     return ret;
 }
 
+void xint_mod_add(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+{
+    xint_add(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_sub(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+{
+    xint_sub(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_mul(xint_t w, const xint_t u, const xint_t v, const xint_t m)
+{
+    xint_mul(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_mul_ulong(xint_t w, const xint_t u, unsigned long v, const xint_t m)
+{
+    xint_mul_ulong(w, u, v);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_lshift(xint_t w, const xint_t u, int nbits, const xint_t m)
+{
+    xint_lshift(w, u, nbits);
+    xint_mod(w, w, m);
+}
+
+void xint_mod_sqr(xint_t w, const xint_t u, const xint_t m)
+{
+    xint_sqr(w, u);
+    xint_mod(w, w, m);
+}
+
 void xint_sqrt(xint_t w, xint_t r, const xint_t s)
 {
     xint_t tmp = XINT_INIT_VAL;

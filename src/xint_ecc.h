@@ -3,7 +3,7 @@
 #define XINT_ECC_H
 
 #include "xint.h"
-#include "curves.h"
+//#include "curves.h"
 
 struct ecc_point
 {
@@ -20,27 +20,6 @@ struct ecc_sig
 };
 typedef struct ecc_sig xint_ecc_sig_t[1];
 
-void xint_mod_fast_k163(xword_t *w, xword_t *u);
-
-void xint_point_init(xint_ecc_point_t p);
-void xint_point_delete(xint_ecc_point_t p);
-void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p);
-void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
-
-void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k, const xint_ecc_curve_t *c);
-void xint_ecc_mul_scalar_joye(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
-void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t x, const xint_ecc_curve_t *c);
-
-int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_curve_t *c);
-
-
-int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, const xint_ecc_curve_t *c);
-int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_ecc_point_t pub, const xint_ecc_curve_t *c);
-
-void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
-void xint_ecc_point_add(xint_ecc_point_t r, xint_ecc_point_t q, xint_ecc_point_t p, xint_t m);
-void xint_ecc_point_double(xint_ecc_point_t r, xint_ecc_point_t p, xint_t a, xint_t m);
-
 struct ecc_point_jacobian
 {
     xword_t *x;
@@ -50,8 +29,57 @@ struct ecc_point_jacobian
     int nwords;
 };
 typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
+
+void xint_mod_fast_k163(xword_t *w, xword_t *u);
+
+void xint_point_init(xint_ecc_point_t p);
+void xint_point_delete(xint_ecc_point_t p);
+void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p);
+void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
+
+
+typedef struct xint_ecc_curve_s xint_ecc_curve_t;
+
+struct xint_ecc_curve_s
+{
+    unsigned nbits;
+    unsigned nwords;
+    const xword_t *p;
+    const xword_t *a;
+    const xword_t *b;
+    const xword_t *Gx;
+    const xword_t *Gy;
+    const xword_t *n;
+    const xword_t *h;
+    void (*affine_add)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_ecc_point_t Qj, const xint_t m);
+    void (*affine_double)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_t a, const xint_t m);
+    void (*xint_mod_fast)(xword_t *w, xword_t *u);
+    void (*jacobian_add)(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
+    void (*jacobian_double)(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
+};
+
+void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k, const xint_ecc_curve_t *c);
+void xint_ecc_mul_scalar_joye(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
+void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t x, const xint_ecc_curve_t *c);
+
+int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_curve_t *c);
+
+void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
+void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
+
+int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, const xint_ecc_curve_t *c);
+int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_ecc_point_t pub, const xint_ecc_curve_t *c);
+
+void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
+void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_t m);
+void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m);
+
 void xint_point_jacobian_init(xint_ecc_point_jacobian_t p, int nwords);
 void from_jacobian(xint_ecc_point_t w, const xint_ecc_point_jacobian_t u, const xint_ecc_curve_t *c);
+void xint_point_jacobian_init(xint_ecc_point_jacobian_t p, int nwords);
+void xint_point_jacobian_delete(xint_ecc_point_jacobian_t p);
+void xint_point_jacobian_copy(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p);
+void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u);
 
 void xint_ecc_mul_scalar_jacobian(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
 void xint_ecc_mul_scalar_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c);

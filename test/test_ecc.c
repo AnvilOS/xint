@@ -9,6 +9,7 @@
 #include "xint_algorithms.h"
 #include "xint_internal.h"
 #include "nist_vectors.h"
+#include "prime_curves.h"
 
 #include "time_stamp.h"
 
