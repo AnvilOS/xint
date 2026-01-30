@@ -13,6 +13,24 @@
 
 #define CURVE_WORDS(__nbits) (((__nbits-1)/XWORD_BITS)+1)
 
+struct xint_ecc_curve_s
+{
+    unsigned nbits;
+    unsigned nwords;
+    const xword_t *p;
+    const xword_t *a;
+    const xword_t *b;
+    const xword_t *Gx;
+    const xword_t *Gy;
+    const xword_t *n;
+    const xword_t *h;
+    void (*affine_add)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_ecc_point_t Qj, const xint_t m);
+    void (*affine_double)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_t a, const xint_t m);
+    void (*xint_mod_fast)(xword_t *w, xword_t *u);
+    void (*jacobian_add)(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
+    void (*jacobian_double)(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
+};
+
 extern const xint_ecc_curve_t k163;
 extern const xint_ecc_curve_t p224;
 extern const xint_ecc_curve_t p256;

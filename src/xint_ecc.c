@@ -6,6 +6,8 @@
 #include "xint_bitwise.h"
 #include "xint_algorithms.h"
 
+#include "curves.h"
+
 #include "sha256.h"
 #include "hmac.h"
 
