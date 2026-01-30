@@ -30,8 +30,6 @@ struct ecc_point_jacobian
 };
 typedef struct ecc_point_jacobian xint_ecc_point_jacobian_t[1];
 
-void xint_mod_fast_k163(xword_t *w, xword_t *u);
-
 void xint_point_init(xint_ecc_point_t p);
 void xint_point_delete(xint_ecc_point_t p);
 void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p);

@@ -5,10 +5,16 @@
 #include "xint_bitwise.h"
 #include "xint_algorithms.h"
 
+void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k_in, const xint_ecc_curve_t *c);
 static void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
 static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
 static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_t m);
 static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m);
+static void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
+static void xint_mod_fast_224(xword_t *w, xword_t *u);
+static void xint_mod_fast_256(xword_t *w, xword_t *u);
+static void xint_mod_fast_384(xword_t *w, xword_t *u);
+static void xint_mod_fast_521(xword_t *w, xword_t *u);
 
 const xword_t p224_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
 const xword_t p224_a[]  = { X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFE), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
@@ -111,7 +117,7 @@ const xint_ecc_curve_t p521 =
     xint_point_double_jacobian,
 };
 
-void xint_mod_fast_224(xword_t *w, xword_t *u)
+static void xint_mod_fast_224(xword_t *w, xword_t *u)
 {
     xint_mod_std(w, u, &p224);
 //    // From NIST SP 800-186
@@ -202,7 +208,7 @@ void xint_mod_fast_224(xword_t *w, xword_t *u)
 //#undef TMP_BUILDER
 }
 
-void xint_mod_fast_256(xword_t *w, xword_t *A)
+static void xint_mod_fast_256(xword_t *w, xword_t *A)
 {
     // T  = (A7 || A6 || A5 || A4 || A3 || A2 || A1 || A0 )
     // S1 = ( A15 || A14 || A13 || A12 || A11 || 0 || 0 || 0 )
@@ -328,17 +334,17 @@ void xint_mod_fast_256(xword_t *w, xword_t *A)
 #undef TMP_BUILDER
 }
 
-void xint_mod_fast_384(xword_t *w, xword_t *u)
+static void xint_mod_fast_384(xword_t *w, xword_t *u)
 {
     xint_mod_std(w, u, &p384);
 }
 
-void xint_mod_fast_521(xword_t *w, xword_t *u)
+static void xint_mod_fast_521(xword_t *w, xword_t *u)
 {
     xint_mod_std(w, u, &p521);
 }
 
-void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
+static void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
 {
     xword_t q[40];
     int mul_sz = 2 * c->nwords;
@@ -428,7 +434,7 @@ static void inline xint_ecc_mod_sqr(xword_t *w, const xword_t *u, const xint_ecc
     c->xint_mod_fast(w, tmp);
 }
 
-void ecc_zaddu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
+static void ecc_zaddu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
 {
     xword_t *T1 = Rj->x;
     xword_t *T2 = Rj->y;
@@ -457,7 +463,7 @@ void ecc_zaddu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const
     xll_move(Pj->z, T3, c->nwords);
 }
 
-void ecc_zdau(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
+static void ecc_zdau(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
 {
     xword_t *T1 = Rj->x;
     xword_t *T2 = Rj->y;
@@ -531,7 +537,7 @@ void ecc_zdau(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const 
     xll_move(Pj->z, T3, c->nwords);
 }
 
-void ecc_dblu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
+static void ecc_dblu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
 {
     // 4M + 6S
     
@@ -631,7 +637,7 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
     xint_delete(k);
 }
 
-void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c)
+static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c)
 {
     if (Pj->is_at_infinity)
     {
@@ -695,7 +701,7 @@ void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point
     Rjx->is_at_infinity = 0;
 }
 
-void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
+static void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
 {
     // 4M + 6S
     if (Pj->is_at_infinity)
@@ -754,7 +760,7 @@ xint_ecc_mod_rshift(T1, T1, 1, c);
     Rjx->is_at_infinity = 0;
 }
 
-void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_t m)
+static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_t m)
 {
     xint_t diffy = XINT_INIT_VAL;
     xint_t diffx = XINT_INIT_VAL;
@@ -798,7 +804,7 @@ void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint
     xint_delete(yr);
 }
 
-void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m)
+static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m)
 {
     xint_t tmp = XINT_INIT_VAL;
     xint_t lambda = XINT_INIT_VAL;

@@ -10,6 +10,7 @@ static void point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_e
 static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m);
 static void point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
 static void point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
+static void xint_mod_fast_k163(xword_t *w, xword_t *u);
 
 const xword_t k163_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
 const xword_t k163_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
@@ -224,7 +225,7 @@ static void point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_poi
     
 }
 
-void xint_mod_fast_k163(xword_t *w, xword_t *u)
+static void xint_mod_fast_k163(xword_t *w, xword_t *u)
 {
     //xint_mod_std(w, u, &k163);
 }
