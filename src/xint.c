@@ -52,7 +52,7 @@ void xint_copy(xint_t u, const xint_t v)
     }
     int Vn = XINT_ABS(v->size);
     FAST_RESIZE(u, Vn);
-    xll_move(u->data, v->data, Vn);
+    xll_copy(u->data, v->data, Vn);
     u->size = v->size;
 }
 
@@ -409,7 +409,7 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
             resize(w, Vn);
             if (Un == 0)
             {
-                xll_move(w->data, v->data, Vn);
+                xll_copy(w->data, v->data, Vn);
             }
             else
             {
@@ -425,7 +425,7 @@ int xint_suba(xint_t w, const xint_t u, const xint_t v)
             resize(w, Un);
             if (Vn == 0)
             {
-                xll_move(w->data, u->data, Un);
+                xll_copy(w->data, u->data, Un);
             }
             else
             {
@@ -505,7 +505,7 @@ void xint_sqr(xint_t w, const xint_t u)
     {
         // Move V to the top of W - in reverse because there may be overlap
         xword_t tmp[Un];
-        xll_move(tmp, u->data, Un);
+        xll_copy(tmp, u->data, Un);
         //U = tmp;
         xll_zero(w->data, Un);
         xll_squ(W, tmp, Un);
@@ -714,7 +714,7 @@ void xint_mul(xint_t w, const xint_t u, const xint_t v)
     if (w == v)
     {
         // Move V to the top of W - in reverse because there may be overlap
-        xll_move(tmpv, V, Vn);
+        xll_copy(tmpv, V, Vn);
         V = tmpv;
         //V = W + Un;
         //xll_mul(W, U, Un, tmp, Vn);
@@ -722,7 +722,7 @@ void xint_mul(xint_t w, const xint_t u, const xint_t v)
     if (w == u)
     {
         // Move U to the top of W - in reverse because there may be overlap
-        xll_move(tmpu, U, Un);
+        xll_copy(tmpu, U, Un);
         // Adjust the V pointer
         U = tmpu;
         //U = W + Vn;
@@ -958,7 +958,7 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     if (norm || v == r || v == q)
     {
         V = ALLOC_XWORDS(n);
-        norm ? x_lshift(V, v->data, n, bit_shift) : xll_move(V, v->data, n);
+        norm ? xll_lshift(V, v->data, n, bit_shift) : xll_copy(V, v->data, n);
         free_v = 1;
     }
 
@@ -966,7 +966,7 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     if (1)
     {
         R = ALLOC_XWORDS(m+n+1);
-        R[m+n] = norm ? x_lshift(R, u->data, m+n, bit_shift) : (xll_move(R, u->data, m+n), 0);
+        R[m+n] = norm ? xll_lshift(R, u->data, m+n, bit_shift) : (xll_copy(R, u->data, m+n), 0);
         free_r = 1;
     }
 
@@ -987,7 +987,7 @@ void xint_div(xint_t q, xint_t r, const xint_t u, const xint_t v)
     if (r != NULL)
     {
         FAST_RESIZE(r, n);
-        norm ? x_rshift(r->data, R, n, bit_shift) : xll_move(r->data, R, n);
+        norm ? xll_rshift(r->data, R, n, bit_shift) : xll_copy(r->data, R, n);
         trim_zeroes(r);
         if (Uneg)
         {
@@ -1097,11 +1097,11 @@ xword_t xint_lshift(xint_t y, const xint_t x, int numbits)
     
     if (shift_bits == 0)
     {
-        xll_move(Y + shift_words, X, Xn);
+        xll_copy(Y + shift_words, X, Xn);
     }
     else
     {
-        Y[Yn - 1] = x_lshift(Y + shift_words, X, Xn, shift_bits);
+        Y[Yn - 1] = xll_lshift(Y + shift_words, X, Xn, shift_bits);
     }
     xll_zero(Y, shift_words);
     trim_zeroes(y);
@@ -1131,11 +1131,11 @@ xword_t xint_rshift(xint_t y, const xint_t x, int numbits)
 
     if (shift_bits == 0)
     {
-        xll_move(Y, X + shift_words, Xn - shift_words);
+        xll_copy(Y, X + shift_words, Xn - shift_words);
     }
     else
     {
-        x_rshift(Y, X + shift_words, Xn - shift_words, shift_bits);
+        xll_rshift(Y, X + shift_words, Xn - shift_words, shift_bits);
     }
     trim_zeroes(y);
 
@@ -1157,7 +1157,7 @@ void _fast_resize(xint_t x, int new_size)
     x->size = new_size;
 }
 
-xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
+xword_t xll_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
 {
     for (int j=0; j<sz - 1; ++j)
     {
@@ -1525,7 +1525,7 @@ void xll_squ_c(xword_t *W, const xword_t *U, int Un)
         W[j+Un] = xll_mul_add_1(W+2*j+1, U+j+1, Un-j-1, U[j]);
     }
     W[2*Un-1] = 0;
-    x_lshift(W, W, 2*Un, 1);
+    xll_lshift(W, W, 2*Un, 1);
     xword_t kk = 0;
     for (int j=0; j<Un; ++j)
     {

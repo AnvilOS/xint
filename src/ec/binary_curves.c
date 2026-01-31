@@ -186,7 +186,7 @@ static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint
     }
     if (Un > Vn)
     {
-        xll_move(w->data+Vn, u->data+Vn, Un-Vn);
+        xll_copy(w->data+Vn, u->data+Vn, Un-Vn);
     }
 }
 

@@ -260,9 +260,9 @@ void xint_point_jacobian_delete(xint_ecc_point_jacobian_t p)
 void xint_point_jacobian_copy(xint_ecc_point_jacobian_t r, const xint_ecc_point_jacobian_t p)
 {
     r->is_at_infinity = p->is_at_infinity;
-    xll_move(r->x, p->x, r->nwords);
-    xll_move(r->y, p->y, r->nwords);
-    xll_move(r->z, p->z, r->nwords);
+    xll_copy(r->x, p->x, r->nwords);
+    xll_copy(r->y, p->y, r->nwords);
+    xll_copy(r->z, p->z, r->nwords);
 }
 
 void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u)
@@ -270,8 +270,8 @@ void to_jacobian(xint_ecc_point_jacobian_t w, const xint_ecc_point_t u)
     xll_zero(w->x, w->nwords);
     xll_zero(w->y, w->nwords);
     xll_zero(w->z, w->nwords);
-    xll_move(w->x, u->x->data, u->x->size);
-    xll_move(w->y, u->y->data, u->y->size);
+    xll_copy(w->x, u->x->data, u->x->size);
+    xll_copy(w->y, u->y->data, u->y->size);
     w->z[0] = 1;
     w->is_at_infinity = u->is_at_infinity;
 }

@@ -75,7 +75,7 @@ do { \
 #define XINT_FROM_XWORDS(__x, __w, __s) \
     do { \
         FAST_RESIZE(__x, __s); \
-        xll_move((__x)->data, (__w), (__s)); \
+        xll_copy((__x)->data, (__w), (__s)); \
         trim_zeroes((__x)); \
     } while (0)
 
@@ -184,7 +184,7 @@ static inline void xll_zero(xword_t *Y, size_t sz)
     }
 }
 
-static inline void xll_move(xword_t *Y, const xword_t *X, size_t sz)
+static inline void xll_copy(xword_t *Y, const xword_t *X, size_t sz)
 {
     for (int i=0; i< sz; ++i)
     {
@@ -273,7 +273,7 @@ static int xll_cmp(const xword_t *U, const xword_t *V, int n)
     return 0;
 }
 
-static inline xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
+static inline xword_t xll_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits)
 {
     xword_t ret = X[sz - 1] >> (XWORD_BITS - shift_bits);
     for (int j=sz-1; j>=1; --j)
@@ -297,8 +297,8 @@ xword_t xll_div_1(xword_t *Q, const xword_t *U, xword_t V, int m);
 xword_t xll_sub_1(xword_t *W, const xword_t *U, xword_t v, size_t n);
 xword_t xll_mul_add_1(xword_t *W, const xword_t *U, size_t m, xword_t v);
 xword_t xll_mul_add_4(xword_t *W, const xword_t *U, size_t m, const xword_t *V);
-xword_t x_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
-xword_t x_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
+xword_t xll_lshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
+xword_t xll_rshift(xword_t *Y, const xword_t *X, int sz, int shift_bits);
 
 
 #endif // XINT_INTERNAL_H

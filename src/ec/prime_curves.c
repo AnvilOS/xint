@@ -235,7 +235,7 @@ static void xint_mod_fast_256(xword_t *w, xword_t *A)
     tmp_data[0] = __t0;
     long k;
     // T
-    xll_move(w, A, p256.nwords);
+    xll_copy(w, A, p256.nwords);
 
     // S1
     TMP_BUILDER(A[15], A[14], A[13], A[12], A[11], 0, 0, 0);
@@ -372,7 +372,7 @@ static void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c)
         u[mul_sz] = 0;
         xll_div(q, u, c->p, m, n);
     }
-    xll_move(w, u, c->nwords);
+    xll_copy(w, u, c->nwords);
 }
 
 static void inline xint_ecc_mod_add(xword_t *w, const xword_t *u, const xword_t *v, const xint_ecc_curve_t *c)
@@ -411,7 +411,7 @@ static void inline xint_ecc_mod_mul_ulong(xword_t *w, const xword_t *u, xword_t 
 
 static void inline xint_ecc_mod_lshift(xword_t *w, const xword_t *u, int nbits, const xint_ecc_curve_t *c)
 {
-    xword_t k = x_lshift(w, u, c->nwords, nbits);
+    xword_t k = xll_lshift(w, u, c->nwords, nbits);
     while (k > 0 || xll_cmp(w, c->p, c->nwords) >= 0)
     {
         k -= xll_sub(w, w, c->p, c->nwords);
@@ -420,7 +420,7 @@ static void inline xint_ecc_mod_lshift(xword_t *w, const xword_t *u, int nbits, 
 
 static void inline xint_ecc_mod_rshift(xword_t *w, const xword_t *u, int nbits, const xint_ecc_curve_t *c)
 {
-    xword_t k = x_rshift(w, u, c->nwords, nbits);
+    xword_t k = xll_rshift(w, u, c->nwords, nbits);
     while (k > 0 || xll_cmp(w, c->p, c->nwords) >= 0)
     {
         k -= xll_sub(w, w, c->p, c->nwords);
@@ -460,7 +460,7 @@ static void ecc_zaddu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj
     xint_ecc_mod_mul(T5, T5, T6, c);
     xint_ecc_mod_sub(T5, T5, T2, c);
     
-    xll_move(Pj->z, T3, c->nwords);
+    xll_copy(Pj->z, T3, c->nwords);
 }
 
 static void ecc_zdau(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
@@ -534,7 +534,7 @@ static void ecc_zdau(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj,
     xint_ecc_mod_mul(T7, T7, T8, c);
     xint_ecc_mod_sub(T5, T7, T5, c);
     
-    xll_move(Pj->z, T3, c->nwords);
+    xll_copy(Pj->z, T3, c->nwords);
 }
 
 static void ecc_dblu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
@@ -579,14 +579,14 @@ static void ecc_dblu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj,
     xint_ecc_mod_sub(y3, y3, tmp, c);
     
     // z3 = 2.y1.z1
-    xll_move(z3, y1, c->nwords);
+    xll_copy(z3, y1, c->nwords);
     xint_ecc_mod_mul(z3, z3, z1, c);
     xint_ecc_mod_lshift(z3, z3, 1, c);
     
     // Now update Pj
-    xll_move(x1, S, c->nwords);
-    xll_move(y1, tmp, c->nwords);
-    xll_move(z1, z3, c->nwords);
+    xll_copy(x1, S, c->nwords);
+    xll_copy(y1, tmp, c->nwords);
+    xll_copy(z1, z3, c->nwords);
     Rj->is_at_infinity = 0;
 }
 
@@ -614,8 +614,8 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
     int bit = xint_get_bit(k, 1);
     
     // To Jacobian
-    xll_move(Rj[bit]->x, Px, c->nwords);
-    xll_move(Rj[bit]->y, Py, c->nwords);
+    xll_copy(Rj[bit]->x, Px, c->nwords);
+    xll_copy(Rj[bit]->y, Py, c->nwords);
     xll_zero(Rj[bit]->z, c->nwords);
     Rj[bit]->z[0] = 1;
     Rj[bit]->is_at_infinity = 0;
@@ -659,12 +659,12 @@ static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ec
     xword_t T6[10];
     xword_t T7[10];
 
-    xll_move(T1, Pj->x, Pj->nwords);
-    xll_move(T2, Pj->y, Pj->nwords);
-    xll_move(T3, Pj->z, Pj->nwords);
-    xll_move(T4, Qj->x, Qj->nwords);
-    xll_move(T5, Qj->y, Qj->nwords);
-    xll_move(T6, Qj->z, Qj->nwords);
+    xll_copy(T1, Pj->x, Pj->nwords);
+    xll_copy(T2, Pj->y, Pj->nwords);
+    xll_copy(T3, Pj->z, Pj->nwords);
+    xll_copy(T4, Qj->x, Qj->nwords);
+    xll_copy(T5, Qj->y, Qj->nwords);
+    xll_copy(T6, Qj->z, Qj->nwords);
     
     xint_ecc_mod_sqr(T7, T3, c);        // T7 = z1^2
     xint_ecc_mod_mul(T4, T4, T7, c);    // T4 = x2.z1^2 = U2
@@ -695,9 +695,9 @@ static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ec
     xint_ecc_mod_mul(T7, T5, T1, c);    // T7 = -S2.H^3
     xint_ecc_mod_sub(T7, T2, T7 , c);   // T7 = -R(U2.H^2 - X3) - S2.H^3 = Y3 ***
 
-    xll_move(Rjx->x, T6, Pj->nwords);
-    xll_move(Rjx->y, T7, Pj->nwords);
-    xll_move(Rjx->z, T3, Pj->nwords);
+    xll_copy(Rjx->x, T6, Pj->nwords);
+    xll_copy(Rjx->y, T7, Pj->nwords);
+    xll_copy(Rjx->z, T3, Pj->nwords);
     Rjx->is_at_infinity = 0;
 }
 
@@ -716,9 +716,9 @@ static void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint
     xword_t T4[10];
     xword_t T5[10];
 
-    xll_move(T1, Pj->x, Pj->nwords);
-    xll_move(T2, Pj->y, Pj->nwords);
-    xll_move(T3, Pj->z, Pj->nwords);
+    xll_copy(T1, Pj->x, Pj->nwords);
+    xll_copy(T2, Pj->y, Pj->nwords);
+    xll_copy(T3, Pj->z, Pj->nwords);
     
     xint_ecc_mod_sqr(T4, T2, c);        // T4 = Y^2
     xint_ecc_mod_mul(T5, T1, T4, c);    // T5 = X.Y^2
@@ -754,9 +754,9 @@ xint_ecc_mod_rshift(T1, T1, 1, c);
     xint_ecc_mod_mul(T1, T1, T5, c);    // T1 = M.(S - X')
     xint_ecc_mod_sub(T1, T1, T4, c);    // T1 = M.(S - X') - 8.Y^4
 
-    xll_move(Rjx->x, T3, Pj->nwords);
-    xll_move(Rjx->y, T1, Pj->nwords);
-    xll_move(Rjx->z, T2, Pj->nwords);
+    xll_copy(Rjx->x, T3, Pj->nwords);
+    xll_copy(Rjx->y, T1, Pj->nwords);
+    xll_copy(Rjx->z, T2, Pj->nwords);
     Rjx->is_at_infinity = 0;
 }
 
