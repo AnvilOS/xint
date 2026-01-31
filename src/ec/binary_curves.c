@@ -188,6 +188,7 @@ static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint
     {
         xll_copy(w->data+Vn, u->data+Vn, Un-Vn);
     }
+    trim_zeroes(w);
 }
 
 static void field_mul(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint_ecc_curve_t *c)
