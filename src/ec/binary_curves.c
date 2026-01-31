@@ -291,6 +291,11 @@ static void field_inv(xint_t w, const xint_t a, const xint_ecc_curve_t *cve)
         field_add(b, b, TMP, cve);
     }
     xint_copy(w, b);
+    xint_delete(b);
+    xint_delete(c);
+    xint_delete(u);
+    xint_delete(v);
+    xint_delete(TMP);
 }
 
 static void point_add(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_point_t q, const xint_ecc_curve_t *c)
@@ -335,6 +340,11 @@ static void point_add(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_e
     field_add(y3, y3, p->y, c);
     xint_copy(r->x, x3);
     xint_copy(r->y, y3);
+    xint_delete(lambda);
+    xint_delete(y_sum);
+    xint_delete(x_sum);
+    xint_delete(x3);
+    xint_delete(y3);
 }
 
 static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c)
@@ -390,6 +400,9 @@ static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xin
     field_add(y3, y3, p->y, c);
     xint_copy(r->x, x3);
     xint_copy(r->y, y3);
+    xint_delete(lambda);
+    xint_delete(x3);
+    xint_delete(y3);
 }
 
 static void point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c)
