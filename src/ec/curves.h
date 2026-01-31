@@ -35,10 +35,14 @@ struct xint_ecc_curve_s
     const xword_t *x;
 };
 
-extern const xint_ecc_curve_t k163;
 extern const xint_ecc_curve_t p224;
 extern const xint_ecc_curve_t p256;
 extern const xint_ecc_curve_t p384;
 extern const xint_ecc_curve_t p521;
+extern const xint_ecc_curve_t k163;
+extern const xint_ecc_curve_t k233;
+extern const xint_ecc_curve_t k283;
+extern const xint_ecc_curve_t k409;
+extern const xint_ecc_curve_t k571;
 
 #endif // CURVES_H
