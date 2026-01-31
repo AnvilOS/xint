@@ -12,7 +12,7 @@ static void point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_poi
 static void point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
 static void xint_mod_fast_k163(xword_t *w, xword_t *u);
 
-const xword_t k163_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
+const xword_t k163_p[]  = { 0 };
 const xword_t k163_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
 const xword_t k163_b[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
 const xword_t k163_Gx[] = { X(0x5c94eee8, 0xde4e6d5e), X(0xaa07d793, 0x7bbc11ac), X(0xfe13c053, 0x02) };
@@ -43,7 +43,7 @@ const xint_ecc_curve_t k163 =
     k163_x,
 };
 
-const xword_t k233_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0000) };
+const xword_t k233_p[]  = { 0 };
 const xword_t k233_a[]  = { X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0000) };
 const xword_t k233_b[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0000) };
 const xword_t k233_Gx[] = { X(0xefad6126, 0x0a4c9d6e), X(0x19c26bf5, 0x149563a4), X(0x29f22ff4, 0x7e731af1), X(0x32ba853a, 0x0172) };
@@ -74,15 +74,15 @@ const xint_ecc_curve_t k233 =
     k233_x,
 };
 
-const xword_t k283_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
-const xword_t k283_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
-const xword_t k283_b[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
-const xword_t k283_Gx[] = { X(0x5c94eee8, 0xde4e6d5e), X(0xaa07d793, 0x7bbc11ac), X(0xfe13c053, 0x02) };
-const xword_t k283_Gy[] = { X(0xccdaa3d9, 0x0536d538), X(0x321f2e80, 0x5d38ff58), X(0x89070fb0, 0x02) };
-const xword_t k283_n[]  = { X(0x99f8a5ef, 0xa2e0cc0d), X(0x00020108, 0x00000000), X(0x00000000, 0x04) };
-const xword_t k283_h[]  = { 0x02 };
-const int k283_exp[] = { 7, 6, 3, 0 };
-const xword_t k283_x[]  = { X(0x000000C9, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x08) };
+const xword_t k283_p[]  = { 0 };
+const xword_t k283_a[]  = { X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0000000000), X(0x00000000, 0x0000000000), 0x0000 };
+const xword_t k283_b[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0000000000), X(0x00000000, 0x0000000000), 0x0000 };
+const xword_t k283_Gx[] = { X(0x58492836, 0xb0c2ac24), X(0x16876913, 0x23c1567a), X(0x53cd265f, 0x62f188e5), X(0x3f1a3b81, 0x78ca4488), 0x503213f };
+const xword_t k283_Gy[] = { X(0x77dd2259, 0x4e341161), X(0xe4596236, 0xe8184698), X(0xe87e45c0, 0x07e5426f), X(0x8d90f95d, 0x0f1c9e31), 0x1ccda38 };
+const xword_t k283_n[]  = { X(0x1e163c61, 0x94451e06), X(0x265dff7f, 0x2ed07577), X(0xffffe9ae, 0xffffffff), X(0xffffffff, 0xffffffff), 0x1ffffff };
+const xword_t k283_h[]  = { 0x04 };
+const int k283_exp[] = { 12, 7, 5, 0 };
+const xword_t k283_x[]  = { X(0x000010a1, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x8000000 };
 const xint_ecc_curve_t k283 =
 {
     283,

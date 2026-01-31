@@ -496,7 +496,7 @@ TEST(ecc, nist)
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_283[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k233);
+        xint_ecc_get_public_key(pub, priv, &k283);
         int resx = test_equality(pub->x, key_pairs_k_283[i].Qx);
         int resy = test_equality(pub->y, key_pairs_k_283[i].Qy);
         ASSERT_EQ(0, resx);
@@ -505,7 +505,7 @@ TEST(ecc, nist)
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_409[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k233);
+        xint_ecc_get_public_key(pub, priv, &k409);
         int resx = test_equality(pub->x, key_pairs_k_409[i].Qx);
         int resy = test_equality(pub->y, key_pairs_k_409[i].Qy);
         ASSERT_EQ(0, resx);
@@ -514,7 +514,7 @@ TEST(ecc, nist)
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_571[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k233);
+        xint_ecc_get_public_key(pub, priv, &k571);
         int resx = test_equality(pub->x, key_pairs_k_571[i].Qx);
         int resy = test_equality(pub->y, key_pairs_k_571[i].Qy);
         ASSERT_EQ(0, resx);
