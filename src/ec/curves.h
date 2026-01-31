@@ -39,10 +39,17 @@ extern const xint_ecc_curve_t p224;
 extern const xint_ecc_curve_t p256;
 extern const xint_ecc_curve_t p384;
 extern const xint_ecc_curve_t p521;
+
 extern const xint_ecc_curve_t k163;
 extern const xint_ecc_curve_t k233;
 extern const xint_ecc_curve_t k283;
 extern const xint_ecc_curve_t k409;
 extern const xint_ecc_curve_t k571;
+
+extern const xint_ecc_curve_t b163;
+extern const xint_ecc_curve_t b233;
+extern const xint_ecc_curve_t b283;
+extern const xint_ecc_curve_t b409;
+extern const xint_ecc_curve_t b571;
 
 #endif // CURVES_H

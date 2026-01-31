@@ -520,6 +520,15 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    for (int i=0; i<10; ++i)
+    {
+        xint_assign_str(priv, key_pairs_b_163[i].d, 0);
+        xint_ecc_get_public_key(pub, priv, &b163);
+        int resx = test_equality(pub->x, key_pairs_b_163[i].Qx);
+        int resy = test_equality(pub->y, key_pairs_b_163[i].Qy);
+        ASSERT_EQ(0, resx);
+        ASSERT_EQ(0, resy);
+    }
     xint_delete(priv);
     xint_point_delete(pub);
 

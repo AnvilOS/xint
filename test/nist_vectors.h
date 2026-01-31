@@ -17,3 +17,9 @@ extern struct key_pair key_pairs_k_233[];
 extern struct key_pair key_pairs_k_283[];
 extern struct key_pair key_pairs_k_409[];
 extern struct key_pair key_pairs_k_571[];
+
+extern struct key_pair key_pairs_b_163[];
+extern struct key_pair key_pairs_b_233[];
+extern struct key_pair key_pairs_b_283[];
+extern struct key_pair key_pairs_b_409[];
+extern struct key_pair key_pairs_b_571[];

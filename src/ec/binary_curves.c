@@ -167,6 +167,37 @@ const xint_ecc_curve_t k571 =
     k571_x,
 };
 
+const xword_t b163_p[]  = { 0 };
+const xword_t b163_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
+const xword_t b163_b[]  = { X(0x4a3205fd, 0x512f7874), X(0x1481eb10, 0xb8c953ca), X(0x0a601907, 0x02) };
+const xword_t b163_Gx[] = { X(0xe8343e36, 0xd4994637), X(0xa0991168, 0x86a2d57e), X(0xf0eba162, 0x03) };
+const xword_t b163_Gy[] = { X(0x797324f1, 0xb11c5c0c), X(0xa2cdd545, 0x71a0094f), X(0xd51fbc6c, 0x00) };
+const xword_t b163_n[]  = { X(0xa4234c33, 0x77e70c12), X(0x000292fe, 0x00000000), X(0x00000000, 0x04) };
+const xword_t b163_h[]  = { 0x02 };
+const int b163_exp[] = { 7, 6, 3, 0 };
+const xword_t b163_x[]  = { X(0x000000C9, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x08) };
+const xint_ecc_curve_t b163 =
+{
+    163,
+    CURVE_WORDS(163),
+    b163_p,
+    b163_a,
+    b163_b,
+    b163_Gx,
+    b163_Gy,
+    b163_n,
+    b163_h,
+    point_add,
+    point_double,
+    xint_mod_fast_k163,
+    point_add_jacobian,
+    point_double_jacobian,
+    0xc9,
+    b163_exp,
+    4,
+    b163_x,
+};
+
 static void field_red(xint_t w, const xint_ecc_curve_t *c);
 
 static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint_ecc_curve_t *c)
