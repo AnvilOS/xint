@@ -8,8 +8,8 @@
 void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k_in, const xint_ecc_curve_t *c);
 static void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
 static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
-static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_t m);
-static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m);
+static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_ecc_curve_t *c);
+static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c);
 static void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
 static void xint_mod_fast_224(xword_t *w, xword_t *u);
 static void xint_mod_fast_256(xword_t *w, xword_t *u);
@@ -760,7 +760,7 @@ xint_ecc_mod_rshift(T1, T1, 1, c);
     Rjx->is_at_infinity = 0;
 }
 
-static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_t m)
+static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_ecc_curve_t *c)
 {
     xint_t diffy = XINT_INIT_VAL;
     xint_t diffx = XINT_INIT_VAL;
@@ -779,6 +779,9 @@ static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, con
         xint_point_copy(r, p);
         return;
     }
+
+    xint_t m = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(m, c->p, c->nwords);
 
     xint_mod_sub(diffy, q->y, p->y, m);
     xint_mod_sub(diffx, q->x, p->x, m);
@@ -804,12 +807,23 @@ static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, con
     xint_delete(yr);
 }
 
-static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m)
+static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c)
 {
+    if (p->is_at_infinity)
+    {
+        xint_point_copy(r, p);
+        return;
+    }
+    
     xint_t tmp = XINT_INIT_VAL;
     xint_t lambda = XINT_INIT_VAL;
     xint_t xr = XINT_INIT_VAL;
     xint_t yr = XINT_INIT_VAL;
+
+    xint_t a = XINT_INIT_VAL;
+    xint_t m = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(a, c->a, c->nwords);
+    CONST_XINT_FROM_XWORDS(m, c->p, c->nwords);
 
     xint_mod_sqr(tmp, p->x, m);
     xint_mod_mul_ulong(tmp, tmp, 3, m);

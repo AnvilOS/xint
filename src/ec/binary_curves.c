@@ -6,8 +6,8 @@
 #include "xint_io.h"
 #include "xint_bitwise.h"
 
-static void point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_t m);
-static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m);
+static void point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_ecc_curve_t *c);
+static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c);
 static void point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
 static void point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
 static void xint_mod_fast_k163(xword_t *w, xword_t *u);
@@ -35,11 +35,12 @@ const xint_ecc_curve_t k163 =
     xint_mod_fast_k163,
     point_add_jacobian,
     point_double_jacobian,
+    0xc9,
 };
 
-static void field_red(xint_t w);
+static void field_red(xint_t w, const xint_ecc_curve_t *c);
 
-static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v)
+static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint_ecc_curve_t *c)
 {
     // W = U xor V
     int Un = XINT_ABS(u->size);
@@ -60,7 +61,7 @@ static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v)
     }
 }
 
-static void field_mul(xint_ptr w, const_xint_ptr u, const_xint_ptr v)
+static void field_mul(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint_ecc_curve_t *c)
 {
     // W = U . V
     int Un = XINT_ABS(u->size);
@@ -102,18 +103,19 @@ static void field_mul(xint_ptr w, const_xint_ptr u, const_xint_ptr v)
     xint_copy(w, w_copy);
     xint_delete(v_copy);
     xint_delete(w_copy);
+    field_red(w, c);
 }
 
-static void field_squ(xint_t w, const xint_t u)
+static void field_squ(xint_t w, const xint_t u, const xint_ecc_curve_t *c)
 {
     
 }
 
-static void field_red(xint_t w)
+static void field_red(xint_t w, const xint_ecc_curve_t *c)
 {
 }
 
-static void field_inv(xint_t w, const xint_t a)
+static void field_inv(xint_t w, const xint_t a, const xint_ecc_curve_t *cve)
 {
     char *fx_str = "0x0800000000000000000000000000000000000000C9";
     xint_t b = XINT_INIT_VAL;
@@ -142,30 +144,42 @@ static void field_inv(xint_t w, const xint_t a)
         }
         xint_copy(TMP, v);
         xint_lshift(TMP, TMP, j);
-        field_add(u, u, TMP);
+        field_add(u, u, TMP, cve);
         xint_copy(TMP, c);
         xint_lshift(TMP, TMP, j);
-        field_add(b, b, TMP);
+        field_add(b, b, TMP, cve);
     }
     xint_copy(w, b);
 }
 
-static void point_add(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_point_t q, const xint_t m)
+static void point_add(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_point_t q, const xint_ecc_curve_t *c)
 {
+    if (p->is_at_infinity)
+    {
+        xint_point_copy(r, q);
+        return;
+    }
+
+    if (q->is_at_infinity)
+    {
+        xint_point_copy(r, p);
+        return;
+    }
+
     // lambda = (y1 + y2) / (x1 + x2)
     xint_t lambda = XINT_INIT_VAL;
     
     xint_t y_sum = XINT_INIT_VAL;
-    field_add(y_sum, p->y, q->y);
+    field_add(y_sum, p->y, q->y, c);
     
     xint_t x_sum = XINT_INIT_VAL;
-    field_add(y_sum, p->x, q->x);
+    field_add(y_sum, p->x, q->x, c);
     
-    field_inv(lambda, x_sum);
-    field_mul(lambda, lambda, y_sum);
+    field_inv(lambda, x_sum, c);
+    field_mul(lambda, lambda, y_sum, c);
 }
 
-static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_t a, const xint_t m)
+static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c)
 {
 //    xint_t IN = XINT_INIT_VAL;
 //    xint_t OUT = XINT_INIT_VAL;
@@ -189,28 +203,33 @@ static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xin
 //    xint_print_hex("IN ", IN);
 //    xint_print_hex("PROD", PROD);
 
+    if (p->is_at_infinity)
+    {
+        xint_point_copy(r, p);
+        return;
+    }
+    
     // lambda = (y1 / x1) + x1
     xint_t lambda = XINT_INIT_VAL;
     
-    field_inv(lambda, p->x);      // 1/x1
-    field_mul(lambda, lambda, p->y);         // y1/x1
-    field_red(lambda);
-    field_add(lambda, lambda, p->x);         // y1/x1 + x1
+    field_inv(lambda, p->x, c);            // 1/x1
+    field_mul(lambda, lambda, p->y, c);    // y1/x1
+    field_add(lambda, lambda, p->x, c);    // y1/x1 + x1
     
     xint_t x3 = XINT_INIT_VAL;
-    field_mul(x3, lambda, lambda);
-    field_red(x3);
-    field_add(x3, x3, lambda);
-    field_add(x3, x3, p->x);
-    field_add(x3, x3, p->x);
-    field_add(x3, x3, a);
+    field_mul(x3, lambda, lambda, c);
+    field_add(x3, x3, lambda, c);
+    field_add(x3, x3, p->x, c);
+    field_add(x3, x3, p->x, c);
+    xint_t a = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(a, c->a, c->nwords);
+    field_add(x3, x3, a, c);
     
     xint_t y3 = XINT_INIT_VAL;
-    field_add(y3, p->x, x3);
-    field_mul(y3, y3, lambda);
-    field_red(y3);
-    field_add(y3, y3, x3);
-    field_add(y3, y3, p->y);
+    field_add(y3, p->x, x3, c);
+    field_mul(y3, y3, lambda, c);
+    field_add(y3, y3, x3, c);
+    field_add(y3, y3, p->y, c);
     xint_copy(r->x, x3);
     xint_copy(r->y, y3);
 }

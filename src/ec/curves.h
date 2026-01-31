@@ -24,11 +24,12 @@ struct xint_ecc_curve_s
     const xword_t *Gy;
     const xword_t *n;
     const xword_t *h;
-    void (*affine_add)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_ecc_point_t Qj, const xint_t m);
-    void (*affine_double)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_t a, const xint_t m);
+    void (*affine_add)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_ecc_point_t Qj, const xint_ecc_curve_t *c);
+    void (*affine_double)(xint_ecc_point_t Rj, const xint_ecc_point_t Pj, const xint_ecc_curve_t *c);
     void (*xint_mod_fast)(xword_t *w, xword_t *u);
     void (*jacobian_add)(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
     void (*jacobian_double)(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
+    const xword_t low_polinomial;
 };
 
 extern const xint_ecc_curve_t k163;

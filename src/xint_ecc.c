@@ -234,9 +234,9 @@ void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, con
     {
         if (xint_get_bit(k, i) == 1)
         {
-            c->affine_add(R, R, TMP, p);
+            c->affine_add(R, R, TMP, c);
         }
-        c->affine_double(TMP, TMP, a, p);
+        c->affine_double(TMP, TMP, c);
     }
 }
 
