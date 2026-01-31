@@ -32,6 +32,7 @@ struct xint_ecc_curve_s
     const xword_t low_polinomial;
     const int *exp;
     const int num_exp;
+    const xword_t *x;
 };
 
 extern const xint_ecc_curve_t k163;

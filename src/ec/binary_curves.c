@@ -189,10 +189,27 @@ static void point_add(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_e
     field_add(y_sum, p->y, q->y, c);
     
     xint_t x_sum = XINT_INIT_VAL;
-    field_add(y_sum, p->x, q->x, c);
+    field_add(x_sum, p->x, q->x, c);
     
     field_inv(lambda, x_sum, c);
     field_mul(lambda, lambda, y_sum, c);
+    
+    xint_t x3 = XINT_INIT_VAL;
+    field_mul(x3, lambda, lambda, c);
+    field_add(x3, x3, lambda, c);
+    field_add(x3, x3, p->x, c);
+    field_add(x3, x3, q->x, c);
+    xint_t a = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(a, c->a, c->nwords);
+    field_add(x3, x3, a, c);
+    
+    xint_t y3 = XINT_INIT_VAL;
+    field_add(y3, p->x, x3, c);
+    field_mul(y3, y3, lambda, c);
+    field_add(y3, y3, x3, c);
+    field_add(y3, y3, p->y, c);
+    xint_copy(r->x, x3);
+    xint_copy(r->y, y3);
 }
 
 static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c)
