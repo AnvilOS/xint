@@ -198,6 +198,134 @@ const xint_ecc_curve_t b163 =
     b163_x,
 };
 
+const xword_t b233_p[]  = { 0 };
+const xword_t b233_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0000) };
+const xword_t b233_b[]  = { X(0x7d8f90ad, 0x81fe115f), X(0x20e9ce42, 0x213b333b), X(0x0923bb58, 0x332c7f8c), X(0x647ede6c, 0x0066) };
+//0x
+//0x
+const xword_t b233_Gx[] = { X(0x71fd558b, 0xf8f8eb73), X(0x391f8b36, 0x5fef65bc), X(0x39f1bb75, 0x8313bb21), X(0xc9dfcbac, 0x00fa) };
+const xword_t b233_Gy[] = { X(0x01f81052, 0x36716f7e), X(0xf867a7ca, 0xbf8a0bef), X(0xe58528be, 0x03350678), X(0x6a08a419, 0x0100) };
+//0x
+const xword_t b233_n[]  = { X(0x03cfe0d7, 0x22031d26), X(0xe72f8a69, 0x0013e974), X(0x00000000, 0x00000000), X(0x00000000, 0x0100) };
+const xword_t b233_h[]  = { 0x04 };
+const int b233_exp[] = { 74, 0 };
+const xword_t b233_x[]  = { X(0x00000001, 0x00000000), X(0x00000400, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0200) };
+const xint_ecc_curve_t b233 =
+{
+    233,
+    CURVE_WORDS(233),
+    b233_p,
+    b233_a,
+    b233_b,
+    b233_Gx,
+    b233_Gy,
+    b233_n,
+    b233_h,
+    point_add,
+    point_double,
+    xint_mod_fast_k163,
+    point_add_jacobian,
+    point_double_jacobian,
+    0xc9,
+    b233_exp,
+    2,
+    b233_x,
+};
+
+const xword_t b283_p[]  = { 0 };
+const xword_t b283_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x0000000 };
+const xword_t b283_b[]  = { X(0x3b79a2f5, 0xf6263e31), X(0xa581485a, 0x45309fa2), X(0xca97fd76, 0x19a0303f), X(0xa5a4af8a, 0xc8b8596d), 0x27b680a };
+const xword_t b283_Gx[] = { X(0x86b12053, 0xf8cdbecd), X(0x80e2e198, 0x557eac9c), X(0x2eed25b8, 0x70b0dfec), X(0xe1934f8c, 0x8db7dd90), 0x5f93925 };
+const xword_t b283_Gy[] = { X(0xbe8112f4, 0x13f0df45), X(0x826779c8, 0x350eddb0), X(0x516ff702, 0xb20d02b4), X(0xb98fe6d4, 0xfe24141c), 0x3676854 };
+const xword_t b283_n[]  = { X(0xefadb307, 0x5b042a7c), X(0x938a9016, 0x399660fc), X(0xffffef90, 0xffffffff), X(0xffffffff, 0xffffffff), 0x3ffffff };
+const xword_t b283_h[]  = { 0x04 };
+const int b283_exp[] = { 12, 7, 5, 0 };
+const xword_t b283_x[]  = { X(0x000010a1, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x8000000 };
+const xint_ecc_curve_t b283 =
+{
+    283,
+    CURVE_WORDS(283),
+    b283_p,
+    b283_a,
+    b283_b,
+    b283_Gx,
+    b283_Gy,
+    b283_n,
+    b283_h,
+    point_add,
+    point_double,
+    xint_mod_fast_k163,
+    point_add_jacobian,
+    point_double_jacobian,
+    0xc9,
+    b283_exp,
+    4,
+    b283_x,
+};
+
+const xword_t b409_p[]  = { 0 };
+const xword_t b409_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x0000000 };
+const xword_t b409_b[]  = { X(0x7b13545f, 0x4f50ae31), X(0xd57a55aa, 0x72822f6c), X(0xa9a197b2, 0xd6ac27c8), X(0x4761fa99, 0xf1f3dd67), X(0x7fd6422e, 0x3b7b476b), X(0x5c4b9a75, 0xc8ee9feb), 0x021a5c2 };
+const xword_t b409_Gx[] = { X(0xbb7996a7, 0x60794e54), X(0x5603aeab, 0x8a118051), X(0xdc255a86, 0x34e59703), X(0xb01ffe5b, 0xf1771d4d), X(0x441cde4a, 0x64756260), X(0x496b0c60, 0xd088ddb3), 0x15d4860 };
+const xword_t b409_Gy[] = { X(0x0273c706, 0x81c364ba), X(0xd2181b36, 0xdf4b4f40), X(0x38514f1f, 0x5488d08f), X(0x0158aa4f, 0xa7bd198d), X(0x7636b9c5, 0x24ed106a), X(0x2bbfa783, 0xab6be5f3), 0x061b1cf };
+//0x
+const xword_t b409_n[]  = { X(0xd9a21173, 0x8164cd37), X(0x9e052f83, 0x5fa47c3c), X(0xf33307be, 0xaad6a612), X(0x000001e2, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x1000000 };
+const xword_t b409_h[]  = { 0x04 };
+const int b409_exp[] = { 87, 0 };
+const xword_t b409_x[]  = { X(0x00000001, 0x00000000), X(0x00800000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x2000000 };
+const xint_ecc_curve_t b409 =
+{
+    409,
+    CURVE_WORDS(409),
+    b409_p,
+    b409_a,
+    b409_b,
+    b409_Gx,
+    b409_Gy,
+    b409_n,
+    b409_h,
+    point_add,
+    point_double,
+    xint_mod_fast_k163,
+    point_add_jacobian,
+    point_double_jacobian,
+    0xc9,
+    b409_exp,
+    2,
+    b409_x,
+};
+
+const xword_t b571_p[]  = { 0 };
+const xword_t b571_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000) };
+const xword_t b571_b[]  = { X(0x2955727a, 0x7ffeff7f), X(0x39baca0c, 0x520e4de7), X(0x78ff12aa, 0x4afd185a), X(0x56a66e29, 0x2be7ad67), X(0x8efa5933, 0x84ffabbd), X(0x4a9a18ad, 0xcd6ba8ce), X(0xcb8ceff1, 0x5c6a97ff), X(0xb7f3d62f, 0xde297117), X(0x2221f295, 0x2f40e7e) };
+const xword_t b571_Gx[] = { X(0x8eec2d19, 0xe1e7769c), X(0xc850d927, 0x4abfa3b4), X(0x8614f139, 0x99ae6003), X(0x5b67fb14, 0xcdd711a3), X(0xf4c0d293, 0xbde53950), X(0xdb7b2abd, 0xa5f40fc8), X(0x955fa80a, 0x0a93d1d2), X(0x0d3cd775, 0x6c16c0d4), X(0x34b85629, 0x303001d) };
+const xword_t b571_Gy[] = { X(0x1b8ac15b, 0x1a4827af), X(0x6e23dd3c, 0x16e2f151), X(0x0485c19b, 0xb3531d2f), X(0x461bb2a8, 0x6291af8f), X(0xbab08a57, 0x84423e43), X(0x3921e8a6, 0x1980f853), X(0x009cbbca, 0x8c6c27a6), X(0xb73d69d7, 0x6dccfffe), X(0x42da639b, 0x37bf273) };
+const xword_t b571_n[]  = { X(0x2fe84e47, 0x8382e9bb), X(0x5174d66e, 0x161de93d), X(0xc7dd9ca1, 0x6823851e), X(0x08059b18, 0xff559873), X(0xe661ce18, 0xffffffff), X(0xffffffff, 0xffffffff), X(0xffffffff, 0xffffffff), X(0xffffffff, 0xffffffff), X(0xffffffff, 0x3ffffff) };
+const xword_t b571_h[]  = { 0x04 };
+const int b571_exp[] = { 10, 5, 2, 0 };
+const xword_t b571_x[]  = { X(0x00000425, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x8000000) };
+const xint_ecc_curve_t b571 =
+{
+    571,
+    CURVE_WORDS(571),
+    b571_p,
+    b571_a,
+    b571_b,
+    b571_Gx,
+    b571_Gy,
+    b571_n,
+    b571_h,
+    point_add,
+    point_double,
+    xint_mod_fast_k163,
+    point_add_jacobian,
+    point_double_jacobian,
+    0xc9,
+    b571_exp,
+    4,
+    b571_x,
+};
+
 static void field_red(xint_t w, const xint_ecc_curve_t *c);
 
 static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint_ecc_curve_t *c)
