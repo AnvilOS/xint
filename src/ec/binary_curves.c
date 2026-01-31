@@ -19,6 +19,7 @@ const xword_t k163_Gx[] = { X(0x5c94eee8, 0xde4e6d5e), X(0xaa07d793, 0x7bbc11ac)
 const xword_t k163_Gy[] = { X(0xccdaa3d9, 0x0536d538), X(0x321f2e80, 0x5d38ff58), X(0x89070fb0, 0x02) };
 const xword_t k163_n[]  = { X(0x99f8a5ef, 0xa2e0cc0d), X(0x00020108, 0x00000000), X(0x00000000, 0x04) };
 const xword_t k163_h[]  = { 0x02 };
+const int k163_exp[] = { 7, 6, 3, 0 };
 const xint_ecc_curve_t k163 =
 {
     163,
@@ -36,6 +37,8 @@ const xint_ecc_curve_t k163 =
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
+    k163_exp,
+    4,
 };
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c);
@@ -113,6 +116,22 @@ static void field_squ(xint_t w, const xint_t u, const xint_ecc_curve_t *c)
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c)
 {
+    const int *exp = c->exp;
+    int num_exp = c->num_exp;
+    int m = c->nbits;
+        
+    for (int i = xint_highest_bit_num(w); i>=m; --i)
+    {
+        if (xint_get_bit(w, i))
+        {
+            for (int k=0; k<num_exp; ++k)
+            {
+                xint_flip_bit(w, i - m + exp[k]);
+            }
+            xint_flip_bit(w, i); // Clear the bit we just reduced
+        }
+    }
+    trim_zeroes(w);
 }
 
 static void field_inv(xint_t w, const xint_t a, const xint_ecc_curve_t *cve)

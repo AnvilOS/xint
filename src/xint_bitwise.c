@@ -38,3 +38,29 @@ int xint_set_bit(xint_t u, int bit)
     return bitval;
 }
 
+int xint_flip_bit(xint_t u, int bit)
+{
+    // Fistly find our bit
+    int xword_no = bit / XWORD_BITS;
+    int bit_no = bit % XWORD_BITS;
+    int Un = abs(u->size);
+    
+    if (xword_no >= Un)
+    {
+        return 0;
+    }
+
+    xword_t xword = u->data[xword_no];
+    int bitval = (xword >> bit_no) & 1;
+
+    if (bitval)
+    {
+        u->data[xword_no] &= ~(1ULL << bit_no);
+    }
+    else
+    {
+        u->data[xword_no] |= 1ULL << bit_no;
+    }
+    return bitval;
+}
+

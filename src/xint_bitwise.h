@@ -11,6 +11,7 @@ extern "C"
 
 int xint_get_bit(const xint_t u, int bit);
 int xint_set_bit(xint_t u, int bit);
+int xint_flip_bit(xint_t u, int bit);
 
 #ifdef __cplusplus
 }
