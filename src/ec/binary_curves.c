@@ -20,6 +20,7 @@ const xword_t k163_Gy[] = { X(0xccdaa3d9, 0x0536d538), X(0x321f2e80, 0x5d38ff58)
 const xword_t k163_n[]  = { X(0x99f8a5ef, 0xa2e0cc0d), X(0x00020108, 0x00000000), X(0x00000000, 0x04) };
 const xword_t k163_h[]  = { 0x02 };
 const int k163_exp[] = { 7, 6, 3, 0 };
+const xword_t k163_x[]  = { X(0x000000C9, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x08) };
 const xint_ecc_curve_t k163 =
 {
     163,
@@ -39,6 +40,7 @@ const xint_ecc_curve_t k163 =
     0xc9,
     k163_exp,
     4,
+    k163_x,
 };
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c);
@@ -128,7 +130,7 @@ static void field_red(xint_t w, const xint_ecc_curve_t *c)
             {
                 xint_flip_bit(w, i - m + exp[k]);
             }
-            xint_flip_bit(w, i); // Clear the bit we just reduced
+            xint_flip_bit(w, i);
         }
     }
     trim_zeroes(w);
@@ -136,7 +138,6 @@ static void field_red(xint_t w, const xint_ecc_curve_t *c)
 
 static void field_inv(xint_t w, const xint_t a, const xint_ecc_curve_t *cve)
 {
-    char *fx_str = "0x0800000000000000000000000000000000000000C9";
     xint_t b = XINT_INIT_VAL;
     xint_t c = XINT_INIT_VAL;
     xint_t u = XINT_INIT_VAL;
@@ -145,15 +146,13 @@ static void field_inv(xint_t w, const xint_t a, const xint_ecc_curve_t *cve)
     xint_assign_long(b, 1);
     xint_assign_zero(c);
     xint_copy(u, a);
-    xint_assign_str(v, fx_str, 0);
-    while (1)
+    XINT_FROM_XWORDS(v, cve->x, cve->nwords);
+    int degv = xint_highest_bit_num(v);
+    int degu;
+    while (degv >= 0)
     {
-        int degu = xint_highest_bit_num(u);
-        int degv = xint_highest_bit_num(v);
-        if (degu == 0)
-        {
-            break;
-        }
+        degu = xint_highest_bit_num(u);
+        degv = xint_highest_bit_num(v);
         int j = degu - degv;
         if (j < 0)
         {
@@ -161,11 +160,9 @@ static void field_inv(xint_t w, const xint_t a, const xint_ecc_curve_t *cve)
             xint_swap(b, c);
             j = -j;
         }
-        xint_copy(TMP, v);
-        xint_lshift(TMP, TMP, j);
+        xint_lshift(TMP, v, j);
         field_add(u, u, TMP, cve);
-        xint_copy(TMP, c);
-        xint_lshift(TMP, TMP, j);
+        xint_lshift(TMP, c, j);
         field_add(b, b, TMP, cve);
     }
     xint_copy(w, b);
