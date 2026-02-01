@@ -33,6 +33,7 @@ struct xint_ecc_curve_s
     const int *exp;
     const int num_exp;
     const xword_t *x;
+    void (*scalar_mul)(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
 };
 
 extern const xint_ecc_curve_t p224;

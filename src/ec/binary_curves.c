@@ -11,6 +11,7 @@ static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xin
 static void point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
 static void point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
 static void xint_mod_fast_k163(xword_t *w, xword_t *u);
+static void scalar_multiply_mont_x_only(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
 
 const xword_t k163_p[]  = { 0 };
 const xword_t k163_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
@@ -41,6 +42,7 @@ const xint_ecc_curve_t k163 =
     k163_exp,
     4,
     k163_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t k233_p[]  = { 0 };
@@ -72,6 +74,7 @@ const xint_ecc_curve_t k233 =
     k233_exp,
     2,
     k233_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t k283_p[]  = { 0 };
@@ -103,6 +106,7 @@ const xint_ecc_curve_t k283 =
     k283_exp,
     4,
     k283_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t k409_p[]  = { 0 };
@@ -134,6 +138,7 @@ const xint_ecc_curve_t k409 =
     k409_exp,
     2,
     k409_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t k571_p[]  = { 0 };
@@ -165,6 +170,7 @@ const xint_ecc_curve_t k571 =
     k571_exp,
     4,
     k571_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t b163_p[]  = { 0 };
@@ -196,6 +202,7 @@ const xint_ecc_curve_t b163 =
     b163_exp,
     4,
     b163_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t b233_p[]  = { 0 };
@@ -227,6 +234,7 @@ const xint_ecc_curve_t b233 =
     b233_exp,
     2,
     b233_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t b283_p[]  = { 0 };
@@ -258,6 +266,7 @@ const xint_ecc_curve_t b283 =
     b283_exp,
     4,
     b283_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t b409_p[]  = { 0 };
@@ -290,6 +299,7 @@ const xint_ecc_curve_t b409 =
     b409_exp,
     2,
     b409_x,
+    scalar_multiply_mont_x_only,
 };
 
 const xword_t b571_p[]  = { 0 };
@@ -321,6 +331,7 @@ const xint_ecc_curve_t b571 =
     b571_exp,
     4,
     b571_x,
+    scalar_multiply_mont_x_only,
 };
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c);

@@ -274,7 +274,12 @@ TEST(ecc, curve_p224)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar(R, p224.Gx, p224.Gy, x, &p224);
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    CONST_XINT_FROM_XWORDS(G->x, p224.Gx, p224.nwords);
+    CONST_XINT_FROM_XWORDS(G->y, p224.Gy, p224.nwords);
+    G->is_at_infinity = 0;
+    p224.scalar_mul(R, G, x, &p224);
     
     ASSERT_EQ(0, test_equality(R->x, "0xC3A3F5B82712532004C6F6D1DB672F55D931C3409EA1216D0BE77380"));
     ASSERT_EQ(0, test_equality(R->y, "0x9BF4978CA8C8A8DF855A74C6905A5A3947ACFF772FCE436D48341D46"));
@@ -301,11 +306,17 @@ TEST(ecc, curve_p256)
     xint_ecc_point_t R;
     xint_point_init(R);
     
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    CONST_XINT_FROM_XWORDS(G->x, p256.Gx, p256.nwords);
+    CONST_XINT_FROM_XWORDS(G->y, p256.Gy, p256.nwords);
+    G->is_at_infinity = 0;
+
     STAMP_VARS();
     __disable_irq();
     STAMP_BEFORE();
     //for (int i=0; i<512; ++i)
-    xint_ecc_mul_scalar(R, p256.Gx, p256.Gy, x, &p256);
+    p256.scalar_mul(R, G, x, &p256);
     STAMP_AFTER();
     __enable_irq();
     printf("xint_ecc_mult : %u\n", STAMP_DIFF());
@@ -335,7 +346,13 @@ TEST(ecc, curve_p384)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar(R, p384.Gx, p384.Gy, x, &p384);
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    CONST_XINT_FROM_XWORDS(G->x, p384.Gx, p384.nwords);
+    CONST_XINT_FROM_XWORDS(G->y, p384.Gy, p384.nwords);
+    G->is_at_infinity = 0;
+
+    p384.scalar_mul(R, G, x, &p384);
     
     ASSERT_EQ(0, test_equality(R->x, "0x30EA514FC0D38D8208756F068113C7CADA9F66A3B40EA3B313D040D9B57DD41A332795D02CC7D507FCEF9FAF01A27088"));
     ASSERT_EQ(0, test_equality(R->y, "0xC04E32465D14C50CBC3BCB88EA20F95B10616663FC62A8DCDB48D3006327EA7CA104F6F9294C66EA2487BD50357010C6"));
@@ -362,7 +379,13 @@ TEST(ecc, curve_p521)
     xint_ecc_point_t R;
     xint_point_init(R);
     
-    xint_ecc_mul_scalar(R, p521.Gx, p521.Gy, x, &p521);
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    CONST_XINT_FROM_XWORDS(G->x, p521.Gx, p521.nwords);
+    CONST_XINT_FROM_XWORDS(G->y, p521.Gy, p521.nwords);
+    G->is_at_infinity = 0;
+
+    p521.scalar_mul(R, G, x, &p521);
     
     ASSERT_EQ(0, test_equality(R->x, "0x140C8EDCA57108CE3F7E7A240DDD3AD74D81E2DE62451FC1D558FDC79269ADACD1C2526EEEEF32F8C0432A9D56E2B4A8A732891C37C9B96641A9254CCFE5DC3E2BA"));
     ASSERT_EQ(0, test_equality(R->y, "0xCD42A03AD1EB93C532FC8A54683998FF86FEC61F85F8E15B4ACD5B696498F211506D340091019900C918BD8088E0352E9742EA9E2B55983ECAA343E424B8113428"));

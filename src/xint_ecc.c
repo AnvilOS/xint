@@ -125,13 +125,12 @@ void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, cons
 int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_curve_t *c)
 {
     // Try and generate the public key
-//    xint_ecc_point_t G;
-//    xint_point_init(G);
-//    CONST_XINT_FROM_XWORDS(G->x, c->Gx, c->nwords);
-//    CONST_XINT_FROM_XWORDS(G->y, c->Gy, c->nwords);
-//    G->is_at_infinity = 0;
-//    xint_ecc_mul_scalar_plain(pub, G, priv, c);
-    xint_ecc_mul_scalar(pub, c->Gx, c->Gy, priv, c);
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    CONST_XINT_FROM_XWORDS(G->x, c->Gx, c->nwords);
+    CONST_XINT_FROM_XWORDS(G->y, c->Gy, c->nwords);
+    G->is_at_infinity = 0;
+    c->scalar_mul(pub, G, priv, c);
     return 1;
 }
 
@@ -142,7 +141,14 @@ int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len,
               
     xint_ecc_point_t point;
     xint_point_init(point);
-    xint_ecc_mul_scalar(point, c->Gx, c->Gy, k, c);
+
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    CONST_XINT_FROM_XWORDS(G->x, c->Gx, c->nwords);
+    CONST_XINT_FROM_XWORDS(G->y, c->Gy, c->nwords);
+    G->is_at_infinity = 0;
+
+    c->scalar_mul(point, G, k, c);
 
     xint_t N = XINT_INIT_VAL;
     CONST_XINT_FROM_XWORDS(N, c->n, c->nwords);

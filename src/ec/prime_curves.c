@@ -5,7 +5,6 @@
 #include "xint_bitwise.h"
 #include "xint_algorithms.h"
 
-void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k_in, const xint_ecc_curve_t *c);
 static void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
 static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_point_jacobian_t Qj, const xint_ecc_curve_t *c);
 static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_ecc_curve_t *c);
@@ -15,6 +14,7 @@ static void xint_mod_fast_224(xword_t *w, xword_t *u);
 static void xint_mod_fast_256(xword_t *w, xword_t *u);
 static void xint_mod_fast_384(xword_t *w, xword_t *u);
 static void xint_mod_fast_521(xword_t *w, xword_t *u);
+static void mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
 
 const xword_t p224_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
 const xword_t p224_a[]  = { X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFE), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
@@ -39,6 +39,11 @@ const xint_ecc_curve_t p224 =
     xint_mod_fast_224,
     xint_point_add_jacobian,
     xint_point_double_jacobian,
+    0,
+    0,
+    0,
+    0,
+    mul_scalar,
 };
 
 const xword_t p256_p[]  = { X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0x00000000), X(0x00000000, 0x00000000), X(0x00000001, 0xFFFFFFFF) };
@@ -64,6 +69,11 @@ const xint_ecc_curve_t p256 =
     xint_mod_fast_256,
     xint_point_add_jacobian,
     xint_point_double_jacobian,
+    0,
+    0,
+    0,
+    0,
+    mul_scalar,
 };
 
 const xword_t p384_p[]  = { X(0xFFFFFFFF, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF) };
@@ -89,6 +99,11 @@ const xint_ecc_curve_t p384 =
     xint_mod_fast_384,
     xint_point_add_jacobian,
     xint_point_double_jacobian,
+    0,
+    0,
+    0,
+    0,
+    mul_scalar,
 };
 
 
@@ -115,6 +130,11 @@ const xint_ecc_curve_t p521 =
     xint_mod_fast_521,
     xint_point_add_jacobian,
     xint_point_double_jacobian,
+    0,
+    0,
+    0,
+    0,
+    mul_scalar,
 };
 
 static void xint_mod_fast_224(xword_t *w, xword_t *u)
@@ -590,7 +610,7 @@ static void ecc_dblu(xint_ecc_point_jacobian_t Rj, xint_ecc_point_jacobian_t Pj,
     Rj->is_at_infinity = 0;
 }
 
-void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k_in, const xint_ecc_curve_t *c)
+static void mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k_in, const xint_ecc_curve_t *c)
 {
     // Force b0 of k to be a 1
     xint_t k = XINT_INIT_VAL;
@@ -614,8 +634,8 @@ void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *P
     int bit = xint_get_bit(k, 1);
     
     // To Jacobian
-    xll_copy(Rj[bit]->x, Px, c->nwords);
-    xll_copy(Rj[bit]->y, Py, c->nwords);
+    xll_copy(Rj[bit]->x, P->x->data, c->nwords);
+    xll_copy(Rj[bit]->y, P->y->data, c->nwords);
     xll_zero(Rj[bit]->z, c->nwords);
     Rj[bit]->z[0] = 1;
     Rj[bit]->is_at_infinity = 0;
