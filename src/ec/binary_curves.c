@@ -201,11 +201,8 @@ const xint_ecc_curve_t b163 =
 const xword_t b233_p[]  = { 0 };
 const xword_t b233_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0000) };
 const xword_t b233_b[]  = { X(0x7d8f90ad, 0x81fe115f), X(0x20e9ce42, 0x213b333b), X(0x0923bb58, 0x332c7f8c), X(0x647ede6c, 0x0066) };
-//0x
-//0x
 const xword_t b233_Gx[] = { X(0x71fd558b, 0xf8f8eb73), X(0x391f8b36, 0x5fef65bc), X(0x39f1bb75, 0x8313bb21), X(0xc9dfcbac, 0x00fa) };
 const xword_t b233_Gy[] = { X(0x01f81052, 0x36716f7e), X(0xf867a7ca, 0xbf8a0bef), X(0xe58528be, 0x03350678), X(0x6a08a419, 0x0100) };
-//0x
 const xword_t b233_n[]  = { X(0x03cfe0d7, 0x22031d26), X(0xe72f8a69, 0x0013e974), X(0x00000000, 0x00000000), X(0x00000000, 0x0100) };
 const xword_t b233_h[]  = { 0x04 };
 const int b233_exp[] = { 74, 0 };
@@ -397,7 +394,7 @@ static void field_mul(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint
 
 static void field_squ(xint_t w, const xint_t u, const xint_ecc_curve_t *c)
 {
-    
+    field_mul(w, u, u, c);
 }
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c)
@@ -433,7 +430,7 @@ static void field_inv(xint_t w, const xint_t a, const xint_ecc_curve_t *cve)
     XINT_FROM_XWORDS(v, cve->x, cve->nwords);
     int degv = xint_highest_bit_num(v);
     int degu;
-    while (degv >= 0)
+    while (xint_highest_bit_num(v) >= 0)
     {
         degu = xint_highest_bit_num(u);
         degv = xint_highest_bit_num(v);
@@ -508,28 +505,6 @@ static void point_add(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_e
 
 static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c)
 {
-//    xint_t IN = XINT_INIT_VAL;
-//    xint_t OUT = XINT_INIT_VAL;
-//    xint_t PROD = XINT_INIT_VAL;
-//    xint_assign_str(IN, "0x5", 0);
-//    field_inv(OUT, IN);
-//    xint_print_hex("INV", OUT);
-//    xint_print_hex("IN ", IN);
-//
-//    field_mul(PROD, OUT, IN);
-//    xint_print_hex("PROD", PROD);
-//    field_red(PROD);
-//    xint_print_hex("PROD", PROD);
-//
-//    field_mul(PROD, IN, OUT);
-//    xint_print_hex("PROD", PROD);
-//
-//    xint_print_hex("PROD", PROD);
-//    field_red(PROD);
-//    xint_print_hex("OUT", OUT);
-//    xint_print_hex("IN ", IN);
-//    xint_print_hex("PROD", PROD);
-
     if (p->is_at_infinity)
     {
         xint_point_copy(r, p);
@@ -579,3 +554,97 @@ static void xint_mod_fast_k163(xword_t *w, xword_t *u)
     //xint_mod_std(w, u, &k163);
 }
 
+void m_add(xint_t X1, xint_t Z1, xint_t X2, xint_t Z2, const xint_t px, const xint_ecc_curve_t *c)
+{
+    xint_t T1 = XINT_INIT_VAL;
+    xint_t T2 = XINT_INIT_VAL;
+    xint_copy(T1, px);
+    field_mul(X1, X1, Z2, c);
+    field_mul(Z1, Z1, X2, c);
+    field_mul(T2, X1, Z1, c);
+    field_add(Z1, Z1, X1, c);
+    field_squ(Z1, Z1, c);
+    field_mul(X1, Z1, T1, c);
+    field_add(X1, X1, T2, c);
+    xint_delete(T1);
+    xint_delete(T2);
+}
+
+void m_dbl(xint_t X2, xint_t Z2, const xint_ecc_curve_t *c)
+{
+    xint_t T1 = XINT_INIT_VAL;
+    xint_t T2 = XINT_INIT_VAL;
+    xint_assign_long(T1, 1); // c is 1 for now
+    field_squ(X2, X2, c);
+    field_squ(Z2, Z2, c);
+    field_mul(T1, T1, Z2, c);
+    field_add(T1, X2, T1, c);
+    field_mul(Z2, X2, Z2, c);
+    field_squ(X2, T1, c);
+    xint_delete(T1);
+    xint_delete(T2);
+}
+
+void scalar_multiply_mont_x_only(
+            xint_ecc_point_t R,
+            const xint_ecc_point_t P,
+            const xint_t k,
+            const xint_ecc_curve_t *c)
+{
+    xint_t X1 = XINT_INIT_VAL;
+    xint_t Z1 = XINT_INIT_VAL;
+    xint_t X2 = XINT_INIT_VAL;
+    xint_t Z2 = XINT_INIT_VAL;
+    
+    if (xint_cmp_ulong(k, 1) <= 0)
+    {
+        // k is too same
+        // return an error
+        return;
+    }
+
+    // Initial doubling
+    xint_copy(X1, P->x);
+    xint_assign_ulong(Z1, 1);
+    field_squ(Z2, X1, c);
+    field_squ(X2, Z2, c);
+    xint_t b = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(b, c->b, c->nwords);
+    field_add(X2, X2, b, c);
+
+//    xint_print_hex("X1", X1);
+//    xint_print_hex("Z1", Z1);
+//    xint_print_hex("X2", X2);
+//    xint_print_hex("Z2", Z2);
+
+    // We need the top bit set
+    int nbits = xint_highest_bit_num(k) + 1;
+    for (int i=nbits-2; i >= 0; --i)
+    {
+        if (xint_get_bit(k, i))
+        {
+            m_add(X1, Z1, X2, Z2, P->x, c);
+            m_dbl(X2, Z2, c);
+        }
+        else
+        {
+            m_add(X2, Z2, X1, Z1, P->x, c);
+            m_dbl(X1, Z1, c);
+        }
+//        xint_print_hex("X1", X1);
+//        xint_print_hex("Z1", Z1);
+//        xint_print_hex("X2", X2);
+//        xint_print_hex("Z2", Z2);
+    }
+    
+    xint_t zinv = XINT_INIT_VAL;
+    field_inv(zinv, Z1, c);
+    field_mul(R->x, X1, zinv, c);
+//    xint_print_hex("R->x", R->x);
+//    xint_print_hex("k", k);
+
+    xint_delete(X1);
+    xint_delete(Z1);
+    xint_delete(X2);
+    xint_delete(Z2);
+}
