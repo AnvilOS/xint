@@ -615,10 +615,8 @@ void m_dbl(xint_t X2, xint_t Z2, const xint_ecc_curve_t *c)
 
 void scalar_multiply_mont_x_only(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c)
 {
-    xint_t X1 = XINT_INIT_VAL;
-    xint_t Z1 = XINT_INIT_VAL;
-    xint_t X2 = XINT_INIT_VAL;
-    xint_t Z2 = XINT_INIT_VAL;
+    xint_t X[2];
+    xint_t Z[2];
     
     if (xint_cmp_ulong(k, 1) <= 0)
     {
@@ -627,64 +625,62 @@ void scalar_multiply_mont_x_only(xint_ecc_point_t R, const xint_ecc_point_t P, c
         return;
     }
     
+    xint_init(X[0]);
+    xint_init(X[1]);
+    xint_init(Z[0]);
+    xint_init(Z[1]);
+
     // Initial doubling
-    xint_copy(X1, P->x);
-    xint_assign_ulong(Z1, 1);
-    field_squ(Z2, X1, c);
-    field_squ(X2, Z2, c);
+    xint_copy(X[0], P->x);
+    xint_assign_ulong(Z[0], 1);
+    field_squ(Z[1], X[0], c);
+    field_squ(X[1], Z[1], c);
     xint_t b = XINT_INIT_VAL;
     CONST_XINT_FROM_XWORDS(b, c->b, c->nwords);
-    field_add(X2, X2, b, c);
+    field_add(X[1], X[1], b, c);
 
     // We need the top bit set
     int nbits = xint_highest_bit_num(k) + 1;
     for (int i=nbits-2; i >= 0; --i)
     {
-        if (xint_get_bit(k, i))
-        {
-            m_add(X1, Z1, X2, Z2, P->x, c);
-            m_dbl(X2, Z2, c);
-        }
-        else
-        {
-            m_add(X2, Z2, X1, Z1, P->x, c);
-            m_dbl(X1, Z1, c);
-        }
+        int bit = xint_get_bit(k, i);
+        m_add(X[1-bit], Z[1-bit], X[bit], Z[bit], P->x, c);
+        m_dbl(X[bit], Z[bit], c);
     }
     
     xint_t zinv = XINT_INIT_VAL;
-    field_inv(zinv, Z1, c);
-    field_mul(R->x, X1, zinv, c);
+    field_inv(zinv, Z[0], c);
+    field_mul(R->x, X[0], zinv, c);
     
     xint_t T1 = XINT_INIT_VAL;
     xint_t T2 = XINT_INIT_VAL;
-    field_mul(T1, P->x, Z1, c);
-    field_add(T1, T1, X1, c);
-    field_mul(T2, P->x, Z2, c);
-    field_add(T2, T2, X2, c);
+    field_mul(T1, P->x, Z[0], c);
+    field_add(T1, T1, X[0], c);
+    field_mul(T2, P->x, Z[1], c);
+    field_add(T2, T2, X[1], c);
     field_mul(T1, T1, T2, c);
     
     field_squ(T2, P->x, c);
     field_add(T2, T2, P->y, c);
-    field_mul(T2, T2, Z1, c);
-    field_mul(T2, T2, Z2, c);
+    field_mul(T2, T2, Z[0], c);
+    field_mul(T2, T2, Z[1], c);
     
     field_add(T1, T1, T2, c);
     
-    field_mul(T2, X1, zinv, c);
+    field_mul(T2, X[0], zinv, c);
     field_add(T2, T2, P->x, c);
     
     field_mul(T1, T1, T2, c);
     
-    field_mul(T2, P->x, Z1, c);
-    field_mul(T2, T2, Z2, c);
+    field_mul(T2, P->x, Z[0], c);
+    field_mul(T2, T2, Z[1], c);
     field_inv(T2, T2, c);
     
     field_mul(T1, T1, T2, c);
     field_add(R->y, T1, P->y, c);
     
-    xint_delete(X1);
-    xint_delete(Z1);
-    xint_delete(X2);
-    xint_delete(Z2);
+    xint_delete(X[0]);
+    xint_delete(Z[0]);
+    xint_delete(X[1]);
+    xint_delete(Z[1]);
 }

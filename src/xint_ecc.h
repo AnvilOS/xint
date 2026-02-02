@@ -36,7 +36,6 @@ void xint_point_negate(xint_ecc_point_t r, xint_ecc_point_t p);
 
 typedef struct xint_ecc_curve_s xint_ecc_curve_t;
 
-void xint_ecc_mul_scalar(xint_ecc_point_t R, const xword_t *Px, const xword_t *Py, const xint_t k, const xint_ecc_curve_t *c);
 void xint_ecc_mul_scalar_joye(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
 void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t x, const xint_ecc_curve_t *c);
 
