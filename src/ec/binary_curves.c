@@ -43,6 +43,7 @@ const xint_ecc_curve_t k163 =
     4,
     k163_x,
     scalar_multiply_mont_x_only,
+    k163_b,
 };
 
 const xword_t k233_p[]  = { 0 };
@@ -75,6 +76,7 @@ const xint_ecc_curve_t k233 =
     2,
     k233_x,
     scalar_multiply_mont_x_only,
+    k233_b,
 };
 
 const xword_t k283_p[]  = { 0 };
@@ -107,6 +109,7 @@ const xint_ecc_curve_t k283 =
     4,
     k283_x,
     scalar_multiply_mont_x_only,
+    k283_b,
 };
 
 const xword_t k409_p[]  = { 0 };
@@ -139,6 +142,7 @@ const xint_ecc_curve_t k409 =
     2,
     k409_x,
     scalar_multiply_mont_x_only,
+    k409_b,
 };
 
 const xword_t k571_p[]  = { 0 };
@@ -171,6 +175,7 @@ const xint_ecc_curve_t k571 =
     4,
     k571_x,
     scalar_multiply_mont_x_only,
+    k571_b,
 };
 
 const xword_t b163_p[]  = { 0 };
@@ -182,6 +187,7 @@ const xword_t b163_n[]  = { X(0xa4234c33, 0x77e70c12), X(0x000292fe, 0x00000000)
 const xword_t b163_h[]  = { 0x02 };
 const int b163_exp[] = { 7, 6, 3, 0 };
 const xword_t b163_x[]  = { X(0x000000C9, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x08) };
+const xword_t b163_sqrt_b[]  = { X(0x69f34da5, 0xda89c039), X(0x3d21c366, 0xdf892759), X(0xc25b85ba, 0x02) };
 const xint_ecc_curve_t b163 =
 {
     163,
@@ -203,6 +209,7 @@ const xint_ecc_curve_t b163 =
     4,
     b163_x,
     scalar_multiply_mont_x_only,
+    b163_sqrt_b,
 };
 
 const xword_t b233_p[]  = { 0 };
@@ -214,6 +221,7 @@ const xword_t b233_n[]  = { X(0x03cfe0d7, 0x22031d26), X(0xe72f8a69, 0x0013e974)
 const xword_t b233_h[]  = { 0x04 };
 const int b233_exp[] = { 74, 0 };
 const xword_t b233_x[]  = { X(0x00000001, 0x00000000), X(0x00000400, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x0200) };
+const xword_t b233_sqrt_b[]  = { X(0x61da9138, 0xe5f946d0), X(0x52f21253, 0x71caaeea), X(0xee31e06d, 0x7874e747), X(0xf85627b9, 0x0187) };
 const xint_ecc_curve_t b233 =
 {
     233,
@@ -235,6 +243,7 @@ const xint_ecc_curve_t b233 =
     2,
     b233_x,
     scalar_multiply_mont_x_only,
+    b233_sqrt_b,
 };
 
 const xword_t b283_p[]  = { 0 };
@@ -246,6 +255,7 @@ const xword_t b283_n[]  = { X(0xefadb307, 0x5b042a7c), X(0x938a9016, 0x399660fc)
 const xword_t b283_h[]  = { 0x04 };
 const int b283_exp[] = { 12, 7, 5, 0 };
 const xword_t b283_x[]  = { X(0x000010a1, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x8000000 };
+const xword_t b283_sqrt_b[]  = { X(0xe9b9b3f6, 0x17442aed), X(0x17c082ae, 0x304424ca), X(0xa2fd220a, 0x9fb6f835), X(0xe8198308, 0x5792b1eb), 0x72bcc9c };
 const xint_ecc_curve_t b283 =
 {
     283,
@@ -267,6 +277,7 @@ const xint_ecc_curve_t b283 =
     4,
     b283_x,
     scalar_multiply_mont_x_only,
+    b283_sqrt_b,
 };
 
 const xword_t b409_p[]  = { 0 };
@@ -279,6 +290,7 @@ const xword_t b409_n[]  = { X(0xd9a21173, 0x8164cd37), X(0x9e052f83, 0x5fa47c3c)
 const xword_t b409_h[]  = { 0x04 };
 const int b409_exp[] = { 87, 0 };
 const xword_t b409_x[]  = { X(0x00000001, 0x00000000), X(0x00800000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), 0x2000000 };
+const xword_t b409_sqrt_b[]  = { X(0xbc25d5ef, 0x872accf0), X(0x8a48e27b, 0x73326c52), X(0x0cf65767, 0xfde89595), X(0x7c1b2649, 0xd0ad7ce5), X(0x5d93ab2e, 0xa29f53cb), X(0xef22f9b4, 0xe4768ee2), 0x09935f7 };
 const xint_ecc_curve_t b409 =
 {
     409,
@@ -300,6 +312,7 @@ const xint_ecc_curve_t b409 =
     2,
     b409_x,
     scalar_multiply_mont_x_only,
+    b409_sqrt_b,
 };
 
 const xword_t b571_p[]  = { 0 };
@@ -311,6 +324,7 @@ const xword_t b571_n[]  = { X(0x2fe84e47, 0x8382e9bb), X(0x5174d66e, 0x161de93d)
 const xword_t b571_h[]  = { 0x04 };
 const int b571_exp[] = { 10, 5, 2, 0 };
 const xword_t b571_x[]  = { X(0x00000425, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x8000000) };
+const xword_t b571_sqrt_b[]  = { X(0x3b761c43, 0x699b0844), X(0x0ce39b64, 0x71bedfc1), X(0x3594a7f7, 0x06f0340e), X(0x460cd20c, 0x60536b58), X(0xa874ab0b, 0x362c4800), X(0x255902e6, 0x041d7aa1), X(0x135429eb, 0x68d41c59), X(0x8dffd582, 0xdd739a05), X(0x640c20b5, 0x732d556) };
 const xint_ecc_curve_t b571 =
 {
     571,
@@ -332,6 +346,7 @@ const xint_ecc_curve_t b571 =
     4,
     b571_x,
     scalar_multiply_mont_x_only,
+    b571_sqrt_b,
 };
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c);
@@ -565,7 +580,7 @@ static void xint_mod_fast_k163(xword_t *w, xword_t *u)
     //xint_mod_std(w, u, &k163);
 }
 
-void m_add(xint_t X1, xint_t Z1, xint_t X2, xint_t Z2, const xint_t px, const xint_ecc_curve_t *c)
+void m_add(xint_t X1, xint_t Z1, const xint_t X2, const xint_t Z2, const xint_t px, const xint_ecc_curve_t *c)
 {
     xint_t T1 = XINT_INIT_VAL;
     xint_t T2 = XINT_INIT_VAL;
@@ -585,7 +600,9 @@ void m_dbl(xint_t X2, xint_t Z2, const xint_ecc_curve_t *c)
 {
     xint_t T1 = XINT_INIT_VAL;
     xint_t T2 = XINT_INIT_VAL;
-    xint_assign_long(T1, 1); // c is 1 for now
+    xint_t sqrt_b = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(sqrt_b, c->sqrt_b, c->nwords);
+    xint_copy(T1, sqrt_b);
     field_squ(X2, X2, c);
     field_squ(Z2, Z2, c);
     field_mul(T1, T1, Z2, c);
@@ -596,11 +613,7 @@ void m_dbl(xint_t X2, xint_t Z2, const xint_ecc_curve_t *c)
     xint_delete(T2);
 }
 
-void scalar_multiply_mont_x_only(
-            xint_ecc_point_t R,
-            const xint_ecc_point_t P,
-            const xint_t k,
-            const xint_ecc_curve_t *c)
+void scalar_multiply_mont_x_only(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c)
 {
     xint_t X1 = XINT_INIT_VAL;
     xint_t Z1 = XINT_INIT_VAL;
@@ -613,7 +626,7 @@ void scalar_multiply_mont_x_only(
         // return an error
         return;
     }
-
+    
     // Initial doubling
     xint_copy(X1, P->x);
     xint_assign_ulong(Z1, 1);
@@ -622,11 +635,6 @@ void scalar_multiply_mont_x_only(
     xint_t b = XINT_INIT_VAL;
     CONST_XINT_FROM_XWORDS(b, c->b, c->nwords);
     field_add(X2, X2, b, c);
-
-//    xint_print_hex("X1", X1);
-//    xint_print_hex("Z1", Z1);
-//    xint_print_hex("X2", X2);
-//    xint_print_hex("Z2", Z2);
 
     // We need the top bit set
     int nbits = xint_highest_bit_num(k) + 1;
@@ -642,18 +650,39 @@ void scalar_multiply_mont_x_only(
             m_add(X2, Z2, X1, Z1, P->x, c);
             m_dbl(X1, Z1, c);
         }
-//        xint_print_hex("X1", X1);
-//        xint_print_hex("Z1", Z1);
-//        xint_print_hex("X2", X2);
-//        xint_print_hex("Z2", Z2);
     }
     
     xint_t zinv = XINT_INIT_VAL;
     field_inv(zinv, Z1, c);
     field_mul(R->x, X1, zinv, c);
-//    xint_print_hex("R->x", R->x);
-//    xint_print_hex("k", k);
-
+    
+    xint_t T1 = XINT_INIT_VAL;
+    xint_t T2 = XINT_INIT_VAL;
+    field_mul(T1, P->x, Z1, c);
+    field_add(T1, T1, X1, c);
+    field_mul(T2, P->x, Z2, c);
+    field_add(T2, T2, X2, c);
+    field_mul(T1, T1, T2, c);
+    
+    field_squ(T2, P->x, c);
+    field_add(T2, T2, P->y, c);
+    field_mul(T2, T2, Z1, c);
+    field_mul(T2, T2, Z2, c);
+    
+    field_add(T1, T1, T2, c);
+    
+    field_mul(T2, X1, zinv, c);
+    field_add(T2, T2, P->x, c);
+    
+    field_mul(T1, T1, T2, c);
+    
+    field_mul(T2, P->x, Z1, c);
+    field_mul(T2, T2, Z2, c);
+    field_inv(T2, T2, c);
+    
+    field_mul(T1, T1, T2, c);
+    field_add(R->y, T1, P->y, c);
+    
     xint_delete(X1);
     xint_delete(Z1);
     xint_delete(X2);
