@@ -464,6 +464,15 @@ TEST(ecc, nist)
     xint_point_init(pub);
     for (int i=0; i<10; ++i)
     {
+        xint_assign_str(priv, key_pairs_p_192[i].d, 0);
+        xint_ecc_get_public_key(pub, priv, &p192);
+        int resx = test_equality(pub->x, key_pairs_p_192[i].Qx);
+        int resy = test_equality(pub->y, key_pairs_p_192[i].Qy);
+        ASSERT_EQ(0, resx);
+        ASSERT_EQ(0, resy);
+    }
+    for (int i=0; i<10; ++i)
+    {
         xint_assign_str(priv, key_pairs_p_224[i].d, 0);
         xint_ecc_get_public_key(pub, priv, &p224);
         int resx = test_equality(pub->x, key_pairs_p_224[i].Qx);

@@ -10,11 +10,41 @@ static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ec
 static void xint_ecc_point_add(xint_ecc_point_t r, const xint_ecc_point_t q, const xint_ecc_point_t p, const xint_ecc_curve_t *c);
 static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_ecc_curve_t *c);
 static void xint_mod_std(xword_t *w, xword_t *u, const xint_ecc_curve_t *c);
+static void xint_mod_fast_192(xword_t *w, xword_t *u);
 static void xint_mod_fast_224(xword_t *w, xword_t *u);
 static void xint_mod_fast_256(xword_t *w, xword_t *u);
 static void xint_mod_fast_384(xword_t *w, xword_t *u);
 static void xint_mod_fast_521(xword_t *w, xword_t *u);
 static void mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
+const xword_t p192_p[]  = { X(0xffffffff, 0xffffffff), X(0xfffffffe, 0xffffffff), X(0xffffffff, 0xffffffff) };
+const xword_t p192_a[]  = { X(0xfffffffc, 0xffffffff), X(0xfffffffe, 0xffffffff), X(0xffffffff, 0xffffffff) };
+const xword_t p192_b[]  = { X(0xc146b9b1, 0xfeb8deec), X(0x72243049, 0x0fa7e9ab), X(0xe59c80e7, 0x64210519) };
+const xword_t p192_Gx[] = { X(0x82ff1012, 0xf4ff0afd), X(0x43a18800, 0x7cbf20eb), X(0xb03090f6, 0x188da80e) };
+const xword_t p192_Gy[] = { X(0x1e794811, 0x73f977a1), X(0x6b24cdd5, 0x631011ed), X(0xffc8da78, 0x07192b95) };
+const xword_t p192_n[]  = { X(0xb4d22831, 0x146bc9b1), X(0x99def836, 0xffffffff), X(0xffffffff, 0xffffffff) };
+const xword_t p192_h[]  = { 0x01 };
+const xint_ecc_curve_t p192 =
+{
+    192,
+    CURVE_WORDS(192),
+    p192_p,
+    p192_a,
+    p192_b,
+    p192_Gx,
+    p192_Gy,
+    p192_n,
+    p192_h,
+    xint_ecc_point_add,
+    xint_ecc_point_double,
+    xint_mod_fast_192,
+    xint_point_add_jacobian,
+    xint_point_double_jacobian,
+    0,
+    0,
+    0,
+    0,
+    mul_scalar,
+};
 
 const xword_t p224_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
 const xword_t p224_a[]  = { X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFE), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
@@ -136,6 +166,11 @@ const xint_ecc_curve_t p521 =
     0,
     mul_scalar,
 };
+
+static void xint_mod_fast_192(xword_t *w, xword_t *u)
+{
+    xint_mod_std(w, u, &p192);
+}
 
 static void xint_mod_fast_224(xword_t *w, xword_t *u)
 {

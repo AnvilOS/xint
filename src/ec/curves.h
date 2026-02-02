@@ -37,6 +37,7 @@ struct xint_ecc_curve_s
     const xword_t *sqrt_b;
 };
 
+extern const xint_ecc_curve_t p192;
 extern const xint_ecc_curve_t p224;
 extern const xint_ecc_curve_t p256;
 extern const xint_ecc_curve_t p384;
