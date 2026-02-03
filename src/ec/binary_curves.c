@@ -484,19 +484,23 @@ static void field_red_233(xint_t w, const xint_ecc_curve_t *c)
     w->size = 8;
     trim_zeroes(w);
 #elif XWORD_BITS == 64
-    XLL_ASSERT(w->size<=6);
+    XLL_ASSERT(w->size<=8);
     xword_t T;
-    FAST_RESIZE_0(w, 6);
-    for (int i=5; i>=3; --i)
+    FAST_RESIZE_0(w, 8);
+    for (int i=7; i>=4; --i)
     {
         T = w->data[i];
-        w->data[i-2] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-        w->data[i-3] ^= (T << 29) ^ (T << 32) ^ (T << 35) ^ (T << 36);
+        w->data[i-2] ^= (T >> 31);
+        w->data[i-3] ^= (T << 33);
+        w->data[i-3] ^= (T >> 41);
+        w->data[i-4] ^= (T << 23);
     }
-    T = w->data[2] & 0xfffffff800000000ULL;
-    w->data[0] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-    w->data[2] &= 0x00000007ffffffffULL;
-    w->size = 3;
+    T = w->data[3] & 0xfffffe0000000000ULL;
+    w->data[1] ^= (T >> 31);
+    w->data[0] ^= (T << 33);
+    w->data[0] ^= (T >> 41);
+    w->data[3] &= 0x000001ffffffffffULL;
+    w->size = 4;
     trim_zeroes(w);
 #else
 #error XWORD_BITS must be 32 or 64
