@@ -465,10 +465,10 @@ static void field_red_163(xint_t w, const xint_ecc_curve_t *c)
 static void field_red_233(xint_t w, const xint_ecc_curve_t *c)
 {
 #if XWORD_BITS == 32
-    XLL_ASSERT(w->size<=16);
+    XLL_ASSERT(w->size<=15);
     xword_t T;
-    FAST_RESIZE_0(w, 16);
-    for (int i=15; i>=8; --i)
+    FAST_RESIZE_0(w, 15);
+    for (int i=14; i>=8; --i)
     {
         T = w->data[i];
         w->data[i-4] ^= (T >> 31);
