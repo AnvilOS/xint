@@ -173,6 +173,27 @@ do                                  \
     }                               \
 } while (0);
 
+#define FAST_RESIZE_0(__x, __s)         \
+do                                      \
+{                                       \
+    int old_sz = __x->size;             \
+    if ((__s) <= (__x)->capacity)       \
+    {                                   \
+        (__x)->size = __s;              \
+    }                                   \
+    else                                \
+    {                                   \
+        _fast_resize((__x), (__s));     \
+    }                                   \
+    if (old_sz < __s)                   \
+    {                                   \
+        for (int j=old_sz; j<__s; ++j)  \
+        {                               \
+            (__x)->data[j] = 0;         \
+        }                               \
+    }                                   \
+} while (0);
+
 void _fast_resize(xint_t x, int new_size);
 
 // Low level functions

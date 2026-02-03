@@ -109,11 +109,9 @@ TEST(karatsuba, karatsuba)
     kara_cutoff = 10000000;
     
     STAMP_VARS();
-    __disable_irq();
     STAMP_BEFORE();
         xint_mul(Z_algm, X, Y);
     STAMP_AFTER();
-    __enable_irq();
     printf("Schoolbook : %u\n", STAMP_DIFF());
 
     kara_cutoff = 16;
@@ -121,7 +119,6 @@ TEST(karatsuba, karatsuba)
     STAMP_BEFORE();
         xint_mul(Z_kara, X, Y);
     STAMP_AFTER();
-    __enable_irq();
     printf("Karatsuba : %u\n", STAMP_DIFF());
     
     int d = xint_cmp(Z_algm, Z_kara);

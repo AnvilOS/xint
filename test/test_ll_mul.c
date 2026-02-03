@@ -158,28 +158,22 @@ TEST(ll_mul, mul_asm)
         for (int Un=MINUV; Un<=MAXUV; ++Un)
         {
             TRACE(" %2dx%2d:", Un, Vn);
-            __disable_irq();
             STAMP_BEFORE();
             xll_mul_c(w_c, u, Un, v, Vn);
             STAMP_AFTER();
-            __enable_irq();
             TRACE("%7lu", STAMP_DIFF());
 #if defined XINT_USE_MUL_ASM
-            __disable_irq();
             STAMP_BEFORE();;
             xll_mul_asm(w_asm, u, Un, v, Vn);
             STAMP_AFTER();
-            __enable_irq();
             TRACE("%6lu", STAMP_DIFF());
             cmp = xll_cmp(w_c, w_asm, Un+Vn);
             if (cmp) ++errors;
             TRACE("%c", cmp ? '*' : ' ');
             if (Un == 8 && Un == Vn) {
-            __disable_irq();
                 STAMP_BEFORE();
                 uECC_vli_mult(w_asm, u, v, Un);
             STAMP_AFTER();
-            __enable_irq();
                 TRACE("%7lu", STAMP_DIFF());
             }
 #endif
@@ -198,35 +192,27 @@ TEST(ll_mul, squ_asm)
     for (int Un=MINUV; Un<=MAXUV; ++Un)
     {
         TRACE(" %2dx%2d:", Un, Un);
-        __disable_irq();
         STAMP_BEFORE();
         xll_mul_c(w_c, u, Un, u, Un);
         STAMP_AFTER();
-        __enable_irq();
         TRACE("%7lu", STAMP_DIFF());
-        __disable_irq();
         STAMP_BEFORE();
         xll_squ_c(w_sq, u, Un);
         STAMP_AFTER();
-        __enable_irq();
         TRACE("%6lu", STAMP_DIFF());
         TRACE("%c", xll_cmp(w_c, w_sq, 2*Un) ? '*' : ' ');
 #if defined XINT_USE_MUL_ASM
-        __disable_irq();
         STAMP_BEFORE();
         xll_mul_asm(w_asm, u, Un, u, Un);
         STAMP_AFTER();
-        __enable_irq();
         TRACE("%6lu", STAMP_DIFF());
         long ddd = STAMP_DIFF();
         TRACE("%c", xll_cmp(w_c, w_asm, 2*Un) ? '*' : ' ');
 #endif
 #if defined XINT_USE_MUL_ASM
-        __disable_irq();
         STAMP_BEFORE();
         xll_squ_asm(w_sq_asm, u, Un);
         STAMP_AFTER();
-        __enable_irq();
         TRACE("%6lu %d", STAMP_DIFF(), ddd - STAMP_DIFF());
         TRACE("%c", xll_cmp(w_c, w_sq_asm, 2*Un) ? '*' : ' ');
 #endif

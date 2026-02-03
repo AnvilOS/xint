@@ -151,11 +151,9 @@ TEST(ecc, rfc_6979)
     xint_ecc_point_t pub;
     xint_point_init(pub);
     STAMP_VARS();
-    __disable_irq();
     STAMP_BEFORE();
     xint_ecc_get_public_key(pub, priv, &p256);
     STAMP_AFTER();
-    __enable_irq();
     printf("xint_ecc_get_public_key : %u\n", STAMP_DIFF());
     pub->is_at_infinity = 0;
     ASSERT_EQ(0, test_equality(pub->x, Ux_exp));
@@ -176,11 +174,9 @@ TEST(ecc, rfc_6979)
     xint_init(signature->r);
     xint_init(signature->s);
     //STAMP_VARS();
-    __disable_irq();
     STAMP_BEFORE();
     xint_ecc_sign_det(signature, h1, hlen, priv, &p256);
     STAMP_AFTER();
-    __enable_irq();
     printf("xint_ecc_sign_det : %u\n", STAMP_DIFF());
     printf("Calculated\n");
     xint_print_hex("sigR", signature->r);
@@ -190,12 +186,10 @@ TEST(ecc, rfc_6979)
     ASSERT_EQ(0, test_equality(signature->s, s_exp));
     
     //STAMP_VARS();
-    __disable_irq();
     STAMP_BEFORE();
     //for (int i=0; i<512; ++i)
     ASSERT_EQ(1, xint_ecc_verify(signature, h1, hlen, pub, &p256));
     STAMP_AFTER();
-    __enable_irq();
     printf("xint_ecc_verify : %u\n", STAMP_DIFF());
 
     END_TEST(ecc);
@@ -313,12 +307,10 @@ TEST(ecc, curve_p256)
     G->is_at_infinity = 0;
 
     STAMP_VARS();
-    __disable_irq();
     STAMP_BEFORE();
     //for (int i=0; i<512; ++i)
     p256.scalar_mul(R, G, x, &p256);
     STAMP_AFTER();
-    __enable_irq();
     printf("xint_ecc_mult : %u\n", STAMP_DIFF());
     
     ASSERT_EQ(0, test_equality(R->x, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F"));
@@ -412,12 +404,10 @@ TEST(ecc, plain_scalar_multiply)
     G->y->data = p256.Gy;
 
     STAMP_VARS();
-    __disable_irq();
     STAMP_BEFORE();
     //for (int i=0; i<512; ++i)
     xint_ecc_mul_scalar_plain(R, G, x, &p256);
     STAMP_AFTER();
-    __enable_irq();
     printf("xint_ecc_mul_scalar_plain : %u\n", STAMP_DIFF());
     
     ASSERT_EQ(0, test_equality(R->x, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F"));
@@ -443,12 +433,10 @@ TEST(ecc, jacobian_scalar_multiply)
     G->y->data = p256.Gy;
 
     STAMP_VARS();
-    __disable_irq();
     STAMP_BEFORE();
     //for (int i=0; i<512; ++i)
     xint_ecc_mul_scalar_jacobian(R, G, x, &p256);
     STAMP_AFTER();
-    __enable_irq();
     printf("xint_ecc_mul_scalar_jacobian : %u\n", STAMP_DIFF());
     
     ASSERT_EQ(0, test_equality(R->x, "0x2B42F576D07F4165FF65D1F3B1500F81E44C316F1F0B3EF57325B69ACA46104F"));
@@ -459,9 +447,11 @@ TEST(ecc, jacobian_scalar_multiply)
 
 TEST(ecc, nist)
 {
+    STAMP_VARS();
     xint_t priv = XINT_INIT_VAL;
     xint_ecc_point_t pub;
     xint_point_init(pub);
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_p_192[i].d, 0);
@@ -471,6 +461,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_p_192 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_p_224[i].d, 0);
@@ -480,6 +474,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_p_224 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_p_256[i].d, 0);
@@ -489,6 +487,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_p_256 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_p_384[i].d, 0);
@@ -498,6 +500,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_p_384 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_p_521[i].d, 0);
@@ -507,6 +513,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_p_521 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_163[i].d, 0);
@@ -516,6 +526,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_k_163 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_233[i].d, 0);
@@ -525,6 +539,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_k_233 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_283[i].d, 0);
@@ -534,6 +552,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_k_283 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_409[i].d, 0);
@@ -543,6 +565,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_k_409 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_k_571[i].d, 0);
@@ -552,6 +578,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_k_571 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_b_163[i].d, 0);
@@ -561,6 +591,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_b_163 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_b_233[i].d, 0);
@@ -570,6 +604,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_b_233 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_b_283[i].d, 0);
@@ -579,6 +617,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_b_283 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_b_409[i].d, 0);
@@ -588,6 +630,10 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_b_409 : %lu\n", STAMP_DIFF());
+
+    STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
         xint_assign_str(priv, key_pairs_b_571[i].d, 0);
@@ -597,6 +643,9 @@ TEST(ecc, nist)
         ASSERT_EQ(0, resx);
         ASSERT_EQ(0, resy);
     }
+    STAMP_AFTER();
+    printf("key_pairs_b_571 : %lu\n", STAMP_DIFF());
+
     xint_delete(priv);
     xint_point_delete(pub);
 
