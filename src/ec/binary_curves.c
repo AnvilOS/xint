@@ -525,19 +525,19 @@ static void field_red_283(xint_t w, const xint_ecc_curve_t *c)
     w->size = 9;
     trim_zeroes(w);
 #elif XWORD_BITS == 64
-    XLL_ASSERT(w->size<=6);
+    XLL_ASSERT(w->size<=9);
     xword_t T;
-    FAST_RESIZE_0(w, 6);
-    for (int i=5; i>=3; --i)
+    FAST_RESIZE_0(w, 9);
+    for (int i=8; i>=5; --i)
     {
         T = w->data[i];
-        w->data[i-2] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-        w->data[i-3] ^= (T << 29) ^ (T << 32) ^ (T << 35) ^ (T << 36);
+        w->data[i-5] ^= (T << 37) ^ (T << 42) ^ (T << 44) ^ (T << 49);
+        w->data[i-4] ^= (T >> 27) ^ (T >> 22) ^ (T >> 20) ^ (T >> 15);
     }
-    T = w->data[2] & 0xfffffff800000000ULL;
-    w->data[0] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-    w->data[2] &= 0x00000007ffffffffULL;
-    w->size = 3;
+    T = w->data[4] & 0xfffffffff8000000ULL;
+    w->data[0] ^= (T >> 27) ^ (T >> 22) ^ (T >> 20) ^ (T >> 15);
+    w->data[4] &= 0x0000000007ffffffULL;
+    w->size = 5;
     trim_zeroes(w);
 #else
 #error XWORD_BITS must be 32 or 64
@@ -565,19 +565,22 @@ static void field_red_409(xint_t w, const xint_ecc_curve_t *c)
     w->size = 13;
     trim_zeroes(w);
 #elif XWORD_BITS == 64
-    XLL_ASSERT(w->size<=6);
+    XLL_ASSERT(w->size<=13);
     xword_t T;
-    FAST_RESIZE_0(w, 6);
-    for (int i=5; i>=3; --i)
+    FAST_RESIZE_0(w, 13);
+    for (int i=12; i>=7; --i)
     {
         T = w->data[i];
-        w->data[i-2] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-        w->data[i-3] ^= (T << 29) ^ (T << 32) ^ (T << 35) ^ (T << 36);
+        w->data[i-7] ^= (T << 39);
+        w->data[i-6] ^= (T >> 25);
+        w->data[i-6] ^= (T << 62);
+        w->data[i-5] ^= (T >>  2);
     }
-    T = w->data[2] & 0xfffffff800000000ULL;
-    w->data[0] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-    w->data[2] &= 0x00000007ffffffffULL;
-    w->size = 3;
+    T = w->data[6] & 0xfffffffffe000000ULL;
+    w->data[0] ^= (T >> 25);
+    w->data[1] ^= (T >>  2);
+    w->data[6] &= 0x0000000001ffffffULL;
+    w->size = 7;
     trim_zeroes(w);
 #else
 #error XWORD_BITS must be 32 or 64
@@ -596,25 +599,25 @@ static void field_red_571(xint_t w, const xint_ecc_curve_t *c)
         w->data[i-18] ^= (T <<  5) ^ (T <<  7) ^ (T << 10) ^ (T << 15);
         w->data[i-17] ^= (T >> 27) ^ (T >> 25) ^ (T >> 22) ^ (T >> 17);
     }
-    T = w->data[17] >> 27;//& 0xfe000000;
-    w->data[0] ^= (T ) ^ (T << 2) ^ (T << 5) ^ (T << 10);
+    T = w->data[17] & 0xf8000000;
+    w->data[0] ^= (T >> 27) ^ (T >> 25) ^ (T >> 22) ^ (T >> 17);
     w->data[17] &= 0x07ffffff;
     w->size = 18;
     trim_zeroes(w);
 #elif XWORD_BITS == 64
-    XLL_ASSERT(w->size<=6);
+    XLL_ASSERT(w->size<=18);
     xword_t T;
-    FAST_RESIZE_0(w, 6);
-    for (int i=5; i>=3; --i)
+    FAST_RESIZE_0(w, 18);
+    for (int i=17; i>=9; --i)
     {
         T = w->data[i];
-        w->data[i-2] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-        w->data[i-3] ^= (T << 29) ^ (T << 32) ^ (T << 35) ^ (T << 36);
+        w->data[i-9] ^= (T <<  5) ^ (T <<  7) ^ (T << 10) ^ (T << 15);
+        w->data[i-8] ^= (T >> 59) ^ (T >> 57) ^ (T >> 54) ^ (T >> 49);
     }
-    T = w->data[2] & 0xfffffff800000000ULL;
-    w->data[0] ^= (T >> 35) ^ (T >> 32) ^ (T >> 29) ^ (T >> 28);
-    w->data[2] &= 0x00000007ffffffffULL;
-    w->size = 3;
+    T = w->data[8] & 0xf800000000000000ULL;
+    w->data[0] ^= (T >> 59) ^ (T >> 57) ^ (T >> 54) ^ (T >> 49);
+    w->data[8] &= 0x07ffffffffffffffULL;
+    w->size = 9;
     trim_zeroes(w);
 #else
 #error XWORD_BITS must be 32 or 64
