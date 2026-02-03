@@ -12,6 +12,11 @@ static void point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_poi
 static void point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ecc_point_jacobian_t Pj, const xint_ecc_curve_t *c);
 static void xint_mod_fast_k163(xword_t *w, xword_t *u);
 static void scalar_multiply_mont_x_only(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
+static void field_red_163(xint_t w, const xint_t u);
+static void field_red_233(xint_t w, const xint_t u);
+static void field_red_283(xint_t w, const xint_t u);
+static void field_red_409(xint_t w, const xint_t u);
+static void field_red_571(xint_t w, const xint_t u);
 
 const xword_t k163_p[]  = { 0 };
 const xword_t k163_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
@@ -35,7 +40,7 @@ const xint_ecc_curve_t k163 =
     k163_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_163,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -68,7 +73,7 @@ const xint_ecc_curve_t k233 =
     k233_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_233,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -101,7 +106,7 @@ const xint_ecc_curve_t k283 =
     k283_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_283,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -134,7 +139,7 @@ const xint_ecc_curve_t k409 =
     k409_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_409,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -167,7 +172,7 @@ const xint_ecc_curve_t k571 =
     k571_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_571,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -201,7 +206,7 @@ const xint_ecc_curve_t b163 =
     b163_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_163,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -235,7 +240,7 @@ const xint_ecc_curve_t b233 =
     b233_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_233,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -269,7 +274,7 @@ const xint_ecc_curve_t b283 =
     b283_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_283,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -304,7 +309,7 @@ const xint_ecc_curve_t b409 =
     b409_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_409,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -338,7 +343,7 @@ const xint_ecc_curve_t b571 =
     b571_h,
     point_add,
     point_double,
-    xint_mod_fast_k163,
+    field_red_571,
     point_add_jacobian,
     point_double_jacobian,
     0xc9,
@@ -420,10 +425,57 @@ static void field_mul(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint
 
 static void field_squ(xint_t w, const xint_t u, const xint_ecc_curve_t *c)
 {
-    field_mul(w, u, u, c);
+    int Un = XINT_ABS(u->size);
+    
+    FAST_RESIZE(w, Un * 2);
+    
+    for (int i=Un-1; i>=0; --i)
+    {
+        xword_t inxword = u->data[i];
+        xword_t outword = 0;
+        xword_t chsq = 0;
+        for (int j=0; j<XWORD_SIZE/2; ++j)
+        {
+            unsigned char ch = inxword;
+            inxword >>= 8;
+            for (int b=0; b<8; ++b)
+            {
+                chsq >>= 2;
+                if (ch & 1)
+                {
+                    chsq |= 0x00004000;
+                }
+                ch >>= 1;
+            }
+            outword >>= 16;
+            outword |= chsq << (XWORD_BITS-16);
+        }
+        w->data[2*i] = outword;
+        outword = 0;
+        chsq = 0;
+        for (int j=0; j<XWORD_SIZE/2; ++j)
+        {
+            unsigned char ch = inxword;
+            inxword >>= 8;
+            for (int b=0; b<8; ++b)
+            {
+                chsq >>= 2;
+                if (ch & 1)
+                {
+                    chsq |= 0x00004000;
+                }
+                ch >>= 1;
+            }
+            outword >>= 16;
+            outword |= chsq << (XWORD_BITS-16);
+        }
+        w->data[2*i+1] = outword;
+    }
+    trim_zeroes(w);
+    field_red(w, c);
 }
 
-static void field_red_163(xint_t w, const xint_ecc_curve_t *c)
+static void field_red_163(xint_t w, const xint_t u)
 {
 #if XWORD_BITS == 32
     XLL_ASSERT(w->size<=11);
@@ -462,7 +514,7 @@ static void field_red_163(xint_t w, const xint_ecc_curve_t *c)
 #endif
 }
 
-static void field_red_233(xint_t w, const xint_ecc_curve_t *c)
+static void field_red_233(xint_t w, const xint_t u)
 {
 #if XWORD_BITS == 32
     XLL_ASSERT(w->size<=15);
@@ -507,7 +559,7 @@ static void field_red_233(xint_t w, const xint_ecc_curve_t *c)
 #endif
 }
 
-static void field_red_283(xint_t w, const xint_ecc_curve_t *c)
+static void field_red_283(xint_t w, const xint_t u)
 {
 #if XWORD_BITS == 32
     XLL_ASSERT(w->size<=18);
@@ -544,7 +596,7 @@ static void field_red_283(xint_t w, const xint_ecc_curve_t *c)
 #endif
 }
 
-static void field_red_409(xint_t w, const xint_ecc_curve_t *c)
+static void field_red_409(xint_t w, const xint_t u)
 {
 #if XWORD_BITS == 32
     XLL_ASSERT(w->size<=26);
@@ -587,7 +639,7 @@ static void field_red_409(xint_t w, const xint_ecc_curve_t *c)
 #endif
 }
 
-static void field_red_571(xint_t w, const xint_ecc_curve_t *c)
+static void field_red_571(xint_t w, const xint_t u)
 {
 #if XWORD_BITS == 32
     XLL_ASSERT(w->size<=36);
@@ -626,32 +678,12 @@ static void field_red_571(xint_t w, const xint_ecc_curve_t *c)
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c)
 {
-    if (c->nbits == 163)
+    if (c->xint_mod_fast)
     {
-        field_red_163(w, c);
+        c->xint_mod_fast(w, w);
         return;
     }
-    if (c->nbits == 233)
-    {
-        field_red_233(w, c);
-        return;
-    }
-    if (c->nbits == 283)
-    {
-        field_red_283(w, c);
-        return;
-    }
-    if (c->nbits == 409)
-    {
-        field_red_409(w, c);
-        return;
-    }
-    if (c->nbits == 571)
-    {
-        field_red_571(w, c);
-        return;
-    }
-
+    
     const int *exp = c->exp;
     int num_exp = c->num_exp;
     int m = c->nbits;
