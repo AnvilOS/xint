@@ -380,46 +380,51 @@ static void field_add(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint
 
 static void field_mul(xint_ptr w, const_xint_ptr u, const_xint_ptr v, const xint_ecc_curve_t *c)
 {
-    // W = U . V
-    int Un = XINT_ABS(u->size);
-    int Vn = XINT_ABS(v->size);
-    if (Un == 0 || Vn == 0)
+    xword_t wintab[16][40];
+    for (int i=0; i<16; ++i)
     {
-        w->size = 0;
-        return;
+        xll_zero(wintab[i], c->nwords);
     }
-
-    // We need a copy of v because we will be shifting it
-    xint_t v_copy = XINT_INIT_VAL;
-    xint_copy(v_copy, v);
-    
-    // We also need a copy of w because it may be common with u
-    xint_t w_copy = XINT_INIT_VAL;
-    FAST_RESIZE(w_copy, Un + Vn);
-    xll_zero(w_copy->data, Un + Vn);
-
-    for (int k=0; k<XWORD_BITS; ++k)
+    xll_copy(wintab[1], u->data, u->size);
+    for (int i=2; i<16; ++i)
     {
-        for (int j=0; j<Un; ++j)
+        if ((i % 2) == 0)
         {
-            if (u->data[j] & (1ULL<<k))
+            xll_lshift(wintab[i], wintab[i/2], c->nwords, 1);
+        }
+        else
+        {
+            int j;
+            for (j=0; j<u->size; ++j)
             {
-                for (int i=0; i<Vn; ++i)
+                wintab[i][j] = wintab[i-1][j] ^ u->data[j];
+            }
+            for (   ; j<c->nwords; ++j)
+            {
+                wintab[i][j] = wintab[i-1][j];
+            }
+        }
+    }
+    xword_t C[2*c->nwords];
+    xll_zero(C, 2*c->nwords);
+    for (int k=(XWORD_BITS/4-1); k>=0; --k)
+    {
+        xll_lshift(C, C, 2*c->nwords, 4);
+        for (int j=v->size-1; j>=0; --j)
+        {
+            uint8_t window = (v->data[j] >> (4 * k)) & 0xF;
+            if (window)
+            {
+                for (int i=0; i<c->nwords; i++)
                 {
-                    w_copy->data[j+i] ^= v_copy->data[i];
+                    C[i + j] ^= wintab[window][i];
                 }
             }
         }
-        if (k < XWORD_BITS - 1)
-        {
-            xint_lshift(v_copy, v_copy, 1);
-            Vn = XINT_ABS(v_copy->size);
-        }
     }
-    trim_zeroes(w_copy);
-    xint_copy(w, w_copy);
-    xint_delete(v_copy);
-    xint_delete(w_copy);
+    FAST_RESIZE(w, 2*c->nwords);
+    xll_copy(w->data, C, 2*c->nwords);
+    trim_zeroes(w);
     field_red(w, c);
 }
 
