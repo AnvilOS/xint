@@ -134,6 +134,12 @@ int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_cu
     return 1;
 }
 
+int xint_ecc_verify_public_key(xint_ecc_point_t pub, const xint_ecc_curve_t *c)
+{
+    int valid = c->is_valid_point(pub, c);
+    return valid;
+}
+
 int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, const xint_ecc_curve_t *c)
 {
     xint_t k = XINT_INIT_VAL;
@@ -187,8 +193,8 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
 {
     xint_t N = XINT_INIT_VAL;
     CONST_XINT_FROM_XWORDS(N, c->n, c->nwords);
-    xint_t P = XINT_INIT_VAL;
-    CONST_XINT_FROM_XWORDS(P, c->p, c->nwords);
+//    xint_t P = XINT_INIT_VAL;
+//    CONST_XINT_FROM_XWORDS(P, c->p, c->nwords);
 
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, digest, digest_len);
@@ -217,11 +223,7 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
     xint_ecc_point_t p3;
     xint_point_init(p3);
     xint_ecc_mul_scalar_shamir(p3, pub, G, u1, u2, c);
-    if (xint_cmp(p3->x, sig->r) == 0)
-    {
-        return 1;
-    }
-    return 0;
+    return xint_cmp(p3->x, sig->r) == 0;
 }
 
 void xint_ecc_mul_scalar_plain(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c)

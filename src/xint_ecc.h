@@ -40,6 +40,7 @@ void xint_ecc_mul_scalar_joye(xint_ecc_point_t R, const xint_ecc_point_t P, cons
 void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t x, const xint_ecc_curve_t *c);
 
 int xint_ecc_get_public_key(xint_ecc_point_t pub, xint_t priv, const xint_ecc_curve_t *c);
+int xint_ecc_verify_public_key(xint_ecc_point_t pub, const xint_ecc_curve_t *c);
 
 int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, const xint_ecc_curve_t *c);
 int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_ecc_point_t pub, const xint_ecc_curve_t *c);

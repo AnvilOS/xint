@@ -23,3 +23,13 @@ extern struct key_pair key_pairs_b_233[];
 extern struct key_pair key_pairs_b_283[];
 extern struct key_pair key_pairs_b_409[];
 extern struct key_pair key_pairs_b_571[];
+
+struct pkv
+{
+    char *Qx;
+    char *Qy;
+    char *result;
+};
+
+extern struct pkv pkv_p_192[];
+extern struct pkv pkv_k_163[];

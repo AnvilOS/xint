@@ -17,6 +17,7 @@ static void field_red_233(xint_t w, const xint_t u);
 static void field_red_283(xint_t w, const xint_t u);
 static void field_red_409(xint_t w, const xint_t u);
 static void field_red_571(xint_t w, const xint_t u);
+static int is_valid_point(xint_ecc_point_t R, const xint_ecc_curve_t *c);
 
 const xword_t k163_p[]  = { 0 };
 const xword_t k163_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
@@ -49,6 +50,7 @@ const xint_ecc_curve_t k163 =
     k163_x,
     scalar_multiply_mont_x_only,
     k163_b,
+    is_valid_point,
 };
 
 const xword_t k233_p[]  = { 0 };
@@ -930,4 +932,39 @@ void scalar_multiply_mont_x_only(xint_ecc_point_t R, const xint_ecc_point_t P, c
     xint_delete(Z[0]);
     xint_delete(X[1]);
     xint_delete(Z[1]);
+}
+
+int is_valid_point(xint_ecc_point_t P, const xint_ecc_curve_t *c)
+{
+    // Check that P lies on the curve y^2 + xy = x^3 + ax^2 + b
+    xint_t lhs = XINT_INIT_VAL;
+    xint_t rhs = XINT_INIT_VAL;
+    xint_t tmp = XINT_INIT_VAL;
+
+    xint_t a = XINT_INIT_VAL;
+    xint_t b = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(a, c->a, c->nwords);
+    CONST_XINT_FROM_XWORDS(b, c->b, c->nwords);
+
+    // y^2 + xy
+    field_squ(lhs, P->y, c);
+    field_mul(tmp, P->x, P->y, c);
+    field_add(lhs, lhs, tmp, c);
+
+    // x^3 + ax^2 + b
+    field_squ(tmp, P->x, c);
+    field_mul(rhs, tmp, P->x, c);
+    if (xint_cmp_ulong(a, 1) == 0)
+    {
+        field_add(rhs, rhs, tmp, c);
+    }
+    field_add(rhs, rhs, b, c);
+
+    int on_curve = (xint_cmp(lhs, rhs) == 0);
+    
+    xint_delete(lhs);
+    xint_delete(rhs);
+    xint_delete(tmp);
+
+    return on_curve;
 }
