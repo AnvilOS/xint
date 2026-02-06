@@ -293,8 +293,7 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
     pub->is_at_infinity = 0;
     G->is_at_infinity = 0;
     c->mul_shamir(p3, pub, G, u1, u2, c);
-    //xint_print_hex("1", p3->x);
-    //xint_print_hex("2", sig->r);
+    xint_mod(p3->x, p3->x, N);
     return xint_cmp(p3->x, sig->r) == 0;
 }
 

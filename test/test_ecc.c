@@ -670,7 +670,6 @@ TEST(ecc, nist_ver)
         xint_ecc_sig_t sig;
         xint_init(sig->r);
         xint_init(sig->s);
-        printf("%s\n", vec_data[j].name);
         for (int i=0; i<15; ++i)
         {
             xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
@@ -684,26 +683,10 @@ TEST(ecc, nist_ver)
             int verified = xint_ecc_verify(sig, h1, 32, pub, vec_data[j].curve);
             if (vec_data[j].data[i].result[0] == 'F')
             {
-                if (verified == 1)
-                {
-                    printf("False pos %d\n", i);
-                }
-                else
-                {
-                    //printf("Right neg\n");
-                }
                 ASSERT_EQ(0, verified);
             }
             else
             {
-                if (verified == 0)
-                {
-                    printf("False neg %d\n", i);
-                }
-                else
-                {
-                    //printf("Right pos\n");
-                }
                 ASSERT_EQ(1, verified);
             }
         }
