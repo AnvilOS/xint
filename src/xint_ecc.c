@@ -44,7 +44,11 @@ void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, cons
     // a.  The hash is ready, just convert to an xint
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, h1, 32);
-    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - c->nbits);
+    int too_many_bits = xint_size(h1_int) * XWORD_BITS - c->order_bits;
+    if (too_many_bits > 0)
+    {
+        xint_rshift(h1_int, h1_int, too_many_bits);
+    }
     xint_mod(h1_int, h1_int, q_int);
 
     int rolen = (qlen + 7) >> 3;
@@ -165,9 +169,12 @@ int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len,
     
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, digest, digest_len);
-    xint_rshift(h1_int, h1_int, xint_size(h1_int) * XWORD_BITS - c->nbits);
+    int too_many_bits = xint_size(h1_int) * XWORD_BITS - c->order_bits;
+    if (too_many_bits > 0)
+    {
+        xint_rshift(h1_int, h1_int, too_many_bits);
+    }
     xint_mod(h1_int, h1_int, N);
-    //xint_print_hex("h1", h1_int);
 
     xint_mul(point->y, point->x, priv);
     xint_mod(point->y, point->y, N);
@@ -189,6 +196,60 @@ int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len,
     return 0;
 }
 
+int xint_ecc_sign(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, xint_t k, const xint_ecc_curve_t *c)
+{
+    xint_ecc_point_t point;
+    xint_point_init(point);
+
+    xint_ecc_point_t G;
+    xint_point_init(G);
+    CONST_XINT_FROM_XWORDS(G->x, c->Gx, c->nwords);
+    CONST_XINT_FROM_XWORDS(G->y, c->Gy, c->nwords);
+    G->is_at_infinity = 0;
+
+    c->scalar_mul(point, G, k, c);
+
+    xint_t N = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(N, c->n, c->nwords);
+
+    // Invert k
+    xint_t k_inv = XINT_INIT_VAL;
+    xint_mod_inverse(k_inv, k, N);
+    
+    xint_t h1_int = XINT_INIT_VAL;
+    xint_from_bin(h1_int, digest, digest_len);
+    
+    int input_bits = (int)digest_len * 8;
+    if (input_bits > c->order_bits)
+    {
+        xint_rshift(h1_int, h1_int, input_bits - c->order_bits);
+    }
+    xint_mod(h1_int, h1_int, N);
+
+    xint_mod(point->x, point->x, N);
+
+    xint_mul(point->y, point->x, priv);
+    xint_mod(point->y, point->y, N);
+    xint_add(point->y, h1_int, point->y);
+    xint_mod(point->y, point->y, N);
+    xint_mul(point->y, k_inv, point->y);
+    xint_mod(point->y, point->y, N);
+    
+    xint_copy(sig->r, point->x);
+    xint_copy(sig->s, point->y);
+
+    xint_delete(k_inv);
+    xint_delete(h1_int);
+    xint_point_delete(point);
+
+    if (xint_is_zero(sig->r) || xint_is_zero(sig->s))
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_ecc_point_t pub, const xint_ecc_curve_t *c)
 {
     if (xint_ecc_verify_public_key(pub, c) == 0)
@@ -201,7 +262,7 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
 
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, digest, digest_len);
-    int too_many_bits = xint_size(h1_int) * XWORD_BITS - c->nbits;
+    int too_many_bits = xint_size(h1_int) * XWORD_BITS - c->order_bits;
     if (too_many_bits > 0)
     {
         xint_rshift(h1_int, h1_int, too_many_bits);
@@ -229,7 +290,11 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
 
     xint_ecc_point_t p3;
     xint_point_init(p3);
+    pub->is_at_infinity = 0;
+    G->is_at_infinity = 0;
     c->mul_shamir(p3, pub, G, u1, u2, c);
+    //xint_print_hex("1", p3->x);
+    //xint_print_hex("2", sig->r);
     return xint_cmp(p3->x, sig->r) == 0;
 }
 

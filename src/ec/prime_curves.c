@@ -50,6 +50,7 @@ const xint_ecc_curve_t p192 =
     0,
     is_valid_point,
     mul_shamir,
+    192,
 };
 
 const xword_t p224_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
@@ -83,6 +84,7 @@ const xint_ecc_curve_t p224 =
     0,
     is_valid_point,
     mul_shamir,
+    224,
 };
 
 const xword_t p256_p[]  = { X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0x00000000), X(0x00000000, 0x00000000), X(0x00000001, 0xFFFFFFFF) };
@@ -116,6 +118,7 @@ const xint_ecc_curve_t p256 =
     0,
     is_valid_point,
     mul_shamir,
+    256,
 };
 
 const xword_t p384_p[]  = { X(0xFFFFFFFF, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF) };
@@ -149,6 +152,7 @@ const xint_ecc_curve_t p384 =
     0,
     is_valid_point,
     mul_shamir,
+    384,
 };
 
 
@@ -183,6 +187,7 @@ const xint_ecc_curve_t p521 =
     0,
     is_valid_point,
     mul_shamir,
+    521,
 };
 
 static void xint_mod_fast_192(xword_t *w, xword_t *u)
@@ -926,7 +931,13 @@ static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, 
 
 int is_valid_point(xint_ecc_point_t P, const xint_ecc_curve_t *c)
 {
-    
+    xint_t p;
+    CONST_XINT_FROM_XWORDS(p, c->n, c->nwords);
+    if (xint_cmp(P->x, p) >= 0 || xint_cmp(P->y, p) >= 0)
+    {
+        return 0;
+    }
+
     // Check that P lies on the curve y^2 = x^3 + ax + b
     xint_t lhs = XINT_INIT_VAL;
     xint_t rhs = XINT_INIT_VAL;

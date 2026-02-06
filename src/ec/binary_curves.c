@@ -18,6 +18,7 @@ static void field_red_283(xint_t w, const xint_t u);
 static void field_red_409(xint_t w, const xint_t u);
 static void field_red_571(xint_t w, const xint_t u);
 static int is_valid_point(xint_ecc_point_t R, const xint_ecc_curve_t *c);
+static void mul_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c);
 
 const xword_t k163_p[]  = { 0 };
 const xword_t k163_a[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0x00000000), X(0x00000000, 0x00) };
@@ -51,6 +52,8 @@ const xint_ecc_curve_t k163 =
     scalar_multiply_mont_x_only,
     k163_b,
     is_valid_point,
+    mul_shamir,
+    163,
 };
 
 const xword_t k233_p[]  = { 0 };
@@ -85,6 +88,8 @@ const xint_ecc_curve_t k233 =
     scalar_multiply_mont_x_only,
     k233_b,
     is_valid_point,
+    mul_shamir,
+    232,
 };
 
 const xword_t k283_p[]  = { 0 };
@@ -119,6 +124,8 @@ const xint_ecc_curve_t k283 =
     scalar_multiply_mont_x_only,
     k283_b,
     is_valid_point,
+    mul_shamir,
+    282,
 };
 
 const xword_t k409_p[]  = { 0 };
@@ -153,6 +160,8 @@ const xint_ecc_curve_t k409 =
     scalar_multiply_mont_x_only,
     k409_b,
     is_valid_point,
+    mul_shamir,
+    409,
 };
 
 const xword_t k571_p[]  = { 0 };
@@ -187,6 +196,8 @@ const xint_ecc_curve_t k571 =
     scalar_multiply_mont_x_only,
     k571_b,
     is_valid_point,
+    mul_shamir,
+    571,
 };
 
 const xword_t b163_p[]  = { 0 };
@@ -222,6 +233,8 @@ const xint_ecc_curve_t b163 =
     scalar_multiply_mont_x_only,
     b163_sqrt_b,
     is_valid_point,
+    mul_shamir,
+    163,
 };
 
 const xword_t b233_p[]  = { 0 };
@@ -257,6 +270,8 @@ const xint_ecc_curve_t b233 =
     scalar_multiply_mont_x_only,
     b233_sqrt_b,
     is_valid_point,
+    mul_shamir,
+    233,
 };
 
 const xword_t b283_p[]  = { 0 };
@@ -292,6 +307,8 @@ const xint_ecc_curve_t b283 =
     scalar_multiply_mont_x_only,
     b283_sqrt_b,
     is_valid_point,
+    mul_shamir,
+    282
 };
 
 const xword_t b409_p[]  = { 0 };
@@ -328,6 +345,8 @@ const xint_ecc_curve_t b409 =
     scalar_multiply_mont_x_only,
     b409_sqrt_b,
     is_valid_point,
+    mul_shamir,
+    409
 };
 
 const xword_t b571_p[]  = { 0 };
@@ -363,6 +382,8 @@ const xint_ecc_curve_t b571 =
     scalar_multiply_mont_x_only,
     b571_sqrt_b,
     is_valid_point,
+    mul_shamir,
+    571,
 };
 
 static void field_red(xint_t w, const xint_ecc_curve_t *c);
@@ -713,7 +734,7 @@ static void field_red(xint_t w, const xint_ecc_curve_t *c)
         c->xint_mod_fast(w, w);
         return;
     }
-    
+    assert(0);
     const int *exp = c->exp;
     int num_exp = c->num_exp;
     int m = c->nbits;
@@ -783,6 +804,13 @@ static void point_add(xint_ecc_point_t r, const xint_ecc_point_t p, const xint_e
         xint_point_copy(r, p);
         return;
     }
+    
+    if (xint_cmp(p->x, q->x) == 0 || xint_cmp(p->y, q->y) == 0) {
+            // If x1 == x2 and y1 == y2, it's a double
+        printf("Same!!!\n");
+    }
+
+    r->is_at_infinity = 0;
 
     // lambda = (y1 + y2) / (x1 + x2)
     xint_t lambda = XINT_INIT_VAL;
@@ -827,6 +855,8 @@ static void point_double(xint_ecc_point_t r, const xint_ecc_point_t p, const xin
         return;
     }
     
+    r->is_at_infinity = 0;
+
     // lambda = (y1 / x1) + x1
     xint_t lambda = XINT_INIT_VAL;
     
@@ -977,6 +1007,11 @@ void scalar_multiply_mont_x_only(xint_ecc_point_t R, const xint_ecc_point_t P, c
 
 int is_valid_point(xint_ecc_point_t P, const xint_ecc_curve_t *c)
 {
+    if (xint_highest_bit_num(P->x)+1 > c->nbits || xint_highest_bit_num(P->y)+1 > c->nbits)
+    {
+        return 0;
+    }
+    
     // Check that P lies on the curve y^2 + xy = x^3 + ax^2 + b
     xint_t lhs = XINT_INIT_VAL;
     xint_t rhs = XINT_INIT_VAL;
@@ -1008,4 +1043,28 @@ int is_valid_point(xint_ecc_point_t P, const xint_ecc_curve_t *c)
     xint_delete(tmp);
 
     return on_curve;
+}
+
+static void mul_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c)
+{
+    xint_ecc_point_t B;
+    xint_point_init(B);
+    point_add(B, G, S, c);
+    
+    xint_point_init(R);
+
+    int nbits = XINT_MAX(xint_highest_bit_num(u1), xint_highest_bit_num(u2)) + 1;
+    for (int i=nbits-1; i>=0; --i)
+    {
+        point_double(R, R, c);
+
+        int bits = xint_get_bit(u2, i) << 1 | xint_get_bit(u1, i);
+        switch (bits)
+        {
+            case 1: point_add(R, R, G, c); break;
+            case 2: point_add(R, R, S, c); break;
+            case 3: point_add(R, R, B, c); break;
+        }
+    }
+    xint_point_delete(B);
 }

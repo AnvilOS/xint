@@ -491,7 +491,6 @@ TEST(ecc, nist_key_pair)
         STAMP_AFTER();
         xint_delete(priv);
         xint_point_delete(pub);
-        printf("%s : %lu\n", vec_data[j].name, STAMP_DIFF());
     }
 
     END_TEST(ecc);
@@ -499,28 +498,54 @@ TEST(ecc, nist_key_pair)
 
 TEST(ecc, nist_pkv)
 {
-    STAMP_VARS();
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        struct pkv *data;
+    } vec_data[] =
+    {
+        { "p192", &p192, pkv_p_192, },
+        { "p224", &p224, pkv_p_224, },
+        { "p256", &p256, pkv_p_256, },
+        { "p384", &p384, pkv_p_384, },
+        { "p521", &p521, pkv_p_521, },
+        { "k163", &k163, pkv_k_163, },
+        { "k233", &k233, pkv_k_233, },
+        { "k283", &k283, pkv_k_283, },
+        { "k409", &k409, pkv_k_409, },
+        { "k571", &k571, pkv_k_571, },
+        { "b163", &b163, pkv_b_163, },
+        { "b233", &b233, pkv_b_233, },
+        { "b283", &b283, pkv_b_283, },
+        { "b409", &b409, pkv_b_409, },
+        { "b571", &b571, pkv_b_571, },
+    };
+
     xint_t priv = XINT_INIT_VAL;
     xint_ecc_point_t pub;
     xint_point_init(pub);
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
     {
-        xint_assign_str(pub->x, pkv_k_163[i].Qx, 0);
-        xint_assign_str(pub->y, pkv_k_163[i].Qy, 0);
-        int good_point = xint_ecc_verify_public_key(pub, &k163);
-        if (pkv_k_163[i].result[0] == 'F')
+        STAMP_VARS();
+        STAMP_BEFORE();
+        for (int i=0; i<10; ++i)
         {
-            ASSERT_EQ(0, good_point);
+            xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
+            xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
+            int good_point = xint_ecc_verify_public_key(pub, vec_data[j].curve);
+            if (vec_data[j].data[i].result[0] == 'F')
+            {
+                ASSERT_EQ(0, good_point);
+            }
+            else
+            {
+                ASSERT_EQ(1, good_point);
+            }
         }
-        else
-        {
-            ASSERT_EQ(1, good_point);
-        }
+        STAMP_AFTER();
     }
-    STAMP_AFTER();
-    printf("key_pairs_p_192 : %lu\n", STAMP_DIFF());
-    
     
     xint_delete(priv);
     xint_point_delete(pub);
@@ -528,20 +553,10 @@ TEST(ecc, nist_pkv)
     END_TEST(ecc);
 }
 
-TEST(ecc, nist_gen)
-{
-    END_TEST(ecc);
-}
-
 uint8_t *hex2bin(char *hex_msg)
 {
     // Convert msg to a binary array
     long len = strlen(hex_msg);
-//    if (len >= 2 && *hex_msg == '0' && toupper(*(hex_msg+1)) == 'X')
-//    {
-//        hex_msg += 2;
-//        len -= 2;
-//    }
     uint8_t *bin_msg = (uint8_t *)malloc(len/2);
     for (int i=0; i<len/2; ++i)
     {
@@ -563,6 +578,64 @@ uint8_t *hex2bin(char *hex_msg)
     }
     return bin_msg;
 }
+
+TEST(ecc, nist_gen)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        struct sig_gen *data;
+    } vec_data[] =
+    {
+        { "p224", &p224, sig_gen_p_224_sha_256, },
+        { "p256", &p256, sig_gen_p_256_sha_256, },
+        { "p384", &p384, sig_gen_p_384_sha_256, },
+        { "p521", &p521, sig_gen_p_521_sha_256, },
+        { "k233", &k233, sig_gen_k_233_sha_256, },
+        { "k283", &k283, sig_gen_k_283_sha_256, },
+        { "k409", &k409, sig_gen_k_409_sha_256, },
+        { "k571", &k571, sig_gen_k_571_sha_256, },
+        { "b233", &b233, sig_gen_b_233_sha_256, },
+        { "b283", &b283, sig_gen_b_283_sha_256, },
+        { "b409", &b409, sig_gen_b_409_sha_256, },
+        { "b571", &b571, sig_gen_b_571_sha_256, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        xint_ecc_point_t pub;
+        xint_point_init(pub);
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        xint_t priv = XINT_INIT_VAL;
+        xint_t k = XINT_INIT_VAL;
+        for (int i=0; i<15; ++i)
+        {
+            xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
+            xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
+            xint_assign_str(priv, vec_data[j].data[i].d, 0);
+            xint_assign_str(k, vec_data[j].data[i].k, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[32];
+            sha256_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
+            xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
+            xint_ecc_sign(sig, h1, 32, priv, k, vec_data[j].curve);
+            int resx = test_equality(sig->r, vec_data[j].data[i].R);
+            int resy = test_equality(sig->s, vec_data[j].data[i].S);
+            ASSERT_EQ(0, resx);
+            ASSERT_EQ(0, resy);
+        }
+        xint_point_delete(pub);
+        xint_delete(sig->r);
+        xint_delete(sig->s);
+    }
+    END_TEST(ecc);
+}
+
     
 TEST(ecc, nist_ver)
 {
@@ -578,45 +651,65 @@ TEST(ecc, nist_ver)
         { "p256", &p256, sig_ver_p_256_sha_256, },
         { "p384", &p384, sig_ver_p_384_sha_256, },
         { "p521", &p521, sig_ver_p_521_sha_256, },
-//        { "k163", &k163, sig_ver_k_163_sha_256, },
-//        { "k233", &k233, key_pairs_k_233, },
-//        { "k283", &k283, key_pairs_k_283, },
-//        { "k409", &k409, key_pairs_k_409, },
-//        { "k571", &k571, key_pairs_k_571, },
-//        { "b163", &b163, key_pairs_b_163, },
-//        { "b233", &b233, key_pairs_b_233, },
-//        { "b283", &b283, key_pairs_b_283, },
-//        { "b409", &b409, key_pairs_b_409, },
-//        { "b571", &b571, key_pairs_b_571, },
+        { "k163", &k163, sig_ver_k_163_sha_256, },
+        { "k233", &k233, sig_ver_k_233_sha_256, },
+        { "k283", &k283, sig_ver_k_283_sha_256, },
+        { "k409", &k409, sig_ver_k_409_sha_256, },
+        { "k571", &k571, sig_ver_k_571_sha_256, },
+        { "b163", &b163, sig_ver_b_163_sha_256, },
+        { "b233", &b233, sig_ver_b_233_sha_256, },
+        { "b283", &b283, sig_ver_b_283_sha_256, },
+        { "b409", &b409, sig_ver_b_409_sha_256, },
+        { "b571", &b571, sig_ver_b_571_sha_256, },
     };
 
     for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
     {
+        xint_ecc_point_t pub;
+        xint_point_init(pub);
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        printf("%s\n", vec_data[j].name);
         for (int i=0; i<15; ++i)
         {
-            xint_ecc_point_t pub;
-            xint_point_init(pub);
             xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
             xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
             uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
             uint8_t h1[32];
             sha256_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
             free(msg);
-            xint_ecc_sig_t sig;
-            xint_init(sig->r);
-            xint_init(sig->s);
             xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
             xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
             int verified = xint_ecc_verify(sig, h1, 32, pub, vec_data[j].curve);
             if (vec_data[j].data[i].result[0] == 'F')
             {
+                if (verified == 1)
+                {
+                    printf("False pos %d\n", i);
+                }
+                else
+                {
+                    //printf("Right neg\n");
+                }
                 ASSERT_EQ(0, verified);
             }
             else
             {
+                if (verified == 0)
+                {
+                    printf("False neg %d\n", i);
+                }
+                else
+                {
+                    //printf("Right pos\n");
+                }
                 ASSERT_EQ(1, verified);
             }
         }
+        xint_point_delete(pub);
+        xint_delete(sig->r);
+        xint_delete(sig->s);
     }
     END_TEST(ecc);
 }
