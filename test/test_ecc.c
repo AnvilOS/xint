@@ -17,6 +17,7 @@
 #include "hmac.h"
 
 #include <string.h>
+#include <ctype.h>
 
 static int test_equality(const xint_t x, char *p)
 {
@@ -445,7 +446,58 @@ TEST(ecc, jacobian_scalar_multiply)
     END_TEST(ecc);
 }
 
-TEST(ecc, nist)
+TEST(ecc, nist_key_pair)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        struct key_pair *keys;
+    } vec_data[] =
+    {
+        { "p192", &p192, key_pairs_p_192, },
+        { "p224", &p224, key_pairs_p_224, },
+        { "p256", &p256, key_pairs_p_256, },
+        { "p384", &p384, key_pairs_p_384, },
+        { "p521", &p521, key_pairs_p_521, },
+        { "k163", &k163, key_pairs_k_163, },
+        { "k233", &k233, key_pairs_k_233, },
+        { "k283", &k283, key_pairs_k_283, },
+        { "k409", &k409, key_pairs_k_409, },
+        { "k571", &k571, key_pairs_k_571, },
+        { "b163", &b163, key_pairs_b_163, },
+        { "b233", &b233, key_pairs_b_233, },
+        { "b283", &b283, key_pairs_b_283, },
+        { "b409", &b409, key_pairs_b_409, },
+        { "b571", &b571, key_pairs_b_571, },
+    };
+    
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        STAMP_VARS();
+        xint_t priv = XINT_INIT_VAL;
+        xint_ecc_point_t pub;
+        xint_point_init(pub);
+        STAMP_BEFORE();
+        for (int i=0; i<10; ++i)
+        {
+            xint_assign_str(priv, vec_data[j].keys[i].d, 0);
+            xint_ecc_get_public_key(pub, priv, vec_data[j].curve);
+            int resx = test_equality(pub->x, vec_data[j].keys[i].Qx);
+            int resy = test_equality(pub->y, vec_data[j].keys[i].Qy);
+            ASSERT_EQ(0, resx);
+            ASSERT_EQ(0, resy);
+        }
+        STAMP_AFTER();
+        xint_delete(priv);
+        xint_point_delete(pub);
+        printf("%s : %lu\n", vec_data[j].name, STAMP_DIFF());
+    }
+
+    END_TEST(ecc);
+}
+
+TEST(ecc, nist_pkv)
 {
     STAMP_VARS();
     xint_t priv = XINT_INIT_VAL;
@@ -454,203 +506,121 @@ TEST(ecc, nist)
     STAMP_BEFORE();
     for (int i=0; i<10; ++i)
     {
-        xint_assign_str(priv, key_pairs_p_192[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &p192);
-        int resx = test_equality(pub->x, key_pairs_p_192[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_p_192[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
+        xint_assign_str(pub->x, pkv_k_163[i].Qx, 0);
+        xint_assign_str(pub->y, pkv_k_163[i].Qy, 0);
+        int good_point = xint_ecc_verify_public_key(pub, &k163);
+        if (pkv_k_163[i].result[0] == 'F')
+        {
+            ASSERT_EQ(0, good_point);
+        }
+        else
+        {
+            ASSERT_EQ(1, good_point);
+        }
     }
     STAMP_AFTER();
     printf("key_pairs_p_192 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_p_224[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &p224);
-        int resx = test_equality(pub->x, key_pairs_p_224[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_p_224[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_p_224 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_p_256[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &p256);
-        int resx = test_equality(pub->x, key_pairs_p_256[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_p_256[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_p_256 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_p_384[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &p384);
-        int resx = test_equality(pub->x, key_pairs_p_384[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_p_384[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_p_384 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_p_521[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &p521);
-        int resx = test_equality(pub->x, key_pairs_p_521[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_p_521[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_p_521 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_k_163[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k163);
-        int resx = test_equality(pub->x, key_pairs_k_163[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_k_163[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_k_163 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_k_233[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k233);
-        int resx = test_equality(pub->x, key_pairs_k_233[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_k_233[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_k_233 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_k_283[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k283);
-        int resx = test_equality(pub->x, key_pairs_k_283[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_k_283[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_k_283 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_k_409[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k409);
-        int resx = test_equality(pub->x, key_pairs_k_409[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_k_409[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_k_409 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_k_571[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &k571);
-        int resx = test_equality(pub->x, key_pairs_k_571[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_k_571[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_k_571 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_b_163[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &b163);
-        int resx = test_equality(pub->x, key_pairs_b_163[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_b_163[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_b_163 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_b_233[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &b233);
-        int resx = test_equality(pub->x, key_pairs_b_233[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_b_233[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_b_233 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_b_283[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &b283);
-        int resx = test_equality(pub->x, key_pairs_b_283[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_b_283[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_b_283 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_b_409[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &b409);
-        int resx = test_equality(pub->x, key_pairs_b_409[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_b_409[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_b_409 : %lu\n", STAMP_DIFF());
-
-    STAMP_BEFORE();
-    for (int i=0; i<10; ++i)
-    {
-        xint_assign_str(priv, key_pairs_b_571[i].d, 0);
-        xint_ecc_get_public_key(pub, priv, &b571);
-        int resx = test_equality(pub->x, key_pairs_b_571[i].Qx);
-        int resy = test_equality(pub->y, key_pairs_b_571[i].Qy);
-        ASSERT_EQ(0, resx);
-        ASSERT_EQ(0, resy);
-    }
-    STAMP_AFTER();
-    printf("key_pairs_b_571 : %lu\n", STAMP_DIFF());
-
+    
+    
     xint_delete(priv);
     xint_point_delete(pub);
-
+    
     END_TEST(ecc);
 }
+
+TEST(ecc, nist_gen)
+{
+    END_TEST(ecc);
+}
+
+uint8_t *hex2bin(char *hex_msg)
+{
+    // Convert msg to a binary array
+    long len = strlen(hex_msg);
+//    if (len >= 2 && *hex_msg == '0' && toupper(*(hex_msg+1)) == 'X')
+//    {
+//        hex_msg += 2;
+//        len -= 2;
+//    }
+    uint8_t *bin_msg = (uint8_t *)malloc(len/2);
+    for (int i=0; i<len/2; ++i)
+    {
+        uint8_t c[2];
+        c[0] = hex_msg[2*i];
+        c[1] = hex_msg[2*i+1];
+        for (int j=0; j<2; ++j)
+        {
+            if ('0' <= c[j] && c[j] <= '9')
+            {
+                c[j] -= '0';
+            }
+            else if ('a' <= tolower(c[j]) && tolower(c[j]) <= 'f')
+            {
+                c[j] = tolower(c[j]) - 'a' + 10;
+            }
+        }
+        bin_msg[i] = c[0] << 4 | c[1];
+    }
+    return bin_msg;
+}
+    
+TEST(ecc, nist_ver)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        struct sig_ver *data;
+    } vec_data[] =
+    {
+        { "p192", &p192, sig_ver_p_192_sha_256, },
+        { "p224", &p224, sig_ver_p_224_sha_256, },
+        { "p256", &p256, sig_ver_p_256_sha_256, },
+        { "p384", &p384, sig_ver_p_384_sha_256, },
+        { "p521", &p521, sig_ver_p_521_sha_256, },
+//        { "k163", &k163, sig_ver_k_163_sha_256, },
+//        { "k233", &k233, key_pairs_k_233, },
+//        { "k283", &k283, key_pairs_k_283, },
+//        { "k409", &k409, key_pairs_k_409, },
+//        { "k571", &k571, key_pairs_k_571, },
+//        { "b163", &b163, key_pairs_b_163, },
+//        { "b233", &b233, key_pairs_b_233, },
+//        { "b283", &b283, key_pairs_b_283, },
+//        { "b409", &b409, key_pairs_b_409, },
+//        { "b571", &b571, key_pairs_b_571, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        for (int i=0; i<15; ++i)
+        {
+            xint_ecc_point_t pub;
+            xint_point_init(pub);
+            xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
+            xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[32];
+            sha256_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            xint_ecc_sig_t sig;
+            xint_init(sig->r);
+            xint_init(sig->s);
+            xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
+            xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
+            int verified = xint_ecc_verify(sig, h1, 32, pub, vec_data[j].curve);
+            if (vec_data[j].data[i].result[0] == 'F')
+            {
+                ASSERT_EQ(0, verified);
+            }
+            else
+            {
+                ASSERT_EQ(1, verified);
+            }
+        }
+    }
+    END_TEST(ecc);
+}
+
 
 int test_ecc(void)
 {
@@ -666,7 +636,10 @@ int test_ecc(void)
     CALL_TEST(ecc, curve_p521);
     CALL_TEST(ecc, plain_scalar_multiply);
     CALL_TEST(ecc, jacobian_scalar_multiply);
-    CALL_TEST(ecc, nist);
+    CALL_TEST(ecc, nist_key_pair);
+    CALL_TEST(ecc, nist_pkv);
+    CALL_TEST(ecc, nist_gen);
+    CALL_TEST(ecc, nist_ver);
 
     END_TEST_GROUP(ecc);
 }

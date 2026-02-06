@@ -16,6 +16,9 @@ static void xint_mod_fast_256(xword_t *w, xword_t *u);
 static void xint_mod_fast_384(xword_t *w, xword_t *u);
 static void xint_mod_fast_521(xword_t *w, xword_t *u);
 static void mul_scalar(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
+static int is_valid_point(xint_ecc_point_t R, const xint_ecc_curve_t *c);
+static void mul_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c);
+
 const xword_t p192_p[]  = { X(0xffffffff, 0xffffffff), X(0xfffffffe, 0xffffffff), X(0xffffffff, 0xffffffff) };
 const xword_t p192_a[]  = { X(0xfffffffc, 0xffffffff), X(0xfffffffe, 0xffffffff), X(0xffffffff, 0xffffffff) };
 const xword_t p192_b[]  = { X(0xc146b9b1, 0xfeb8deec), X(0x72243049, 0x0fa7e9ab), X(0xe59c80e7, 0x64210519) };
@@ -44,6 +47,9 @@ const xint_ecc_curve_t p192 =
     0,
     0,
     mul_scalar,
+    0,
+    is_valid_point,
+    mul_shamir,
 };
 
 const xword_t p224_p[]  = { X(0x00000001, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), 0xFFFFFFFF };
@@ -74,6 +80,9 @@ const xint_ecc_curve_t p224 =
     0,
     0,
     mul_scalar,
+    0,
+    is_valid_point,
+    mul_shamir,
 };
 
 const xword_t p256_p[]  = { X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0x00000000), X(0x00000000, 0x00000000), X(0x00000001, 0xFFFFFFFF) };
@@ -104,6 +113,9 @@ const xint_ecc_curve_t p256 =
     0,
     0,
     mul_scalar,
+    0,
+    is_valid_point,
+    mul_shamir,
 };
 
 const xword_t p384_p[]  = { X(0xFFFFFFFF, 0x00000000), X(0x00000000, 0xFFFFFFFF), X(0xFFFFFFFE, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF), X(0xFFFFFFFF, 0xFFFFFFFF) };
@@ -134,6 +146,9 @@ const xint_ecc_curve_t p384 =
     0,
     0,
     mul_scalar,
+    0,
+    is_valid_point,
+    mul_shamir,
 };
 
 
@@ -165,6 +180,9 @@ const xint_ecc_curve_t p521 =
     0,
     0,
     mul_scalar,
+    0,
+    is_valid_point,
+    mul_shamir,
 };
 
 static void xint_mod_fast_192(xword_t *w, xword_t *u)
@@ -904,4 +922,72 @@ static void xint_ecc_point_double(xint_ecc_point_t r, const xint_ecc_point_t p, 
     xint_delete(lambda);
     xint_delete(xr);
     xint_delete(yr);
+}
+
+int is_valid_point(xint_ecc_point_t P, const xint_ecc_curve_t *c)
+{
+    
+    // Check that P lies on the curve y^2 = x^3 + ax + b
+    xint_t lhs = XINT_INIT_VAL;
+    xint_t rhs = XINT_INIT_VAL;
+    xint_t tmp = XINT_INIT_VAL;
+
+    xint_t a = XINT_INIT_VAL;
+    xint_t b = XINT_INIT_VAL;
+    xint_t m = XINT_INIT_VAL;
+    CONST_XINT_FROM_XWORDS(a, c->a, c->nwords);
+    CONST_XINT_FROM_XWORDS(b, c->b, c->nwords);
+    CONST_XINT_FROM_XWORDS(m, c->p, c->nwords);
+
+    // lhs = y^2
+    xint_mod_sqr(lhs, P->y, m);
+
+    // rhs = x^3 + ax + b
+    xint_mod_sqr(rhs, P->x, m);
+    xint_mod_mul(rhs, rhs, P->x, m);
+    xint_mod_mul(tmp, a, P->x, m);
+    xint_mod_add(rhs, rhs, tmp, m);
+    xint_mod_add(rhs, rhs, b, m);
+
+    int on_curve = (xint_cmp(lhs, rhs) == 0);
+    
+    xint_delete(lhs);
+    xint_delete(rhs);
+    xint_delete(tmp);
+
+    return on_curve;
+}
+
+static void mul_shamir(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c)
+{
+    xint_ecc_point_jacobian_t P[4];
+    xint_point_jacobian_init(P[1], c->nwords);
+    to_jacobian(P[1], G);
+    P[1]->is_at_infinity = 0;
+
+    xint_point_jacobian_init(P[2], c->nwords);
+    to_jacobian(P[2], S);
+    P[2]->is_at_infinity = 0;
+
+    xint_point_jacobian_init(P[3], c->nwords);
+    c->jacobian_add(P[3], P[1], P[2], c);
+
+    xint_ecc_point_jacobian_t Rj;
+    xint_point_jacobian_init(Rj, c->nwords);
+
+    // Left to right because it's easier to do the Shamir trick
+    for (int i=c->nbits-1; i>=0; --i)
+    {
+        c->jacobian_double(Rj, Rj, c);
+        int bits = xint_get_bit(u2, i) << 1 | xint_get_bit(u1, i);
+        if (bits)
+        {
+            c->jacobian_add(Rj, Rj, P[bits], c);
+        }
+    }
+    from_jacobian(R, Rj, c);
+    xint_point_jacobian_delete(Rj);
+    xint_point_jacobian_delete(P[1]);
+    xint_point_jacobian_delete(P[2]);
+    xint_point_jacobian_delete(P[3]);
 }

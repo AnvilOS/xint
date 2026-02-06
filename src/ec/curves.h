@@ -36,6 +36,7 @@ struct xint_ecc_curve_s
     void (*scalar_mul)(xint_ecc_point_t R, const xint_ecc_point_t P, const xint_t k, const xint_ecc_curve_t *c);
     const xword_t *sqrt_b;
     int (*is_valid_point)(xint_ecc_point_t P, const xint_ecc_curve_t *c);
+    void (*mul_shamir)(xint_ecc_point_t R, const xint_ecc_point_t S, const xint_ecc_point_t G, const xint_t u1, const xint_t u2, const xint_ecc_curve_t *c);
 };
 
 extern const xint_ecc_curve_t p192;
