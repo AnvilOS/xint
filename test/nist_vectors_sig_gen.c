@@ -1,7 +1,7 @@
 
 #include "nist_vectors.h"
 
-struct sig_gen sig_gen_p_224_sha_224[] =
+const struct sig_gen sig_gen_p_224_sha_224[] =
 {
     {
         "0x699325d6fc8fbbb4981a6ded3c3a54ad2e4e3db8a5669201912064c64e700c139248cdc19495df081c3fc60245b9f25fc9e301b845b3d703a694986e4641ae3c7e5a19e6d6edbf1d61e535f49a8fad5f4ac26397cfec682f161a5fcd32c5e780668b0181a91955157635536a22367308036e2070f544ad4fff3d5122c76fad5d",
@@ -140,7 +140,7 @@ struct sig_gen sig_gen_p_224_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_p_224_sha_256[] =
+const struct sig_gen sig_gen_p_224_sha_256[] =
 {
     {
         "0x2b49de971bb0f705a3fb5914eb7638d72884a6c3550667dbfdf301adf26bde02f387fd426a31be6c9ff8bfe8690c8113c88576427f1466508458349fc86036afcfb66448b947707e791e71f558b2bf4e7e7507773aaf4e9af51eda95cbce0a0f752b216f8a54a045d47801ff410ee411a1b66a516f278327df2462fb5619470e",
@@ -279,7 +279,7 @@ struct sig_gen sig_gen_p_224_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_p_224_sha_384[] =
+const struct sig_gen sig_gen_p_224_sha_384[] =
 {
     {
         "0x25e4416695f77551fdce276355528ccf1ddc2483821c5d22d751d50111ca2fadc6593b52c74f4b5957494f1df25b0b2f86950d0d19229ec6506fee8581d2dd09d48418b146ff16bd84a17ca0dc83b1888eb407376da6c8a88fa1e60b8c2a2471dfde4b3996ef673d5bde3d70c434dc9f2488e9de16ae657d29e5e59ec922a1ec",
@@ -418,7 +418,7 @@ struct sig_gen sig_gen_p_224_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_p_224_sha_512[] =
+const struct sig_gen sig_gen_p_224_sha_512[] =
 {
     {
         "0x7522492bdb916a597b8121f3e5c273b1d2800ef8c1db4f7dcbae633b60d7da5193ba53a63d7a377b351897c3b24903ae1cd1994211b259be3e6ae2cbc8970e4957fdf782c7d1bc7a91c80c8ef65468d4ef35428f26e2940ae8b0bd9b8074236bf6c00d0ebe83f9ddb2ade0f835138d39f33b59f244e0037c171f1ba7045a96f5",
@@ -557,7 +557,7 @@ struct sig_gen sig_gen_p_224_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_p_256_sha_224[] =
+const struct sig_gen sig_gen_p_256_sha_224[] =
 {
     {
         "0xff624d0ba02c7b6370c1622eec3fa2186ea681d1659e0a845448e777b75a8e77a77bb26e5733179d58ef9bc8a4e8b6971aef2539f77ab0963a3415bbd6258339bd1bf55de65db520c63f5b8eab3d55debd05e9494212170f5d65b3286b8b668705b1e2b2b5568610617abb51d2dd0cb450ef59df4b907da90cfa7b268de8c4c2",
@@ -696,7 +696,7 @@ struct sig_gen sig_gen_p_256_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_p_256_sha_256[] =
+const struct sig_gen sig_gen_p_256_sha_256[] =
 {
     {
         "0x5905238877c77421f73e43ee3da6f2d9e2ccad5fc942dcec0cbd25482935faaf416983fe165b1a045ee2bcd2e6dca3bdf46c4310a7461f9a37960ca672d3feb5473e253605fb1ddfd28065b53cb5858a8ad28175bf9bd386a5e471ea7a65c17cc934a9d791e91491eb3754d03799790fe2d308d16146d5c9b0d0debd97d79ce8",
@@ -835,7 +835,7 @@ struct sig_gen sig_gen_p_256_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_p_256_sha_384[] =
+const struct sig_gen sig_gen_p_256_sha_384[] =
 {
     {
         "0xe0b8596b375f3306bbc6e77a0b42f7469d7e83635990e74aa6d713594a3a24498feff5006790742d9c2e9b47d714bee932435db747c6e733e3d8de41f2f91311f2e9fd8e025651631ffd84f66732d3473fbd1627e63dc7194048ebec93c95c159b5039ab5e79e42c80b484a943f125de3da1e04e5bf9c16671ad55a1117d3306",
@@ -974,7 +974,7 @@ struct sig_gen sig_gen_p_256_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_p_256_sha_512[] =
+const struct sig_gen sig_gen_p_256_sha_512[] =
 {
     {
         "0x6c8572b6a3a4a9e8e03dbeed99334d41661b8a8417074f335ab1845f6cc852adb8c01d9820fcf8e10699cc827a8fbdca2cbd46cc66e4e6b7ba41ec3efa733587e4a30ec552cd8ddab8163e148e50f4d090782897f3ddac84a41e1fcfe8c56b6152c0097b0d634b41011471ffd004f43eb4aafc038197ec6bae2b4470e869bded",
@@ -1113,7 +1113,7 @@ struct sig_gen sig_gen_p_256_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_p_384_sha_224[] =
+const struct sig_gen sig_gen_p_384_sha_224[] =
 {
     {
         "0x39f0b25d4c15b09a0692b22fbacbb5f8aee184cb75887e2ebe0cd3be5d3815d29f9b587e10b3168c939054a89df11068e5c3fac21af742bf4c3e9512f5569674e7ad8b39042bcd73e4b7ce3e64fbea1c434ed01ad4ad8b5b569f6a0b9a1144f94097925672e59ba97bc4d33be2fa21b46c3dadbfb3a1f89afa199d4b44189938",
@@ -1252,7 +1252,7 @@ struct sig_gen sig_gen_p_384_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_p_384_sha_256[] =
+const struct sig_gen sig_gen_p_384_sha_256[] =
 {
     {
         "0x663b12ebf44b7ed3872b385477381f4b11adeb0aec9e0e2478776313d536376dc8fd5f3c715bb6ddf32c01ee1d6f8b731785732c0d8441df636d8145577e7b3138e43c32a61bc1242e0e73d62d624cdc924856076bdbbf1ec04ad4420732ef0c53d42479a08235fcfc4db4d869c4eb2828c73928cdc3e3758362d1b770809997",
@@ -1391,7 +1391,7 @@ struct sig_gen sig_gen_p_384_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_p_384_sha_384[] =
+const struct sig_gen sig_gen_p_384_sha_384[] =
 {
     {
         "0x6b45d88037392e1371d9fd1cd174e9c1838d11c3d6133dc17e65fa0c485dcca9f52d41b60161246039e42ec784d49400bffdb51459f5de654091301a09378f93464d52118b48d44b30d781eb1dbed09da11fb4c818dbd442d161aba4b9edc79f05e4b7e401651395b53bd8b5bd3f2aaa6a00877fa9b45cadb8e648550b4c6cbe",
@@ -1530,7 +1530,7 @@ struct sig_gen sig_gen_p_384_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_p_384_sha_512[] =
+const struct sig_gen sig_gen_p_384_sha_512[] =
 {
     {
         "0x67d9eb88f289454d61def4764d1573db49b875cfb11e139d7eacc4b7a79d3db3bf7208191b2b2078cbbcc974ec0da1ed5e0c10ec37f6181bf81c0f32972a125df64e3b3e1d838ec7da8dfe0b7fcc911e43159a79c73df5fa252b98790be511d8a732fcbf011aacc7d45d8027d50a347703d613ceda09f650c6104c9459537c8f",
@@ -1669,7 +1669,7 @@ struct sig_gen sig_gen_p_384_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_p_521_sha_224[] =
+const struct sig_gen sig_gen_p_521_sha_224[] =
 {
     {
         "0x58ec2b2ceb80207ff51b17688bd5850f9388ce0b4a4f7316f5af6f52cfc4dde4192b6dbd97b56f93d1e4073517ac6c6140429b5484e266d07127e28b8e613ddf65888cbd5242b2f0eee4d5754eb11f25dfa5c3f87c790de371856c882731a157083a00d8eae29a57884dbbfcd98922c12cf5d73066daabe3bf3f42cfbdb9d853",
@@ -1808,7 +1808,7 @@ struct sig_gen sig_gen_p_521_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_p_521_sha_256[] =
+const struct sig_gen sig_gen_p_521_sha_256[] =
 {
     {
         "0x8ab8176b16278db54f84328ae0b75ef8f0cd18afdf40c04ad0927ed0f6d9e47470396c8e87cde7a9be2ffbfe6c9658c88b7de4d582111119c433b2e4a504493f0a1166e3a3ea0d7b93358f4a297d63f65a5e752f94e2ee7f49ebcc742fa3eb03a617d00c574245b77a20033854d82964b2949e2247637239ab00baf4d170d97c",
@@ -1947,7 +1947,7 @@ struct sig_gen sig_gen_p_521_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_p_521_sha_384[] =
+const struct sig_gen sig_gen_p_521_sha_384[] =
 {
     {
         "0xdbc094402c5b559d53168c6f0c550d827499c6fb2186ae2db15b89b4e6f46220386d6f01bebde91b6ceb3ec7b4696e2cbfd14894dd0b7d656d23396ce920044f9ca514bf115cf98ecaa55b950a9e49365c2f3a05be5020e93db92c37437513044973e792af814d0ffad2c8ecc89ae4b35ccb19318f0b988a7d33ec5a4fe85dfe",
@@ -2086,7 +2086,7 @@ struct sig_gen sig_gen_p_521_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_p_521_sha_512[] =
+const struct sig_gen sig_gen_p_521_sha_512[] =
 {
     {
         "0x9ecd500c60e701404922e58ab20cc002651fdee7cbc9336adda33e4c1088fab1964ecb7904dc6856865d6c8e15041ccf2d5ac302e99d346ff2f686531d25521678d4fd3f76bbf2c893d246cb4d7693792fe18172108146853103a51f824acc621cb7311d2463c3361ea707254f2b052bc22cb8012873dcbb95bf1a5cc53ab89f",
@@ -2225,7 +2225,7 @@ struct sig_gen sig_gen_p_521_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_k_233_sha_224[] =
+const struct sig_gen sig_gen_k_233_sha_224[] =
 {
     {
         "0xf23f784fe136c9fc0d169503d361e9c6148b0f1fbdcae0a97fae1af7033ddef25cb7489c9963cfcb009a8cbfe44a8510a64a073eb1deae4c324ceb9302008c92c69b2dafcc9077fd3cc3c7c119edc3ced36d176ceaa55ac036bf7f07f6fa215e8bb8196e59a5e1c9af4f98b90ab4970885bd7015fa26a09e03c7cf6b4b23d929",
@@ -2364,7 +2364,7 @@ struct sig_gen sig_gen_k_233_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_k_233_sha_256[] =
+const struct sig_gen sig_gen_k_233_sha_256[] =
 {
     {
         "0xc73e3dbac9513d0361dabe94071faf03a11cba18c06d131a172d5f0125b01a5eeb6055bf72c7106fe3f4be3bd2b1771cbe7f85366dccfbc3bac20538510c3f51179cc540ddafb2f3b05a0d276899674ab1d7d8fb4f6838f04e4f9e26b8c6af31540f63f4953c85840af4c57dfa78c704f637dfc8dd750fe45e2c1e149986d127",
@@ -2503,7 +2503,7 @@ struct sig_gen sig_gen_k_233_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_k_233_sha_384[] =
+const struct sig_gen sig_gen_k_233_sha_384[] =
 {
     {
         "0x986d9e5d636526f4deb7545c037fe81b09c74496ddb8e42e61650c74b6fe348593f0cf8f8eca5e839baf62f17bf6ad96ec0c71dc44fdf11259dbfe7499157e402f6bd5076972354150723afb632799a990c44cd0a4fa9609ec4db133e3b4700be3ea4a338e8ba1873d345e80163ed60d0de274d7617a8382980bc2138b0a2a01",
@@ -2642,7 +2642,7 @@ struct sig_gen sig_gen_k_233_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_k_233_sha_512[] =
+const struct sig_gen sig_gen_k_233_sha_512[] =
 {
     {
         "0x72cdef5bdf710978e0aa334b86b8ff4a58630da314eabe98b4d611aab56f55c526983d54d19bbbf9ddba30a84b18aa0bae9f9503e9b222f842f084db83aa39625403213ca321cc0d9c8a136c826e6ea4ec108b913dd0a9ce9d5b8c7e3af53c3876e56a2037ebd6d99f037a097111c837647bedfe4c494e4288ed6427c15969e3",
@@ -2781,7 +2781,7 @@ struct sig_gen sig_gen_k_233_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_k_283_sha_224[] =
+const struct sig_gen sig_gen_k_283_sha_224[] =
 {
     {
         "0xef90f85fbda05e693006e4c64e1dac56223becaf0890f73b5274e6e289a5a1de2c141b825c24d595b3fd18ca855b5c1aa60dac6b5356275b11be670692cdbe5f282f93ac7b2e410a96cb9e9f80defcde98f3449f99e192bfd62040421a0ab8f99acb85369f25e5efbf81439efa8a5e1d9cf781355a0f47b037b09fe4086389a0",
@@ -2920,7 +2920,7 @@ struct sig_gen sig_gen_k_283_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_k_283_sha_256[] =
+const struct sig_gen sig_gen_k_283_sha_256[] =
 {
     {
         "0xf646e7334e191c2bf0056d3bfd23f03ef7f0777b923f962519a8399d311b8f68414c689ca34b96871fae99eb7ea534fcd83e788e56eeef817cbfe33677283c736b99bf6a626f9515291e842bf99f694e4e8aa7c9911c591a87d5f112b3d96b064594e2b368e6d1bf1a1cd343d54916a66da22c26355266aa2884120fffb8b94d",
@@ -3059,7 +3059,7 @@ struct sig_gen sig_gen_k_283_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_k_283_sha_384[] =
+const struct sig_gen sig_gen_k_283_sha_384[] =
 {
     {
         "0xe4d8d49c9bc566261d9134d5e237d9cbd6b67d2619a9bd06b7c9c139e091aa10682cbede114e1d4777d9cd67a16b7d64278e99eed62bbf25ec5a5a8fabcb0a3468b0e73fd02ac6533e04b1110d29da3e34f33eaa228b78341b357a5d892a61beb2168c3bd5e66bffe3f2080a1e246f55a41ebf9d579e188d16991aa060460d6a",
@@ -3198,7 +3198,7 @@ struct sig_gen sig_gen_k_283_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_k_283_sha_512[] =
+const struct sig_gen sig_gen_k_283_sha_512[] =
 {
     {
         "0xc406aa4295f85c854b4db2de5a7a2defae53a319866921a3673af5b48c85ef22f6eb4cef892c790d8e64530fc20c729b2821b5f5e515560b1ac764106560c3a6a05657e34cd6deadfe2884bd288cef4ca92e1f25adde7d68a30fb0a1b3678156ced62e466718e68e9d67099ad82613b8d06bdda1a7b867c2455422818ae9eeac",
@@ -3337,7 +3337,7 @@ struct sig_gen sig_gen_k_283_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_k_409_sha_224[] =
+const struct sig_gen sig_gen_k_409_sha_224[] =
 {
     {
         "0xf153cc61981a46d8a47d17d29ec157fa93fcf644beb84558db7c99c57fb131dcbc5b65581ced5ff0b29bfdc66ff703ecdd4290f7c353c02a3e6d6867f33f3dccd1a0b6752b8a35fa143f8921a5078af9c85b212564c5b795da9858c7955095938fcd10c21e35e1abe905e84c8b4bc05f2a06091ce876d9519b96951d08c7ac9e",
@@ -3476,7 +3476,7 @@ struct sig_gen sig_gen_k_409_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_k_409_sha_256[] =
+const struct sig_gen sig_gen_k_409_sha_256[] =
 {
     {
         "0xdbe04561ea8579672a2b3afa94426a3cbc274b55263989d41a778bcb082da797d84d930ca847a481789524940701cd5f1d11b460bdac0bffb0b3a3abe1ab689c519700de85a0a571494ba0cfc3c865450eba7a9e916b7fa9df55e8a1c246c992e6a0b44b78274e008472bed8d8411633e6520e1a906c5d0c8aafd572fe6f1f64",
@@ -3615,7 +3615,7 @@ struct sig_gen sig_gen_k_409_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_k_409_sha_384[] =
+const struct sig_gen sig_gen_k_409_sha_384[] =
 {
     {
         "0xec69f2937ec793aaa3486d59d0c960ee50f640a9ce98a3becffc12d6a6c1c6c2f255d37d29f9b4d068373a96beadac98fd5203a9f229bfc70bcd449640165ae5128e3f8d057769e28356e73e35d8e9af7876f608390090892c67391ddfcc1c332aa61efbf72d54bc615998b3be8ab0a9d372784bea48c9fab244482c75cb2de3",
@@ -3754,7 +3754,7 @@ struct sig_gen sig_gen_k_409_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_k_409_sha_512[] =
+const struct sig_gen sig_gen_k_409_sha_512[] =
 {
     {
         "0x3583a3226e2dc463a462fefa97024e6e969c1b13bdc1d228e2d7823d9f7c09012390c2535baf086588000e908309090daac6e6d2b06d2ede6fae838ed47f30b5b481185f607a3586f6dea47c8f84e9d3b96d5b0ebae2462fde1e49d84d36658e87dccf5e30c0937feefd8862dcdb1a1ca373f6ae41641502ac54df6633a8cec1",
@@ -3893,7 +3893,7 @@ struct sig_gen sig_gen_k_409_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_k_571_sha_224[] =
+const struct sig_gen sig_gen_k_571_sha_224[] =
 {
     {
         "0x964ad0b5acc1c4db6674e86035139f179a9d5ec711b5bae57d2988456bb136d3aade7ac9ef10813e651ae4b9602308b071d75a934a6c012eb90c5eb9b2947b50fc97b1d36c5bf9eb13a7b06c94212c3dcdab402a563262298defff62b836ead1f78f9d20713710fb48115cc5045ba15140fbb4bdf516e4150d830d02cf30963d",
@@ -4032,7 +4032,7 @@ struct sig_gen sig_gen_k_571_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_k_571_sha_256[] =
+const struct sig_gen sig_gen_k_571_sha_256[] =
 {
     {
         "0xd9c99b8da92d3c2e40dea3c4025dc37770e867c4d2746c4d726b6de24250591a586c166c88acb8ed340e161d4c81b9d14c919a1b06f1feb22c5ce5fca2693bdaf4994ac72c8983c87f331473fd094eccb3d5f3528e69d487562fb5a65c150a8217192f8aabfa7adcfd0b6916d5000248fbbddf1ca2f38e3d9ed2b388998b7cfc",
@@ -4171,7 +4171,7 @@ struct sig_gen sig_gen_k_571_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_k_571_sha_384[] =
+const struct sig_gen sig_gen_k_571_sha_384[] =
 {
     {
         "0x1de4b642ec7220c64b91561caed7832044d6e811ac909f3b199cceb0d8a7db91bcdc801412044f5c34b355b95a2c6170fe497f6d5259bc20715a38cb0341c88e93029137e94d895bab464bca6568b852340a5c5d6a225475f6eefe2fc71ffa42f857d9bab768ccaf4793c80c4751a5583269ddcfccf8283c46a1b34d84463e61",
@@ -4310,7 +4310,7 @@ struct sig_gen sig_gen_k_571_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_k_571_sha_512[] =
+const struct sig_gen sig_gen_k_571_sha_512[] =
 {
     {
         "0x97b79c76d9c637f51294369e0bb52c4189f2fd3bd0607f91834aa71b3555605a89ff68e84fb5bda603f502f620e14e8b0c7affefafa2f0b303009ee99653ae4550a05315e551dd12a4d8328279b8150d030b03c5650ed4f8d3ba7c3a5361f472f436b200b321e7863c771e20ddd7bdf739c51de3676f953a5501e4477aed1bd8",
@@ -4449,7 +4449,7 @@ struct sig_gen sig_gen_k_571_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_b_233_sha_224[] =
+const struct sig_gen sig_gen_b_233_sha_224[] =
 {
     {
         "0xf1b67fde01e60e4bb7904d906e9436a330c5cb5721fd4e0a3c75b83dade868736bb1d21cfb1b5c6407c373e386ee68ec2239b700e763728eb675a153b8ac44cf2a87be85fe8ed6683430cf4b7d718891cbf8d583d0a37cc952cc25fe803a7aa4fda80f05541a2f1f2601cdd0c095f7110f2a84f7d641b8531572269b21cbe77b",
@@ -4588,7 +4588,7 @@ struct sig_gen sig_gen_b_233_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_b_233_sha_256[] =
+const struct sig_gen sig_gen_b_233_sha_256[] =
 {
     {
         "0xd288768cbd066fad4bb2500b5683fa9e4eaedfb3dbb519b083f6b802efda0a022355565c5fc6babeccb22f3adbbda450ce5d633193d1431e40c0fe631a295cf85965cd3f5937b31866bd6a5300eaef9941daf54d49832acfceed90e572ef34ccc94eacd0fd6b903fee3c572b963d21e2881656a214d2a4c125778dbe3bbeebca",
@@ -4727,7 +4727,7 @@ struct sig_gen sig_gen_b_233_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_b_233_sha_384[] =
+const struct sig_gen sig_gen_b_233_sha_384[] =
 {
     {
         "0x05a5d3a3b79f4e51b722e513620c88092a9bb02408f5f52a32e782fd4923f4fd3094fc5536caf4b645d830260eba91b5173f3833dd65600fb9e246aec968b1f6ebdfddb4059fb2de7e636ed60bb7affdb74aefd158e54485d5f26be373cf944c6570daf8fd7e4b77fad57300667d6decf5c65db99ab8763bb4ecbb09fdf47e3a",
@@ -4866,7 +4866,7 @@ struct sig_gen sig_gen_b_233_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_b_233_sha_512[] =
+const struct sig_gen sig_gen_b_233_sha_512[] =
 {
     {
         "0xe95abeeb2c51a8cb75ab74253dbe130b5560cd52e2a63d501d26e1458aa568aca6694be91eee5fdfcf582c47c1c727084ee2b2c810281cf9b095808bf7e7c668eff00a6e48b06df3fe6a445e092c24d5687d7d89acc8063275caac186c441bc697b2f67aa71b03294e1adeb7e557c296dd91304ba0587cda3c984619f1eb4f2b",
@@ -5005,7 +5005,7 @@ struct sig_gen sig_gen_b_233_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_b_283_sha_224[] =
+const struct sig_gen sig_gen_b_283_sha_224[] =
 {
     {
         "0x067f27bbcecbad85277fa3629da11a24b2f19ba1e65a69d827fad430346c9d102e1b4452d04147c8133acc1e268490cd342a54065a1bd6470aabbad42fbddc54a9a76c68aceba397cb350327c5e6f5a6df0b5b5560f04700d536b384dd4b412e74fd1b8f782611e9426bf8ca77b2448d9a9f415bcfee30dda1ccb49737994f2d",
@@ -5144,7 +5144,7 @@ struct sig_gen sig_gen_b_283_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_b_283_sha_256[] =
+const struct sig_gen sig_gen_b_283_sha_256[] =
 {
     {
         "0xf415d0adcd533dd8318b94560f86732c262ad2c6dff9dc83e2435543f429a2158cd2fbab0d96c027f71008c4895ecc644c2ceaefa80937f6cc6338d15d36e459a16bd9387a361a6d800acfd834ad5aecf442e30b70f5bfa164747cf9f89325b80976052a83a5e896c00c54f81472b14329cf23bec10a8e693005de2a506ba83d",
@@ -5283,7 +5283,7 @@ struct sig_gen sig_gen_b_283_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_b_283_sha_384[] =
+const struct sig_gen sig_gen_b_283_sha_384[] =
 {
     {
         "0xeab0a37915c6b43b0d1e3ef92e6317b3afc8b8301b22f6059da8271fc5fe0e419ca6097daba213915855631af64e10d8382d70599d903d1535e25cbf74da3a12ba2f13c33a8562e0db03edce791f1d39af8850fd1feff0eb25f9ad0a86dfab627b96e65831bffc5f6d9693d20493bc9dd6eb3e9325dea50b055768e8aa30d49c",
@@ -5422,7 +5422,7 @@ struct sig_gen sig_gen_b_283_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_b_283_sha_512[] =
+const struct sig_gen sig_gen_b_283_sha_512[] =
 {
     {
         "0x4736e59fe5812f63737eed57a570182c065538abd9fb0a1c9c2059199e7052ba57d84b5fa1cda2ad9f216610361ce1dfb9334816b6bea509283756a03aaae2e5b0597f492d078b6b015a40c9785dcc5d2ae266176980db04f5cffef40e16661a50ef871c5f531d73fd5d114fa19bae9dd2da4267a131fc31849da38c2b78d1af",
@@ -5561,7 +5561,7 @@ struct sig_gen sig_gen_b_283_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_b_409_sha_224[] =
+const struct sig_gen sig_gen_b_409_sha_224[] =
 {
     {
         "0xf2380acb0d869d1cf2e25a6bd46ebe49d1c9270624c5507be4299fe773749596d07d10f7c2be1c0b27e86f27b4a6f8dff68cfe5c0b4c58dad1b4ebec7bd00ab195fdd635d9fa8a15acf81816868d737b8922379648ed70022b98c388ede5355e4d50e6bc9ec57737d8843fabda78054e92777c4b90466a5af35dd79e5d7a81ce",
@@ -5700,7 +5700,7 @@ struct sig_gen sig_gen_b_409_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_b_409_sha_256[] =
+const struct sig_gen sig_gen_b_409_sha_256[] =
 {
     {
         "0x3e967cbc2bd936e0b6125dc5cf885735bdcd2d95b2f764de6931c4578ac8e0e87abdf96375481df67dbe1b6c43537e84ec62bfca6672cc5f3ea4125abd4a4119edffe04e42411d338e8b10abb1f1f818c50a9631a3f89feb5be5367bdcb0a8a82c96a427ba6ce99f9631d4411a2b7f5b14d32cb3901dc9d285e4cf5508940942",
@@ -5839,7 +5839,7 @@ struct sig_gen sig_gen_b_409_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_b_409_sha_384[] =
+const struct sig_gen sig_gen_b_409_sha_384[] =
 {
     {
         "0x55053af9370901e38622734a5bc5589f6a20e258627f381fb0c366f3dbe58394e5997e978eb7ebbc530f6e6186f48294149b8594fb551c31c50521a8c4d67e5862921695604afb23977b6a69b21abe75966fdd11bfbdb6b51ab0a474c5fa07c4de7872a3bd81acc417655090558dfcd5af449b3347e61fa9e839bb9457de64c1",
@@ -5978,7 +5978,7 @@ struct sig_gen sig_gen_b_409_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_b_409_sha_512[] =
+const struct sig_gen sig_gen_b_409_sha_512[] =
 {
     {
         "0xccd494ca005ad706db03a3df6d5c6e876ef859ec77a54de11fe20d104377df1900b6b192126c598944d19a2364b2ae87ad7fd32265d59e1f22be5833f20767793677b628f18e9619f8ca32f3af3b41c31e87a98d1527e5e781bff33c1a8be3a82ea503e76afec5768d7f7dd1f17dc98a9e7f92fd8c96fca0db518bd143d82e6d",
@@ -6117,7 +6117,7 @@ struct sig_gen sig_gen_b_409_sha_512[] =
     },
 };
 
-struct sig_gen sig_gen_b_571_sha_224[] =
+const struct sig_gen sig_gen_b_571_sha_224[] =
 {
     {
         "0x8e14f713a2c427b1f79491033994f76acbead614d12e73ac6f3f518f2052a10c1273aabe628ab38e0d3d5f8ff254802e9f44a51367bf80325b6fc39d907a37f731372864747b10749ea5cb3d3a83da39c21a7b02885a8c1770e4397cedc958e4baa21d5007569dc9dd1e45d2181709d900a394454090badbd0cd9c2cd2369aad",
@@ -6256,7 +6256,7 @@ struct sig_gen sig_gen_b_571_sha_224[] =
     },
 };
 
-struct sig_gen sig_gen_b_571_sha_256[] =
+const struct sig_gen sig_gen_b_571_sha_256[] =
 {
     {
         "0x29acb0fca27e2a10d7b9e7e84a79af73e420abdb0f80dd2665696638951b52dd39ca028166b47a3b6a2eaeceb1a11c152383f0bec64e862db1c249672b3770909f775b794e0b9b28a5ec8635a996d912d837a5f22471b40ec2e84701a8804127a9f1a0b3c96ff654700bad3167240c2518fb5dedcc1be9f56a807083e587bc56",
@@ -6395,7 +6395,7 @@ struct sig_gen sig_gen_b_571_sha_256[] =
     },
 };
 
-struct sig_gen sig_gen_b_571_sha_384[] =
+const struct sig_gen sig_gen_b_571_sha_384[] =
 {
     {
         "0xe67cecedf35058b80787589514a9c81c6b9f4bced4260411d2af75bc46b8b2c962dc9d260dc99ebbf8ee64950766efc0e394184bdc8e2891d66bd3300ecc880e9d6a3d0eb615322378afc3dba89938704e9a8d0c949d4bae9838805c00377e3fe5ec6a1a98ad7eaaba6b500973dac48b26b7fb2e1b9889f8c387de535d4b2363",
@@ -6534,7 +6534,7 @@ struct sig_gen sig_gen_b_571_sha_384[] =
     },
 };
 
-struct sig_gen sig_gen_b_571_sha_512[] =
+const struct sig_gen sig_gen_b_571_sha_512[] =
 {
     {
         "0x10d2e00ae57176c79cdfc746c0c887abe799ee445b151b008e3d9f81eb69be40298ddf37b5c45a9b6e5ff83785d8c140cf11e6a4c3879a2845796872363da24b10f1f8d9cc48f8af20681dceb60dd62095d6d3b1779a4a805de3d74e38983b24c0748618e2f92ef7cac257ff4bd1f41113f2891eb13c47930e69ddbe91f270fb",

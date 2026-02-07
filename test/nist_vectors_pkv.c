@@ -1,7 +1,7 @@
 
 #include "nist_vectors.h"
 
-struct pkv pkv_p_192[] =
+const struct pkv pkv_p_192[] =
 {
     {
         "0x472a620598e6715eff9cc022805d8cc8e8219f0e32042538",
@@ -65,7 +65,7 @@ struct pkv pkv_p_192[] =
     },
 };
 
-struct pkv pkv_p_224[] =
+const struct pkv pkv_p_224[] =
 {
     {
         "0x7fb5f1881188022d9b0a8b808834dfdc0c7388459350983e4aee1412",
@@ -129,7 +129,7 @@ struct pkv pkv_p_224[] =
     },
 };
 
-struct pkv pkv_p_256[] =
+const struct pkv pkv_p_256[] =
 {
     {
         "0xe0f7449c5588f24492c338f2bc8f7865f755b958d48edb0f2d0056e50c3fd5b7",
@@ -193,7 +193,7 @@ struct pkv pkv_p_256[] =
     },
 };
 
-struct pkv pkv_p_384[] =
+const struct pkv pkv_p_384[] =
 {
     {
         "0xe87cc868cdf196471d3fc78c324be2c4a0de8dbde182afea88baa51666f3cc9993eae5f1d60d4aec58894f0357273c48",
@@ -257,7 +257,7 @@ struct pkv pkv_p_384[] =
     },
 };
 
-struct pkv pkv_p_521[] =
+const struct pkv pkv_p_521[] =
 {
     {
         "0x165252970b786685babd0463f7314275c44ac1b558ab5a8e4bde60a441623b204982dcba2d3c0e7d379d5b637fd3edc0b0d2e0b7a33f7b36c03bb8bf3c6c5469ebe",
@@ -321,7 +321,7 @@ struct pkv pkv_p_521[] =
     },
 };
 
-struct pkv pkv_k_163[] =
+const struct pkv pkv_k_163[] =
 {
     {
         "0x7a72843139eeae1bbdfeecff6405a98abb9902f49",
@@ -385,7 +385,7 @@ struct pkv pkv_k_163[] =
     },
 };
 
-struct pkv pkv_k_233[] =
+const struct pkv pkv_k_233[] =
 {
     {
         "0x1a615ca015c5ed3fc91a6b29c3ac35966a5f57440598daf772cbc7a976c",
@@ -449,7 +449,7 @@ struct pkv pkv_k_233[] =
     },
 };
 
-struct pkv pkv_k_283[] =
+const struct pkv pkv_k_283[] =
 {
     {
         "0x06de3f747192594e4780477edfc6a2ddd637f815d517a99856b145e086f2299f3bb7d30",
@@ -513,7 +513,7 @@ struct pkv pkv_k_283[] =
     },
 };
 
-struct pkv pkv_k_409[] =
+const struct pkv pkv_k_409[] =
 {
     {
         "0x1dd599a9f2e5f8f8b897e65c3699f60239a454fbb415bd3a37ae1bcc3f5836acd75daf516c069fe1c1bf5cf7e5b90a9bae94937",
@@ -577,7 +577,7 @@ struct pkv pkv_k_409[] =
     },
 };
 
-struct pkv pkv_k_571[] =
+const struct pkv pkv_k_571[] =
 {
     {
         "0x459d8275f0943fbc433fe6d526ba37402304cdefac9cfd0260b2b985cf6aa4b1ee7f851239006c6f3d17bf6421b4b7e01a6da3c8806eacbd88f6cf5ebe214b61a21303ffacbabc1",
@@ -641,7 +641,7 @@ struct pkv pkv_k_571[] =
     },
 };
 
-struct pkv pkv_b_163[] =
+const struct pkv pkv_b_163[] =
 {
     {
         "0x3a4caa1439ac6d09ef2db6cb7ee135e9f8ad00d06",
@@ -705,7 +705,7 @@ struct pkv pkv_b_163[] =
     },
 };
 
-struct pkv pkv_b_233[] =
+const struct pkv pkv_b_233[] =
 {
     {
         "0x0adc181113825aa7e7eba3325897afd9ffccb158ab6bc0ed2ab7fc4c99b",
@@ -769,7 +769,7 @@ struct pkv pkv_b_233[] =
     },
 };
 
-struct pkv pkv_b_283[] =
+const struct pkv pkv_b_283[] =
 {
     {
         "0x4cf25c4f75eb0e49a309521151ff857677f68cb7135be63d846eaebea46d6546daf9314",
@@ -833,7 +833,7 @@ struct pkv pkv_b_283[] =
     },
 };
 
-struct pkv pkv_b_409[] =
+const struct pkv pkv_b_409[] =
 {
     {
         "0x18ebf4f8eee41fa8554b68731715db8cfa00725052313ffc47a7fbffcda15cae845b98ec74ae2efe4b7fd27c499a720855db97e",
@@ -897,7 +897,7 @@ struct pkv pkv_b_409[] =
     },
 };
 
-struct pkv pkv_b_571[] =
+const struct pkv pkv_b_571[] =
 {
     {
         "0x3620b1ff0a19a5c414fe89ae0c708e0c27e98c70049e0c178515618ba609b44edeba39a678b87a6a3e465dcb332d743ee216398e56ab32805fc0f24a12e73b99c0bf87a6ece885f",

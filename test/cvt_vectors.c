@@ -80,7 +80,7 @@ void cvt_key_pair_file(void)
                 fprintf(fout, "%s\n", "};\n");
                 in_progress = 0;
             }
-            fprintf(fout, "struct key_pair key_pairs_%s[] =\n{\n", name);
+            fprintf(fout, "const struct key_pair key_pairs_%s[] =\n{\n", name);
             in_progress = 1;
         }
         else
@@ -192,7 +192,7 @@ void cvt_pkv_file(void)
                 fprintf(fout, "%s\n", "};\n");
                 in_progress = 0;
             }
-            fprintf(fout, "struct pkv pkv_%s[] =\n{\n", name);
+            fprintf(fout, "const struct pkv pkv_%s[] =\n{\n", name);
             in_progress = 1;
         }
         else
@@ -324,7 +324,7 @@ void cvt_sig_gen_file(void)
                 fprintf(fout, "%s\n", "};\n");
                 in_progress = 0;
             }
-            fprintf(fout, "struct sig_gen sig_gen_%s[] =\n{\n", name);
+            fprintf(fout, "const struct sig_gen sig_gen_%s[] =\n{\n", name);
             in_progress = 1;
         }
         else
@@ -443,7 +443,7 @@ void cvt_sig_ver_file(void)
                 fprintf(fout, "%s\n", "};\n");
                 in_progress = 0;
             }
-            fprintf(fout, "struct sig_ver sig_ver_%s[] =\n{\n", name);
+            fprintf(fout, "const struct sig_ver sig_ver_%s[] =\n{\n", name);
             in_progress = 1;
         }
         else

@@ -1,7 +1,7 @@
 
 #include "nist_vectors.h"
 
-struct key_pair key_pairs_p_192[] =
+const struct key_pair key_pairs_p_192[] =
 {
     {
         "0xe5ce89a34adddf25ff3bf1ffe6803f57d0220de3118798ea",
@@ -55,7 +55,7 @@ struct key_pair key_pairs_p_192[] =
     },
 };
 
-struct key_pair key_pairs_p_224[] =
+const struct key_pair key_pairs_p_224[] =
 {
     {
         "0xe7c92383846a4e6887a10498d8eaca2bd0487d985bd7d3f92ce3ab30",
@@ -109,7 +109,7 @@ struct key_pair key_pairs_p_224[] =
     },
 };
 
-struct key_pair key_pairs_p_256[] =
+const struct key_pair key_pairs_p_256[] =
 {
     {
         "0xc9806898a0334916c860748880a541f093b579a9b1f32934d86c363c39800357",
@@ -163,7 +163,7 @@ struct key_pair key_pairs_p_256[] =
     },
 };
 
-struct key_pair key_pairs_p_384[] =
+const struct key_pair key_pairs_p_384[] =
 {
     {
         "0x5394f7973ea868c52bf3ff8d8ceeb4db90a683653b12485d5f627c3ce5abd8978fc9673d14a71d925747931662493c37",
@@ -217,7 +217,7 @@ struct key_pair key_pairs_p_384[] =
     },
 };
 
-struct key_pair key_pairs_p_521[] =
+const struct key_pair key_pairs_p_521[] =
 {
     {
         "0x0184258ea667ab99d09d4363b3f51384fc0acd2f3b66258ef31203ed30363fcda7661b6a817daaf831415a1f21cb1cda3a74cc1865f2ef40f683c14174ea72803cff",
@@ -271,7 +271,7 @@ struct key_pair key_pairs_p_521[] =
     },
 };
 
-struct key_pair key_pairs_k_163[] =
+const struct key_pair key_pairs_k_163[] =
 {
     {
         "0x028a7447f95b43c072722ee52f2a68897518830272",
@@ -325,7 +325,7 @@ struct key_pair key_pairs_k_163[] =
     },
 };
 
-struct key_pair key_pairs_k_233[] =
+const struct key_pair key_pairs_k_233[] =
 {
     {
         "0x01da7422b50e3ff051f2aaaed10acea6cbf6110c517da2f4eaca8b5b87",
@@ -379,7 +379,7 @@ struct key_pair key_pairs_k_233[] =
     },
 };
 
-struct key_pair key_pairs_k_283[] =
+const struct key_pair key_pairs_k_283[] =
 {
     {
         "0x01de6fc561ce8c3ec9a7c03a51e0c61204991f8caca8c7b073cd07945ffb22c48c30e5d4",
@@ -433,7 +433,7 @@ struct key_pair key_pairs_k_283[] =
     },
 };
 
-struct key_pair key_pairs_k_409[] =
+const struct key_pair key_pairs_k_409[] =
 {
     {
         "0x0190c5a00374cc3254fdd421c8e52b0cb0f00317bbfb4153195eb6195557989b8e78b27df35c8f47bb4b4ee4608ea04f2adb72",
@@ -487,7 +487,7 @@ struct key_pair key_pairs_k_409[] =
     },
 };
 
-struct key_pair key_pairs_k_571[] =
+const struct key_pair key_pairs_k_571[] =
 {
     {
         "0x4b7223994f77708dbefe1e76fedb6279710b8769933f87d12d4304bac646fc453055632beb70f87c6bcf6f28fcccba25088789d1f15013f25320ff09321e921eb3e66b0829e87c",
@@ -541,7 +541,7 @@ struct key_pair key_pairs_k_571[] =
     },
 };
 
-struct key_pair key_pairs_b_163[] =
+const struct key_pair key_pairs_b_163[] =
 {
     {
         "0x025d594310681b01fd63333cdd4315e54e18fe2623",
@@ -595,7 +595,7 @@ struct key_pair key_pairs_b_163[] =
     },
 };
 
-struct key_pair key_pairs_b_233[] =
+const struct key_pair key_pairs_b_233[] =
 {
     {
         "0x1e0da3dca621aab89a54e9528937ca7567464e6e783357878c1ecef15c",
@@ -649,7 +649,7 @@ struct key_pair key_pairs_b_233[] =
     },
 };
 
-struct key_pair key_pairs_b_283[] =
+const struct key_pair key_pairs_b_283[] =
 {
     {
         "0x10d57c6f40baac97852771cee44a04137fb0ae504df7d6bb4153e5f13678f511520d47",
@@ -703,7 +703,7 @@ struct key_pair key_pairs_b_283[] =
     },
 };
 
-struct key_pair key_pairs_b_409[] =
+const struct key_pair key_pairs_b_409[] =
 {
     {
         "0xebd71c6f6a42bb485480526d916977665df53c198dbd027e2a36ddd4e1178bed069ca6758d0069098301e9ef89dc545ce9c691",
@@ -757,7 +757,7 @@ struct key_pair key_pairs_b_409[] =
     },
 };
 
-struct key_pair key_pairs_b_571[] =
+const struct key_pair key_pairs_b_571[] =
 {
     {
         "0x01443e93c7ef6802655f641ecbe95e75f1f15b02d2e172f49a32e22047d5c00ebe1b3ff0456374461360667dbf07bc67f7d6135ee0d1d46a226a530fefe8ebf3b926e9fbad8d57a6",
