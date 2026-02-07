@@ -729,13 +729,13 @@ static void xint_point_add_jacobian(xint_ecc_point_jacobian_t Rjx, const xint_ec
         return;
     }
 
-    xword_t T1[10];
-    xword_t T2[10];
-    xword_t T3[10];
-    xword_t T4[10];
-    xword_t T5[10];
-    xword_t T6[10];
-    xword_t T7[10];
+    xword_t T1[c->nwords];
+    xword_t T2[c->nwords];
+    xword_t T3[c->nwords];
+    xword_t T4[c->nwords];
+    xword_t T5[c->nwords];
+    xword_t T6[c->nwords];
+    xword_t T7[c->nwords];
 
     xll_copy(T1, Pj->x, Pj->nwords);
     xll_copy(T2, Pj->y, Pj->nwords);
@@ -788,11 +788,11 @@ static void xint_point_double_jacobian(xint_ecc_point_jacobian_t Rjx, const xint
         return;
     }
 
-    xword_t T1[10];
-    xword_t T2[10];
-    xword_t T3[10];
-    xword_t T4[10];
-    xword_t T5[10];
+    xword_t T1[c->nwords];
+    xword_t T2[c->nwords];
+    xword_t T3[c->nwords];
+    xword_t T4[c->nwords];
+    xword_t T5[c->nwords];
 
     xll_copy(T1, Pj->x, Pj->nwords);
     xll_copy(T2, Pj->y, Pj->nwords);
