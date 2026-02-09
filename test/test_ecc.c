@@ -14,6 +14,7 @@
 #include "time_stamp.h"
 
 #include "sha256.h"
+#include "sha512.h"
 #include "hmac.h"
 
 #include <string.h>
@@ -43,6 +44,63 @@ static int test_equality_ex(const xword_t *x, int xn, char *p)
 
 
 TEST_GROUP(ecc);
+
+TEST(ecc, sha)
+{
+    static const uint8_t expected_digest_224[28] =
+    {
+        0xd1, 0x4a, 0x02, 0x8c, 0x2a, 0x3a, 0x2b, 0xc9,
+        0x47, 0x61, 0x02, 0xbb, 0x28, 0x82, 0x34, 0xc4,
+        0x15, 0xa2, 0xb0, 0x1f, 0x82, 0x8e, 0xa6, 0x2a,
+        0xc5, 0xb3, 0xe4, 0x2f
+    };
+    
+    uint8_t digest[64];
+    uint8_t msg[] = { };
+    sha224_calc(digest, msg, 0);
+    ASSERT_EQ(0, memcmp(digest, expected_digest_224, sizeof(expected_digest_224)/sizeof(expected_digest_224[0])));
+    
+    static const uint8_t expected_digest_256[32] =
+    {
+        0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
+        0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
+        0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+        0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55
+    };
+
+    sha256_calc(digest, msg, 0);
+    ASSERT_EQ(0, memcmp(digest, expected_digest_256, sizeof(expected_digest_256)/sizeof(expected_digest_256[0])));
+
+    static const uint8_t expected_digest_384[48] =
+    {
+        0x38, 0xb0, 0x60, 0xa7, 0x51, 0xac, 0x96, 0x38,
+        0x4c, 0xd9, 0x32, 0x7e, 0xb1, 0xb1, 0xe3, 0x6a,
+        0x21, 0xfd, 0xb7, 0x11, 0x14, 0xbe, 0x07, 0x43,
+        0x4c, 0x0c, 0xc7, 0xbf, 0x63, 0xf6, 0xe1, 0xda,
+        0x27, 0x4e, 0xde, 0xbf, 0xe7, 0x6f, 0x65, 0xfb,
+        0xd5, 0x1a, 0xd2, 0xf1, 0x48, 0x98, 0xb9, 0x5b
+    };
+    
+    sha384_calc(digest, msg, 0);
+    ASSERT_EQ(0, memcmp(digest, expected_digest_384, sizeof(expected_digest_384)/sizeof(expected_digest_384[0])));
+
+    static const uint8_t expected_digest_512[64] =
+    {
+        0xcf, 0x83, 0xe1, 0x35, 0x7e, 0xef, 0xb8, 0xbd,
+        0xf1, 0x54, 0x28, 0x50, 0xd6, 0x6d, 0x80, 0x07,
+        0xd6, 0x20, 0xe4, 0x05, 0x0b, 0x57, 0x15, 0xdc,
+        0x83, 0xf4, 0xa9, 0x21, 0xd3, 0x6c, 0xe9, 0xce,
+        0x47, 0xd0, 0xd1, 0x3c, 0x5d, 0x85, 0xf2, 0xb0,
+        0xff, 0x83, 0x18, 0xd2, 0x87, 0x7e, 0xec, 0x2f,
+        0x63, 0xb9, 0x31, 0xbd, 0x47, 0x41, 0x7a, 0x81,
+        0xa5, 0x38, 0x32, 0x7a, 0xf9, 0x27, 0xda, 0x3e
+    };
+
+    sha512_calc(digest, msg, 0);
+    ASSERT_EQ(0, memcmp(digest, expected_digest_512, sizeof(expected_digest_512)/sizeof(expected_digest_512[0])));
+
+    END_TEST(ecc);
+}
 
 TEST(ecc, hmac1)
 {
@@ -452,7 +510,7 @@ TEST(ecc, nist_key_pair)
     {
         char *name;
         const xint_ecc_curve_t *curve;
-        struct key_pair *keys;
+        const struct key_pair *keys;
     } vec_data[] =
     {
         { "p192", &p192, key_pairs_p_192, },
@@ -502,7 +560,7 @@ TEST(ecc, nist_pkv)
     {
         char *name;
         const xint_ecc_curve_t *curve;
-        struct pkv *data;
+        const struct pkv *data;
     } vec_data[] =
     {
         { "p192", &p192, pkv_p_192, },
@@ -545,8 +603,8 @@ TEST(ecc, nist_pkv)
             }
         }
         STAMP_AFTER();
+        //printf("xint_ecc_verify_public_key %s : %lu\n", vec_data[j].name, STAMP_DIFF());
     }
-    
     xint_delete(priv);
     xint_point_delete(pub);
     
@@ -579,13 +637,69 @@ uint8_t *hex2bin(char *hex_msg)
     return bin_msg;
 }
 
-TEST(ecc, nist_gen)
+TEST(ecc, nist_gen_224)
 {
     static const struct vec
     {
         char *name;
         const xint_ecc_curve_t *curve;
-        struct sig_gen *data;
+        const struct sig_gen *data;
+    } vec_data[] =
+    {
+        { "p224", &p224, sig_gen_p_224_sha_224, },
+        { "p256", &p256, sig_gen_p_256_sha_224, },
+        { "p384", &p384, sig_gen_p_384_sha_224, },
+        { "p521", &p521, sig_gen_p_521_sha_224, },
+        { "k233", &k233, sig_gen_k_233_sha_224, },
+        { "k283", &k283, sig_gen_k_283_sha_224, },
+        { "k409", &k409, sig_gen_k_409_sha_224, },
+        { "k571", &k571, sig_gen_k_571_sha_224, },
+        { "b233", &b233, sig_gen_b_233_sha_224, },
+        { "b283", &b283, sig_gen_b_283_sha_224, },
+        { "b409", &b409, sig_gen_b_409_sha_224, },
+        { "b571", &b571, sig_gen_b_571_sha_224, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        xint_t priv = XINT_INIT_VAL;
+        xint_t k = XINT_INIT_VAL;
+        STAMP_VARS();
+        for (int i=0; i<15; ++i)
+        {
+            xint_assign_str(priv, vec_data[j].data[i].d, 0);
+            xint_assign_str(k, vec_data[j].data[i].k, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[32];
+            sha224_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            STAMP_BEFORE();
+            xint_ecc_sign(sig, h1, 28, priv, k, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_sign %s : %lu\n", vec_data[j].name, STAMP_DIFF());
+            int resx = test_equality(sig->r, vec_data[j].data[i].R);
+            int resy = test_equality(sig->s, vec_data[j].data[i].S);
+            ASSERT_EQ(0, resx);
+            ASSERT_EQ(0, resy);
+        }
+        xint_delete(sig->r);
+        xint_delete(sig->s);
+    }
+    
+    END_TEST(ecc);
+}
+
+
+TEST(ecc, nist_gen_256)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        const struct sig_gen *data;
     } vec_data[] =
     {
         { "p224", &p224, sig_gen_p_224_sha_256, },
@@ -604,46 +718,221 @@ TEST(ecc, nist_gen)
 
     for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
     {
-        xint_ecc_point_t pub;
-        xint_point_init(pub);
         xint_ecc_sig_t sig;
         xint_init(sig->r);
         xint_init(sig->s);
         xint_t priv = XINT_INIT_VAL;
         xint_t k = XINT_INIT_VAL;
+        STAMP_VARS();
         for (int i=0; i<15; ++i)
         {
-            xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
-            xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
             xint_assign_str(priv, vec_data[j].data[i].d, 0);
             xint_assign_str(k, vec_data[j].data[i].k, 0);
             uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
             uint8_t h1[32];
             sha256_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
             free(msg);
-            xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
-            xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
+            STAMP_BEFORE();
             xint_ecc_sign(sig, h1, 32, priv, k, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_sign %s : %lu\n", vec_data[j].name, STAMP_DIFF());
             int resx = test_equality(sig->r, vec_data[j].data[i].R);
             int resy = test_equality(sig->s, vec_data[j].data[i].S);
             ASSERT_EQ(0, resx);
             ASSERT_EQ(0, resy);
         }
-        xint_point_delete(pub);
         xint_delete(sig->r);
         xint_delete(sig->s);
     }
+    
     END_TEST(ecc);
 }
 
     
-TEST(ecc, nist_ver)
+TEST(ecc, nist_gen_384)
 {
     static const struct vec
     {
         char *name;
         const xint_ecc_curve_t *curve;
-        struct sig_ver *data;
+        const struct sig_gen *data;
+    } vec_data[] =
+    {
+        { "p224", &p224, sig_gen_p_224_sha_384, },
+        { "p256", &p256, sig_gen_p_256_sha_384, },
+        { "p384", &p384, sig_gen_p_384_sha_384, },
+        { "p521", &p521, sig_gen_p_521_sha_384, },
+        { "k233", &k233, sig_gen_k_233_sha_384, },
+        { "k283", &k283, sig_gen_k_283_sha_384, },
+        { "k409", &k409, sig_gen_k_409_sha_384, },
+        { "k571", &k571, sig_gen_k_571_sha_384, },
+        { "b233", &b233, sig_gen_b_233_sha_384, },
+        { "b283", &b283, sig_gen_b_283_sha_384, },
+        { "b409", &b409, sig_gen_b_409_sha_384, },
+        { "b571", &b571, sig_gen_b_571_sha_384, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        xint_t priv = XINT_INIT_VAL;
+        xint_t k = XINT_INIT_VAL;
+        STAMP_VARS();
+        for (int i=0; i<15; ++i)
+        {
+            xint_assign_str(priv, vec_data[j].data[i].d, 0);
+            xint_assign_str(k, vec_data[j].data[i].k, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[48];
+            sha384_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            STAMP_BEFORE();
+            xint_ecc_sign(sig, h1, 48, priv, k, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_sign %s : %lu\n", vec_data[j].name, STAMP_DIFF());
+            int resx = test_equality(sig->r, vec_data[j].data[i].R);
+            int resy = test_equality(sig->s, vec_data[j].data[i].S);
+            ASSERT_EQ(0, resx);
+            ASSERT_EQ(0, resy);
+        }
+        xint_delete(sig->r);
+        xint_delete(sig->s);
+    }
+    
+    END_TEST(ecc);
+}
+
+    
+TEST(ecc, nist_gen_512)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        const struct sig_gen *data;
+    } vec_data[] =
+    {
+        { "p224", &p224, sig_gen_p_224_sha_512, },
+        { "p256", &p256, sig_gen_p_256_sha_512, },
+        { "p384", &p384, sig_gen_p_384_sha_512, },
+        { "p521", &p521, sig_gen_p_521_sha_512, },
+        { "k233", &k233, sig_gen_k_233_sha_512, },
+        { "k283", &k283, sig_gen_k_283_sha_512, },
+        { "k409", &k409, sig_gen_k_409_sha_512, },
+        { "k571", &k571, sig_gen_k_571_sha_512, },
+        { "b233", &b233, sig_gen_b_233_sha_512, },
+        { "b283", &b283, sig_gen_b_283_sha_512, },
+        { "b409", &b409, sig_gen_b_409_sha_512, },
+        { "b571", &b571, sig_gen_b_571_sha_512, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        xint_t priv = XINT_INIT_VAL;
+        xint_t k = XINT_INIT_VAL;
+        STAMP_VARS();
+        for (int i=0; i<15; ++i)
+        {
+            xint_assign_str(priv, vec_data[j].data[i].d, 0);
+            xint_assign_str(k, vec_data[j].data[i].k, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[64];
+            sha512_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            STAMP_BEFORE();
+            xint_ecc_sign(sig, h1, 64, priv, k, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_sign %s : %lu\n", vec_data[j].name, STAMP_DIFF());
+            int resx = test_equality(sig->r, vec_data[j].data[i].R);
+            int resy = test_equality(sig->s, vec_data[j].data[i].S);
+            ASSERT_EQ(0, resx);
+            ASSERT_EQ(0, resy);
+        }
+        xint_delete(sig->r);
+        xint_delete(sig->s);
+    }
+    
+    END_TEST(ecc);
+}
+
+    
+TEST(ecc, nist_ver_224)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        const struct sig_ver *data;
+    } vec_data[] =
+    {
+        { "p192", &p192, sig_ver_p_192_sha_224, },
+        { "p224", &p224, sig_ver_p_224_sha_224, },
+        { "p256", &p256, sig_ver_p_256_sha_224, },
+        { "p384", &p384, sig_ver_p_384_sha_224, },
+        { "p521", &p521, sig_ver_p_521_sha_224, },
+        { "k163", &k163, sig_ver_k_163_sha_224, },
+        { "k233", &k233, sig_ver_k_233_sha_224, },
+        { "k283", &k283, sig_ver_k_283_sha_224, },
+        { "k409", &k409, sig_ver_k_409_sha_224, },
+        { "k571", &k571, sig_ver_k_571_sha_224, },
+        { "b163", &b163, sig_ver_b_163_sha_224, },
+        { "b233", &b233, sig_ver_b_233_sha_224, },
+        { "b283", &b283, sig_ver_b_283_sha_224, },
+        { "b409", &b409, sig_ver_b_409_sha_224, },
+        { "b571", &b571, sig_ver_b_571_sha_224, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        xint_ecc_point_t pub;
+        xint_point_init(pub);
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        STAMP_VARS();
+        for (int i=0; i<15; ++i)
+        {
+            xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
+            xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[32];
+            sha224_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
+            xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
+            STAMP_BEFORE();
+            int verified = xint_ecc_verify(sig, h1, 28, pub, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_verify %s : %lu\n", vec_data[j].name, STAMP_DIFF());
+            if (vec_data[j].data[i].result[0] == 'F')
+            {
+                ASSERT_EQ(0, verified);
+            }
+            else
+            {
+                ASSERT_EQ(1, verified);
+            }
+        }
+        xint_point_delete(pub);
+        xint_delete(sig->r);
+        xint_delete(sig->s);
+    }
+
+    END_TEST(ecc);
+}
+
+TEST(ecc, nist_ver_256)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        const struct sig_ver *data;
     } vec_data[] =
     {
         { "p192", &p192, sig_ver_p_192_sha_256, },
@@ -670,6 +959,7 @@ TEST(ecc, nist_ver)
         xint_ecc_sig_t sig;
         xint_init(sig->r);
         xint_init(sig->s);
+        STAMP_VARS();
         for (int i=0; i<15; ++i)
         {
             xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
@@ -680,7 +970,10 @@ TEST(ecc, nist_ver)
             free(msg);
             xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
             xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
+            STAMP_BEFORE();
             int verified = xint_ecc_verify(sig, h1, 32, pub, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_verify %s : %lu\n", vec_data[j].name, STAMP_DIFF());
             if (vec_data[j].data[i].result[0] == 'F')
             {
                 ASSERT_EQ(0, verified);
@@ -694,12 +987,143 @@ TEST(ecc, nist_ver)
         xint_delete(sig->r);
         xint_delete(sig->s);
     }
+
     END_TEST(ecc);
 }
 
+TEST(ecc, nist_ver_384)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        const struct sig_ver *data;
+    } vec_data[] =
+    {
+        { "p192", &p192, sig_ver_p_192_sha_384, },
+        { "p224", &p224, sig_ver_p_224_sha_384, },
+        { "p256", &p256, sig_ver_p_256_sha_384, },
+        { "p384", &p384, sig_ver_p_384_sha_384, },
+        { "p521", &p521, sig_ver_p_521_sha_384, },
+        { "k163", &k163, sig_ver_k_163_sha_384, },
+        { "k233", &k233, sig_ver_k_233_sha_384, },
+        { "k283", &k283, sig_ver_k_283_sha_384, },
+        { "k409", &k409, sig_ver_k_409_sha_384, },
+        { "k571", &k571, sig_ver_k_571_sha_384, },
+        { "b163", &b163, sig_ver_b_163_sha_384, },
+        { "b233", &b233, sig_ver_b_233_sha_384, },
+        { "b283", &b283, sig_ver_b_283_sha_384, },
+        { "b409", &b409, sig_ver_b_409_sha_384, },
+        { "b571", &b571, sig_ver_b_571_sha_384, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        xint_ecc_point_t pub;
+        xint_point_init(pub);
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        STAMP_VARS();
+        for (int i=0; i<15; ++i)
+        {
+            xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
+            xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[48];
+            sha384_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
+            xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
+            STAMP_BEFORE();
+            int verified = xint_ecc_verify(sig, h1, 48, pub, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_verify %s : %lu\n", vec_data[j].name, STAMP_DIFF());
+            if (vec_data[j].data[i].result[0] == 'F')
+            {
+                ASSERT_EQ(0, verified);
+            }
+            else
+            {
+                ASSERT_EQ(1, verified);
+            }
+        }
+        xint_point_delete(pub);
+        xint_delete(sig->r);
+        xint_delete(sig->s);
+    }
+
+    END_TEST(ecc);
+}
+
+TEST(ecc, nist_ver_512)
+{
+    static const struct vec
+    {
+        char *name;
+        const xint_ecc_curve_t *curve;
+        const struct sig_ver *data;
+    } vec_data[] =
+    {
+        { "p192", &p192, sig_ver_p_192_sha_512, },
+        { "p224", &p224, sig_ver_p_224_sha_512, },
+        { "p256", &p256, sig_ver_p_256_sha_512, },
+        { "p384", &p384, sig_ver_p_384_sha_512, },
+        { "p521", &p521, sig_ver_p_521_sha_512, },
+        { "k163", &k163, sig_ver_k_163_sha_512, },
+        { "k233", &k233, sig_ver_k_233_sha_512, },
+        { "k283", &k283, sig_ver_k_283_sha_512, },
+        { "k409", &k409, sig_ver_k_409_sha_512, },
+        { "k571", &k571, sig_ver_k_571_sha_512, },
+        { "b163", &b163, sig_ver_b_163_sha_512, },
+        { "b233", &b233, sig_ver_b_233_sha_512, },
+        { "b283", &b283, sig_ver_b_283_sha_512, },
+        { "b409", &b409, sig_ver_b_409_sha_512, },
+        { "b571", &b571, sig_ver_b_571_sha_512, },
+    };
+
+    for (int j=0; j<sizeof(vec_data)/sizeof(vec_data[0]); ++j)
+    {
+        xint_ecc_point_t pub;
+        xint_point_init(pub);
+        xint_ecc_sig_t sig;
+        xint_init(sig->r);
+        xint_init(sig->s);
+        STAMP_VARS();
+        for (int i=0; i<15; ++i)
+        {
+            xint_assign_str(pub->x, vec_data[j].data[i].Qx, 0);
+            xint_assign_str(pub->y, vec_data[j].data[i].Qy, 0);
+            uint8_t *msg = hex2bin(vec_data[j].data[i].msg+2);
+            uint8_t h1[64];
+            sha512_calc(h1, msg, (strlen(vec_data[j].data[i].msg)-2)/2);
+            free(msg);
+            xint_assign_str(sig->r, vec_data[j].data[i].R, 0);
+            xint_assign_str(sig->s, vec_data[j].data[i].S, 0);
+            STAMP_BEFORE();
+            int verified = xint_ecc_verify(sig, h1, 64, pub, vec_data[j].curve);
+            STAMP_AFTER();
+            //printf("xint_ecc_verify %s : %lu\n", vec_data[j].name, STAMP_DIFF());
+            if (vec_data[j].data[i].result[0] == 'F')
+            {
+                ASSERT_EQ(0, verified);
+            }
+            else
+            {
+                ASSERT_EQ(1, verified);
+            }
+        }
+        xint_point_delete(pub);
+        xint_delete(sig->r);
+        xint_delete(sig->s);
+    }
+
+    END_TEST(ecc);
+}
 
 int test_ecc(void)
 {
+    CALL_TEST(ecc, sha);
     CALL_TEST(ecc, hmac1);
     CALL_TEST(ecc, hmac2);
     CALL_TEST(ecc, k_generation);
@@ -714,8 +1138,14 @@ int test_ecc(void)
     CALL_TEST(ecc, jacobian_scalar_multiply);
     CALL_TEST(ecc, nist_key_pair);
     CALL_TEST(ecc, nist_pkv);
-    CALL_TEST(ecc, nist_gen);
-    CALL_TEST(ecc, nist_ver);
+    CALL_TEST(ecc, nist_gen_224);
+    CALL_TEST(ecc, nist_gen_256);
+    CALL_TEST(ecc, nist_gen_384);
+    CALL_TEST(ecc, nist_gen_512);
+    CALL_TEST(ecc, nist_ver_224);
+    CALL_TEST(ecc, nist_ver_256);
+    CALL_TEST(ecc, nist_ver_384);
+    CALL_TEST(ecc, nist_ver_512);
 
     END_TEST_GROUP(ecc);
 }

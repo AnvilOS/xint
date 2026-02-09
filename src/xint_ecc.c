@@ -262,11 +262,13 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
 
     xint_t h1_int = XINT_INIT_VAL;
     xint_from_bin(h1_int, digest, digest_len);
-    int too_many_bits = xint_size(h1_int) * XWORD_BITS - c->order_bits;
-    if (too_many_bits > 0)
+    
+    int input_bits = (int)digest_len * 8;
+    if (input_bits > c->order_bits)
     {
-        xint_rshift(h1_int, h1_int, too_many_bits);
+        xint_rshift(h1_int, h1_int, input_bits - c->order_bits);
     }
+
     xint_mod(h1_int, h1_int, N);
 
     // Inverse of s

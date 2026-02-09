@@ -125,7 +125,7 @@ const xint_ecc_curve_t k283 =
     k283_b,
     is_valid_point,
     mul_shamir,
-    282,
+    281,
 };
 
 const xword_t k409_p[]  = { 0 };
@@ -161,7 +161,7 @@ const xint_ecc_curve_t k409 =
     k409_b,
     is_valid_point,
     mul_shamir,
-    409,
+    407,
 };
 
 const xword_t k571_p[]  = { 0 };

@@ -60,6 +60,21 @@ struct sig_gen
     char *S;
 };
 
+extern const struct sig_gen sig_gen_p_224_sha_224[];
+extern const struct sig_gen sig_gen_p_256_sha_224[];
+extern const struct sig_gen sig_gen_p_384_sha_224[];
+extern const struct sig_gen sig_gen_p_521_sha_224[];
+
+extern const struct sig_gen sig_gen_k_233_sha_224[];
+extern const struct sig_gen sig_gen_k_283_sha_224[];
+extern const struct sig_gen sig_gen_k_409_sha_224[];
+extern const struct sig_gen sig_gen_k_571_sha_224[];
+
+extern const struct sig_gen sig_gen_b_233_sha_224[];
+extern const struct sig_gen sig_gen_b_283_sha_224[];
+extern const struct sig_gen sig_gen_b_409_sha_224[];
+extern const struct sig_gen sig_gen_b_571_sha_224[];
+
 extern const struct sig_gen sig_gen_p_224_sha_256[];
 extern const struct sig_gen sig_gen_p_256_sha_256[];
 extern const struct sig_gen sig_gen_p_384_sha_256[];
@@ -75,6 +90,36 @@ extern const struct sig_gen sig_gen_b_283_sha_256[];
 extern const struct sig_gen sig_gen_b_409_sha_256[];
 extern const struct sig_gen sig_gen_b_571_sha_256[];
 
+extern const struct sig_gen sig_gen_p_224_sha_384[];
+extern const struct sig_gen sig_gen_p_256_sha_384[];
+extern const struct sig_gen sig_gen_p_384_sha_384[];
+extern const struct sig_gen sig_gen_p_521_sha_384[];
+
+extern const struct sig_gen sig_gen_k_233_sha_384[];
+extern const struct sig_gen sig_gen_k_283_sha_384[];
+extern const struct sig_gen sig_gen_k_409_sha_384[];
+extern const struct sig_gen sig_gen_k_571_sha_384[];
+
+extern const struct sig_gen sig_gen_b_233_sha_384[];
+extern const struct sig_gen sig_gen_b_283_sha_384[];
+extern const struct sig_gen sig_gen_b_409_sha_384[];
+extern const struct sig_gen sig_gen_b_571_sha_384[];
+
+extern const struct sig_gen sig_gen_p_224_sha_512[];
+extern const struct sig_gen sig_gen_p_256_sha_512[];
+extern const struct sig_gen sig_gen_p_384_sha_512[];
+extern const struct sig_gen sig_gen_p_521_sha_512[];
+
+extern const struct sig_gen sig_gen_k_233_sha_512[];
+extern const struct sig_gen sig_gen_k_283_sha_512[];
+extern const struct sig_gen sig_gen_k_409_sha_512[];
+extern const struct sig_gen sig_gen_k_571_sha_512[];
+
+extern const struct sig_gen sig_gen_b_233_sha_512[];
+extern const struct sig_gen sig_gen_b_283_sha_512[];
+extern const struct sig_gen sig_gen_b_409_sha_512[];
+extern const struct sig_gen sig_gen_b_571_sha_512[];
+
 struct sig_ver
 {
     char *msg;
@@ -84,6 +129,24 @@ struct sig_ver
     char *S;
     char *result;
 };
+
+extern const struct sig_ver sig_ver_p_192_sha_224[];
+extern const struct sig_ver sig_ver_p_224_sha_224[];
+extern const struct sig_ver sig_ver_p_256_sha_224[];
+extern const struct sig_ver sig_ver_p_384_sha_224[];
+extern const struct sig_ver sig_ver_p_521_sha_224[];
+
+extern const struct sig_ver sig_ver_k_163_sha_224[];
+extern const struct sig_ver sig_ver_k_233_sha_224[];
+extern const struct sig_ver sig_ver_k_283_sha_224[];
+extern const struct sig_ver sig_ver_k_409_sha_224[];
+extern const struct sig_ver sig_ver_k_571_sha_224[];
+
+extern const struct sig_ver sig_ver_b_163_sha_224[];
+extern const struct sig_ver sig_ver_b_233_sha_224[];
+extern const struct sig_ver sig_ver_b_283_sha_224[];
+extern const struct sig_ver sig_ver_b_409_sha_224[];
+extern const struct sig_ver sig_ver_b_571_sha_224[];
 
 extern const struct sig_ver sig_ver_p_192_sha_256[];
 extern const struct sig_ver sig_ver_p_224_sha_256[];
@@ -103,3 +166,38 @@ extern const struct sig_ver sig_ver_b_283_sha_256[];
 extern const struct sig_ver sig_ver_b_409_sha_256[];
 extern const struct sig_ver sig_ver_b_571_sha_256[];
 
+extern const struct sig_ver sig_ver_p_192_sha_384[];
+extern const struct sig_ver sig_ver_p_224_sha_384[];
+extern const struct sig_ver sig_ver_p_256_sha_384[];
+extern const struct sig_ver sig_ver_p_384_sha_384[];
+extern const struct sig_ver sig_ver_p_521_sha_384[];
+
+extern const struct sig_ver sig_ver_k_163_sha_384[];
+extern const struct sig_ver sig_ver_k_233_sha_384[];
+extern const struct sig_ver sig_ver_k_283_sha_384[];
+extern const struct sig_ver sig_ver_k_409_sha_384[];
+extern const struct sig_ver sig_ver_k_571_sha_384[];
+
+extern const struct sig_ver sig_ver_b_163_sha_384[];
+extern const struct sig_ver sig_ver_b_233_sha_384[];
+extern const struct sig_ver sig_ver_b_283_sha_384[];
+extern const struct sig_ver sig_ver_b_409_sha_384[];
+extern const struct sig_ver sig_ver_b_571_sha_384[];
+
+extern const struct sig_ver sig_ver_p_192_sha_512[];
+extern const struct sig_ver sig_ver_p_224_sha_512[];
+extern const struct sig_ver sig_ver_p_256_sha_512[];
+extern const struct sig_ver sig_ver_p_384_sha_512[];
+extern const struct sig_ver sig_ver_p_521_sha_512[];
+
+extern const struct sig_ver sig_ver_k_163_sha_512[];
+extern const struct sig_ver sig_ver_k_233_sha_512[];
+extern const struct sig_ver sig_ver_k_283_sha_512[];
+extern const struct sig_ver sig_ver_k_409_sha_512[];
+extern const struct sig_ver sig_ver_k_571_sha_512[];
+
+extern const struct sig_ver sig_ver_b_163_sha_512[];
+extern const struct sig_ver sig_ver_b_233_sha_512[];
+extern const struct sig_ver sig_ver_b_283_sha_512[];
+extern const struct sig_ver sig_ver_b_409_sha_512[];
+extern const struct sig_ver sig_ver_b_571_sha_512[];
