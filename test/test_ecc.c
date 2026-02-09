@@ -14,7 +14,6 @@
 #include "time_stamp.h"
 
 #include "sha256.h"
-#include "sha512.h"
 #include "hmac.h"
 
 #include <string.h>

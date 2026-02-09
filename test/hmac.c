@@ -22,7 +22,7 @@ void hmac_sha256_reset(struct hmac_sha256_ctx *ctx, const uint8_t *key, size_t k
         sha256_append(ctx->sha256_ctx, key, keylen);
         sha256_finalise(ctx->sha256_ctx, ctx->blk_len_key);
     }
-    else if (keylen < 64)
+    else if (keylen <= 64)
     {
         memset(ctx->blk_len_key, 0, 64);
         memcpy(ctx->blk_len_key, key, keylen);

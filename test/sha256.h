@@ -5,6 +5,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef enum
+{
+    sha224,
+    sha256,
+    sha384,
+    sha512,
+} hashfunc_id;
+
 struct sha256_ctx
 {
     uint32_t hv[8];

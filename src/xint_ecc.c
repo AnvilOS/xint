@@ -108,8 +108,7 @@ void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, cons
             
         // 3.  Compute:
         // k = bits2int(T)
-        xint_from_bin(k, T, 32);
-        xint_rshift(k, k, xint_size(k) * XWORD_BITS - qlen);
+        bits2int(k, qlen, T, 32);
         
         // If 1 <= k <= q-1 done
         if (xint_cmp_ulong(k, 1) >= 0 && xint_cmp(k, q_int) < 0)
@@ -156,6 +155,15 @@ int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len,
     int ret = xint_ecc_sign(sig, digest, digest_len, priv, k, c);
     xint_delete(k);
     return ret;
+}
+
+int xint_ecc_sig_gen(unsigned char *msg, int msglen, xint_t priv, const xint_ecc_curve_t *c, hashfunc_id hashfunc_id)
+{
+    
+    
+    
+    
+    return 0;
 }
 
 int xint_ecc_sign(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, xint_t k, const xint_ecc_curve_t *c)
