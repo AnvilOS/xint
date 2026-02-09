@@ -35,6 +35,16 @@ void xint_point_copy(xint_ecc_point_t r, const xint_ecc_point_t p)
     xint_copy(r->y, p->y);
 }
 
+void bits2int(xint_t E, int qlen, unsigned char *in, int in_len)
+{
+    xint_from_bin(E, in, in_len);
+    int blen = in_len * 8;
+    if (blen > qlen)
+    {
+        xint_rshift(E, E, blen - qlen);
+    }
+}
+
 void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, const xint_ecc_curve_t *c)
 {
     xint_t q_int = XINT_INIT_VAL;
@@ -43,12 +53,7 @@ void ecc_gen_deterministic_k(xint_t k, uint8_t *h1, int hlen, xint_t v_int, cons
 
     // a.  The hash is ready, just convert to an xint
     xint_t h1_int = XINT_INIT_VAL;
-    xint_from_bin(h1_int, h1, 32);
-    int too_many_bits = xint_size(h1_int) * XWORD_BITS - c->order_bits;
-    if (too_many_bits > 0)
-    {
-        xint_rshift(h1_int, h1_int, too_many_bits);
-    }
+    bits2int(h1_int, c->order_bits, h1, hlen);
     xint_mod(h1_int, h1_int, q_int);
 
     int rolen = (qlen + 7) >> 3;
@@ -148,52 +153,9 @@ int xint_ecc_sign_det(xint_ecc_sig_t sig, unsigned char *digest, int digest_len,
 {
     xint_t k = XINT_INIT_VAL;
     ecc_gen_deterministic_k(k, digest, digest_len, priv, c);
-              
-    xint_ecc_point_t point;
-    xint_point_init(point);
-
-    xint_ecc_point_t G;
-    xint_point_init(G);
-    CONST_XINT_FROM_XWORDS(G->x, c->Gx, c->nwords);
-    CONST_XINT_FROM_XWORDS(G->y, c->Gy, c->nwords);
-    G->is_at_infinity = 0;
-
-    c->scalar_mul(point, G, k, c);
-
-    xint_t N = XINT_INIT_VAL;
-    CONST_XINT_FROM_XWORDS(N, c->n, c->nwords);
-
-    // Invert k
-    xint_t k_inv = XINT_INIT_VAL;
-    xint_mod_inverse(k_inv, k, N);
-    
-    xint_t h1_int = XINT_INIT_VAL;
-    xint_from_bin(h1_int, digest, digest_len);
-    int too_many_bits = xint_size(h1_int) * XWORD_BITS - c->order_bits;
-    if (too_many_bits > 0)
-    {
-        xint_rshift(h1_int, h1_int, too_many_bits);
-    }
-    xint_mod(h1_int, h1_int, N);
-
-    xint_mul(point->y, point->x, priv);
-    xint_mod(point->y, point->y, N);
-    xint_add(point->y, h1_int, point->y);
-    xint_mod(point->y, point->y, N);
-    xint_mul(point->y, k_inv, point->y);
-    xint_mod(point->y, point->y, N);
-    
-    xint_copy(sig->r, point->x);
-    xint_copy(sig->s, point->y);
-    //xint_print_hex(" r", sig->r);
-    //xint_print_hex(" s", sig->s);
-
+    int ret = xint_ecc_sign(sig, digest, digest_len, priv, k, c);
     xint_delete(k);
-    xint_delete(k_inv);
-    xint_delete(h1_int);
-    xint_point_delete(point);
-
-    return 0;
+    return ret;
 }
 
 int xint_ecc_sign(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xint_t priv, xint_t k, const xint_ecc_curve_t *c)
@@ -217,13 +179,7 @@ int xint_ecc_sign(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, xin
     xint_mod_inverse(k_inv, k, N);
     
     xint_t h1_int = XINT_INIT_VAL;
-    xint_from_bin(h1_int, digest, digest_len);
-    
-    int input_bits = (int)digest_len * 8;
-    if (input_bits > c->order_bits)
-    {
-        xint_rshift(h1_int, h1_int, input_bits - c->order_bits);
-    }
+    bits2int(h1_int, c->order_bits, digest, digest_len);
     xint_mod(h1_int, h1_int, N);
 
     xint_mod(point->x, point->x, N);
@@ -261,14 +217,7 @@ int xint_ecc_verify(xint_ecc_sig_t sig, unsigned char *digest, int digest_len, x
     CONST_XINT_FROM_XWORDS(N, c->n, c->nwords);
 
     xint_t h1_int = XINT_INIT_VAL;
-    xint_from_bin(h1_int, digest, digest_len);
-    
-    int input_bits = (int)digest_len * 8;
-    if (input_bits > c->order_bits)
-    {
-        xint_rshift(h1_int, h1_int, input_bits - c->order_bits);
-    }
-
+    bits2int(h1_int, c->order_bits, digest, digest_len);
     xint_mod(h1_int, h1_int, N);
 
     // Inverse of s
