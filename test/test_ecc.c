@@ -10,6 +10,7 @@
 #include "xint_internal.h"
 #include "nist_vectors.h"
 #include "prime_curves.h"
+#include "hmac_drbg.h"
 
 #include "time_stamp.h"
 
@@ -41,6 +42,31 @@ static int test_equality_ex(const xword_t *x, int xn, char *p)
     return ret;
 }
 
+uint8_t *hex2bin(char *hex_msg)
+{
+    // Convert msg to a binary array
+    long len = strlen(hex_msg);
+    uint8_t *bin_msg = (uint8_t *)malloc(len/2);
+    for (int i=0; i<len/2; ++i)
+    {
+        uint8_t c[2];
+        c[0] = hex_msg[2*i];
+        c[1] = hex_msg[2*i+1];
+        for (int j=0; j<2; ++j)
+        {
+            if ('0' <= c[j] && c[j] <= '9')
+            {
+                c[j] -= '0';
+            }
+            else if ('a' <= tolower(c[j]) && tolower(c[j]) <= 'f')
+            {
+                c[j] = tolower(c[j]) - 'a' + 10;
+            }
+        }
+        bin_msg[i] = c[0] << 4 | c[1];
+    }
+    return bin_msg;
+}
 
 TEST_GROUP(ecc);
 
@@ -137,6 +163,66 @@ TEST(ecc, hmac2)
     const char *msg = "Test Using Larger Than Block-Size Key - Hash Key First";
     hmac_calc(digest, (uint8_t *)key, strlen(key), (uint8_t *)msg, strlen(msg));
     ASSERT_EQ(0, memcmp(digest, expected, 32));
+
+    END_TEST(ecc);
+}
+
+
+TEST(ecc, hmac_drbg)
+{
+//    [SHA-256]
+//    [PredictionResistance = False]
+//    [EntropyInputLen = 256]
+//    [NonceLen = 128]
+//    [PersonalizationStringLen = 0]
+//    [AdditionalInputLen = 0]
+//    [ReturnedBitsLen = 1024]
+//
+//    COUNT = 0
+//    EntropyInput = ca851911349384bffe89de1cbdc46e6831e44d34a4fb935ee285dd14b71a7488
+//    Nonce = 659ba96c601dc69fc902940805ec0ca8
+//    PersonalizationString =
+//    ** INSTANTIATE:
+//        V   = e75855f93b971ac468d200992e211960202d53cf08852ef86772d6490bfb53f9
+//        Key = 302a4aba78412ab36940f4be7b940a0c728542b8b81d95b801a57b3797f9dd6e
+//    AdditionalInput =
+//    ** GENERATE (FIRST CALL):
+//        V   = bfbdcf455d5c82acafc59f339ce57126ff70b67aef910fa25db7617818faeafe
+//        Key = 911bf7cbda4387a172a1a3daf6c9fa8e17c4bfef69cc7eff1341e7eef88d2811
+//    AdditionalInput =
+//    ReturnedBits = e528e9abf2dece54d47c7e75e5fe302149f817ea9fb4bee6f4199697d04d5b89d54fbb978a15b5c443c9ec21036d2460b6f73ebad0dc2aba6e624abf07745bc107694bb7547bb0995f70de25d6b29e2d3011bb19d27676c07162c8b5ccde0668961df86803482cb37ed6d5c0bb8d50cf1f50d476aa0458bdaba806f48be9dcb8
+//    ** GENERATE (SECOND CALL):
+//        V   = 6b94e773e3469353a1ca8face76b238c5919d62a150a7dfc589ffa11c30b5b94
+//        Key = 6dd2cd5b1edba4b620d195ce26ad6845b063211d11e591432de37a3ad793f66c
+
+    char entropy_hex[] = "ca851911349384bffe89de1cbdc46e6831e44d34a4fb935ee285dd14b71a7488";
+    char nonce_hex[] = "659ba96c601dc69fc902940805ec0ca8";
+    int entropy_len = strlen(entropy_hex)/2;
+    unsigned char *entropy = hex2bin(entropy_hex);
+    int nonce_len = strlen(nonce_hex)/2;
+    unsigned char *nonce = hex2bin(nonce_hex);
+
+    unsigned char seed[100];
+    memset(seed, 0, sizeof(seed));
+    int seedlen = entropy_len + nonce_len;
+    memcpy(seed, entropy, entropy_len);
+    memcpy(seed+entropy_len, nonce, nonce_len);
+    struct hmac_drbg_ctx *drbg = hmac_drbg_instantiate(seed, seedlen);
+//    uint8_t block[32];
+//    hmac_calc(block, drbg->K, drbg->outlen, drbg->V, drbg->outlen);
+
+    
+    hmac_drbg_generate(drbg, 1024, NULL, 0);
+    hmac_drbg_generate(drbg, 1024, NULL, 0);
+    hmac_drbg_generate(drbg, 1024, NULL, 0);
+    hmac_drbg_generate(drbg, 1024, NULL, 0);
+//    hmac_drbg_update(drbg, tmp_vec, entropy_len+nonce_len);
+    //    xint_to_buf(seed, rolen, v_int);
+    //    xint_to_buf(seed + rolen, rolen, h1_int);
+    //    int seedlen = rolen + rolen;
+    //
+    //
+    //    // a.  The hash is ready, just convert to an xint
 
     END_TEST(ecc);
 }
@@ -608,32 +694,6 @@ TEST(ecc, nist_pkv)
     xint_point_delete(pub);
     
     END_TEST(ecc);
-}
-
-uint8_t *hex2bin(char *hex_msg)
-{
-    // Convert msg to a binary array
-    long len = strlen(hex_msg);
-    uint8_t *bin_msg = (uint8_t *)malloc(len/2);
-    for (int i=0; i<len/2; ++i)
-    {
-        uint8_t c[2];
-        c[0] = hex_msg[2*i];
-        c[1] = hex_msg[2*i+1];
-        for (int j=0; j<2; ++j)
-        {
-            if ('0' <= c[j] && c[j] <= '9')
-            {
-                c[j] -= '0';
-            }
-            else if ('a' <= tolower(c[j]) && tolower(c[j]) <= 'f')
-            {
-                c[j] = tolower(c[j]) - 'a' + 10;
-            }
-        }
-        bin_msg[i] = c[0] << 4 | c[1];
-    }
-    return bin_msg;
 }
 
 TEST(ecc, nist_gen_224)
@@ -1125,6 +1185,7 @@ int test_ecc(void)
     CALL_TEST(ecc, sha);
     CALL_TEST(ecc, hmac1);
     CALL_TEST(ecc, hmac2);
+    CALL_TEST(ecc, hmac_drbg);
     CALL_TEST(ecc, k_generation);
     CALL_TEST(ecc, rfc_6979);
     CALL_TEST(ecc, gen_det_k);
