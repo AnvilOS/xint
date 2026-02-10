@@ -261,6 +261,38 @@ void sha512_reset(struct sha512_ctx *ctx)
     ctx->msg_len = 0;
 }
 
+void sha512_224_reset(struct sha512_ctx *ctx)
+{
+    // Initialise hash values
+    ctx->hv[0] = 0x8c3d37c819544da2;
+    ctx->hv[1] = 0x73e1996689dcd4d6;
+    ctx->hv[2] = 0x1dfab7ae32ff9c82;
+    ctx->hv[3] = 0x679dd514582f9fcf;
+    ctx->hv[4] = 0x0f6d2b697bd44da8;
+    ctx->hv[5] = 0x77e36f7304C48942;
+    ctx->hv[6] = 0x3f9d85a86a1d36C8;
+    ctx->hv[7] = 0x1112e6ad91d692a1;
+    // Initialise buffer variables
+    ctx->pbuf = ctx->buf;
+    ctx->msg_len = 0;
+}
+
+void sha512_256_reset(struct sha512_ctx *ctx)
+{
+    // Initialise hash values
+    ctx->hv[0] = 0x22312194fc2bf72c;
+    ctx->hv[1] = 0x9f555fa3c84c64c2;
+    ctx->hv[2] = 0x2393b86b6f53b151;
+    ctx->hv[3] = 0x963877195940eabd;
+    ctx->hv[4] = 0x96283ee2a88effe3;
+    ctx->hv[5] = 0xbe5e1e2553863992;
+    ctx->hv[6] = 0x2b0199fc2c85b8aa;
+    ctx->hv[7] = 0x0eb72ddC81c52ca2;
+    // Initialise buffer variables
+    ctx->pbuf = ctx->buf;
+    ctx->msg_len = 0;
+}
+
 // The array of round constants is fixed
 static const uint64_t k64[] =
 {
@@ -455,6 +487,90 @@ void sha512_finalise(struct sha512_ctx *ctx, uint8_t digest[64])
     }
 }
 
+void sha512_224_finalise(struct sha512_ctx *ctx, uint8_t digest[28])
+{
+    uint8_t *ptr = (uint8_t*)digest;
+    
+    uint64_t L = ctx->msg_len * 8;
+
+    // append a single 1 bit
+    sha512_append_ch(ctx, 0x80);
+
+    // append k '0' bits where k takes us up to 8 octets before the buf is full
+    while ((ctx->msg_len % 128) != 112)
+    {
+        sha512_append_ch(ctx, 0x00);
+    }
+    
+    // append L - the message size in bits
+    for (int i=0; i<8; ++i)
+    {
+        sha512_append_ch(ctx, 0);
+    }
+    for (int i=0; i<8; ++i)
+    {
+        sha512_append_ch(ctx, L >> 56);
+        L <<= 8;
+    }
+    
+    // Produce the digest
+    for (int i=0; i<3; ++i)
+    {
+        *ptr++ = ctx->hv[i] >> 56 & 0xff;
+        *ptr++ = ctx->hv[i] >> 48 & 0xff;
+        *ptr++ = ctx->hv[i] >> 40 & 0xff;
+        *ptr++ = ctx->hv[i] >> 32 & 0xff;
+        *ptr++ = ctx->hv[i] >> 24 & 0xff;
+        *ptr++ = ctx->hv[i] >> 16 & 0xff;
+        *ptr++ = ctx->hv[i] >> 8 & 0xff;
+        *ptr++ = ctx->hv[i] >> 0 & 0xff;
+    }
+    *ptr++ = ctx->hv[3] >> 56 & 0xff;
+    *ptr++ = ctx->hv[3] >> 48 & 0xff;
+    *ptr++ = ctx->hv[3] >> 40 & 0xff;
+    *ptr++ = ctx->hv[3] >> 32 & 0xff;
+}
+
+void sha512_256_finalise(struct sha512_ctx *ctx, uint8_t digest[32])
+{
+    uint8_t *ptr = (uint8_t*)digest;
+    
+    uint64_t L = ctx->msg_len * 8;
+
+    // append a single 1 bit
+    sha512_append_ch(ctx, 0x80);
+
+    // append k '0' bits where k takes us up to 8 octets before the buf is full
+    while ((ctx->msg_len % 128) != 112)
+    {
+        sha512_append_ch(ctx, 0x00);
+    }
+    
+    // append L - the message size in bits
+    for (int i=0; i<8; ++i)
+    {
+        sha512_append_ch(ctx, 0);
+    }
+    for (int i=0; i<8; ++i)
+    {
+        sha512_append_ch(ctx, L >> 56);
+        L <<= 8;
+    }
+    
+    // Produce the digest
+    for (int i=0; i<4; ++i)
+    {
+        *ptr++ = ctx->hv[i] >> 56 & 0xff;
+        *ptr++ = ctx->hv[i] >> 48 & 0xff;
+        *ptr++ = ctx->hv[i] >> 40 & 0xff;
+        *ptr++ = ctx->hv[i] >> 32 & 0xff;
+        *ptr++ = ctx->hv[i] >> 24 & 0xff;
+        *ptr++ = ctx->hv[i] >> 16 & 0xff;
+        *ptr++ = ctx->hv[i] >> 8 & 0xff;
+        *ptr++ = ctx->hv[i] >> 0 & 0xff;
+    }
+}
+
 void sha512_delete(struct sha512_ctx *ctx)
 {
     free(ctx);
@@ -475,5 +591,23 @@ void sha512_calc(uint8_t digest[64], const uint8_t *src, size_t n_bytes)
     sha512_reset(ctx);
     sha512_append(ctx, (const uint8_t*)src, n_bytes);
     sha512_finalise(ctx, digest);
+    sha512_delete(ctx);
+}
+
+void sha512_224_calc(uint8_t digest[28], const uint8_t *src, size_t n_bytes)
+{
+    struct sha512_ctx *ctx = sha512_new();
+    sha512_224_reset(ctx);
+    sha512_append(ctx, (const uint8_t*)src, n_bytes);
+    sha512_224_finalise(ctx, digest);
+    sha512_delete(ctx);
+}
+
+void sha512_256_calc(uint8_t digest[32], const uint8_t *src, size_t n_bytes)
+{
+    struct sha512_ctx *ctx = sha512_new();
+    sha512_256_reset(ctx);
+    sha512_append(ctx, (const uint8_t*)src, n_bytes);
+    sha512_256_finalise(ctx, digest);
     sha512_delete(ctx);
 }
