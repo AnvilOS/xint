@@ -255,14 +255,14 @@ TEST(ecc, hmac_drbg)
 
     char entropy_hex[] = "ca851911349384bffe89de1cbdc46e6831e44d34a4fb935ee285dd14b71a7488";
     char nonce_hex[] = "659ba96c601dc69fc902940805ec0ca8";
-    int entropy_len = strlen(entropy_hex)/2;
+    long entropy_len = strlen(entropy_hex)/2;
     unsigned char *entropy = hex2bin(entropy_hex);
-    int nonce_len = strlen(nonce_hex)/2;
+    long nonce_len = strlen(nonce_hex)/2;
     unsigned char *nonce = hex2bin(nonce_hex);
 
     unsigned char seed[100];
     memset(seed, 0, sizeof(seed));
-    int seedlen = entropy_len + nonce_len;
+    long seedlen = entropy_len + nonce_len;
     memcpy(seed, entropy, entropy_len);
     memcpy(seed+entropy_len, nonce, nonce_len);
     struct hmac_drbg_ctx *drbg = hmac_drbg_instantiate(seed, seedlen);

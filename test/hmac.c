@@ -46,6 +46,7 @@ void hmac_sha256_reset(struct hmac_sha256_ctx *ctx, const uint8_t *key, size_t k
     }
     else
     {
+        memset(ctx->blk_len_key, 0, ctx->block_len);
         memcpy(ctx->blk_len_key, key, keylen);
     }
     
