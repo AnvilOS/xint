@@ -7,7 +7,7 @@
 struct hmac_drbg_ctx *hmac_drbg_instantiate(unsigned char *seed, int seedlen)
 {
     struct hmac_drbg_ctx *ctx = (struct hmac_drbg_ctx *)malloc(sizeof(struct hmac_drbg_ctx));
-    ctx->hmac_ctx = hmac_sha256_new(sha256, seed, seedlen);
+    ctx->hmac_ctx = hmac_new(sha256, seed, seedlen);
     ctx->outlen = 32;
     memset(ctx->K, 0, ctx->outlen);
     memset(ctx->V, 1, ctx->outlen);
@@ -20,16 +20,16 @@ struct hmac_drbg_ctx *hmac_drbg_instantiate(unsigned char *seed, int seedlen)
 void hmac_drbg_update(struct hmac_drbg_ctx *ctx, unsigned char *data, int datalen)
 {
     // 1. K = HMAC (K, V || 0x00 || provided_data).
-    hmac_sha256_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
-    hmac_sha256_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
-    hmac_sha256_append_ch(ctx->hmac_ctx, 0);
-    hmac_sha256_append(ctx->hmac_ctx, data, datalen);
-    hmac_sha256_finalise(ctx->hmac_ctx, ctx->K);
+    hmac_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
+    hmac_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
+    hmac_append_ch(ctx->hmac_ctx, 0);
+    hmac_append(ctx->hmac_ctx, data, datalen);
+    hmac_finalise(ctx->hmac_ctx, ctx->K);
 
     // 2. V = HMAC (K, V).
-    hmac_sha256_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
-    hmac_sha256_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
-    hmac_sha256_finalise(ctx->hmac_ctx, ctx->V);
+    hmac_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
+    hmac_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
+    hmac_finalise(ctx->hmac_ctx, ctx->V);
 
     // 3. If (provided_data = Null), then return K and V.
     if (data == NULL | datalen == 0)
@@ -38,16 +38,16 @@ void hmac_drbg_update(struct hmac_drbg_ctx *ctx, unsigned char *data, int datale
     }
 
     // 4. K = HMAC (K, V || 0x01 || provided_data).
-    hmac_sha256_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
-    hmac_sha256_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
-    hmac_sha256_append_ch(ctx->hmac_ctx, 1);
-    hmac_sha256_append(ctx->hmac_ctx, data, datalen);
-    hmac_sha256_finalise(ctx->hmac_ctx, ctx->K);
+    hmac_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
+    hmac_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
+    hmac_append_ch(ctx->hmac_ctx, 1);
+    hmac_append(ctx->hmac_ctx, data, datalen);
+    hmac_finalise(ctx->hmac_ctx, ctx->K);
 
     // 5. V = HMAC(K,V).
-    hmac_sha256_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
-    hmac_sha256_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
-    hmac_sha256_finalise(ctx->hmac_ctx, ctx->V);
+    hmac_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
+    hmac_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
+    hmac_finalise(ctx->hmac_ctx, ctx->V);
     
     // 6. Return (K, V).
 }
@@ -71,9 +71,9 @@ void hmac_drbg_generate(struct hmac_drbg_ctx *ctx, int nbits_requested, unsigned
     while (bits_avail < nbits_requested)
     {
         // 4.1 V = HMAC (Key, V).
-        hmac_sha256_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
-        hmac_sha256_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
-        hmac_sha256_finalise(ctx->hmac_ctx, ctx->V);
+        hmac_reset(ctx->hmac_ctx, ctx->K, ctx->outlen);
+        hmac_append(ctx->hmac_ctx, ctx->V, ctx->outlen);
+        hmac_finalise(ctx->hmac_ctx, ctx->V);
 
 //        hmac_calc(ctx->V, ctx->K, ctx->outlen, ctx->V, ctx->outlen);
         bits_avail += ctx->outlen*8;

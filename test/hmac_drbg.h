@@ -12,7 +12,7 @@ struct hmac_drbg_ctx
     int reseed_counter;
     int security_strength;
     int prediction_resistance;
-    struct hmac_sha256_ctx *hmac_ctx;
+    struct hmac_ctx *hmac_ctx;
 };
 
 struct hmac_drbg_ctx *hmac_drbg_instantiate(unsigned char *seed, int seedlen);
