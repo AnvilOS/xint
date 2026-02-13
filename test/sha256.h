@@ -11,53 +11,41 @@ typedef enum
     sha256,
     sha384,
     sha512,
+    sha512_224,
+    sha512_256,
 } hashfunc_id;
 
-struct sha256_ctx
+// XXX: instead of having the id in the ctx we should have
+// parms like digest_len, h reload values etc.
+struct sha_ctx
 {
-    uint32_t hv[8];
-    uint8_t buf[64];
+    hashfunc_id id;
+    int digest_len;
     uint8_t *pbuf;
-    size_t msg_len;
-};
-
-struct sha512_ctx
-{
-    uint64_t hv[8];
-    uint8_t buf[128];
-    uint8_t *pbuf;
-    size_t msg_len;
+    int buf_len;
+    const void *phv_reload;
+    void (*process_chunk)(struct sha_ctx *ctx, const uint8_t *pbuf);
+    unsigned long msg_len;
+    int size_size;
+    uint8_t *buf;
+    void *phv;
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
-struct sha256_ctx *sha256_new(void);
-void sha224_reset(struct sha256_ctx *ctx);
-void sha256_reset(struct sha256_ctx *ctx);
-void sha256_append(struct sha256_ctx *ctx, const uint8_t *msg, size_t n);
-void sha256_append_ch(struct sha256_ctx *ctx, uint8_t ch);
-void sha224_finalise(struct sha256_ctx *ctx, uint8_t digest[28]);
-void sha256_finalise(struct sha256_ctx *ctx, uint8_t digest[32]);
-void sha256_delete(struct sha256_ctx *ctx);
+size_t sha_mem_required(hashfunc_id id);
+void sha_ctx_init(struct sha_ctx *ctx, hashfunc_id id);
+struct sha_ctx *sha_new(hashfunc_id id);
+void sha_reset(struct sha_ctx *ctx);
+void sha_append(struct sha_ctx *ctx, const uint8_t *msg, size_t n);
+void sha_append_ch(struct sha_ctx *ctx, uint8_t ch);
+void sha_finalise(struct sha_ctx *ctx, uint8_t digest[32]);
+void sha_delete(struct sha_ctx *ctx);
 
 void sha224_calc(uint8_t digest[28], const uint8_t *src, size_t n_bytes);
 void sha256_calc(uint8_t digest[32], const uint8_t *src, size_t n_bytes);
-
-struct sha512_ctx *sha512_new(void);
-void sha384_reset(struct sha512_ctx *ctx);
-void sha512_reset(struct sha512_ctx *ctx);
-void sha512_224_reset(struct sha512_ctx *ctx);
-void sha512_256_reset(struct sha512_ctx *ctx);
-void sha512_append(struct sha512_ctx *ctx, const uint8_t *msg, size_t n);
-void sha512_append_ch(struct sha512_ctx *ctx, uint8_t ch);
-void sha384_finalise(struct sha512_ctx *ctx, uint8_t digest[48]);
-void sha512_finalise(struct sha512_ctx *ctx, uint8_t digest[64]);
-void sha512_224_finalise(struct sha512_ctx *ctx, uint8_t digest[64]);
-void sha512_256_finalise(struct sha512_ctx *ctx, uint8_t digest[64]);
-void sha512_delete(struct sha512_ctx *ctx);
-
 void sha384_calc(uint8_t digest[48], const uint8_t *src, size_t n_bytes);
 void sha512_calc(uint8_t digest[64], const uint8_t *src, size_t n_bytes);
 void sha512_224_calc(uint8_t digest[28], const uint8_t *src, size_t n_bytes);

@@ -149,6 +149,42 @@ TEST(ecc, sha)
     END_TEST(ecc);
 }
 
+TEST(ecc, sha_monte)
+{
+    char *seed_hex = "6d1e72ad03ddeb5de891e572e2396f8da015d899ef0e79503152d6010a3fe691";
+    long seed_len = strlen(seed_hex)/2;
+    unsigned char *seed = hex2bin(seed_hex);
+    uint8_t md[3][seed_len];
+    uint8_t digest[seed_len];
+
+    for (int j=0; j<100; ++j)
+    {
+        uint8_t concat[3*seed_len];
+        memcpy(md[0], seed, seed_len);
+        memcpy(md[1], seed, seed_len);
+        memcpy(md[2], seed, seed_len);
+        for (int i=3; i<1003; ++i)
+        {
+            memcpy(concat, md[0], seed_len);
+            memcpy(concat+seed_len, md[1], seed_len);
+            memcpy(concat+2*seed_len, md[2], seed_len);
+            sha256_calc(digest, concat, 3*seed_len);
+            memcpy(md[0], md[1], seed_len);
+            memcpy(md[1], md[2], seed_len);
+            memcpy(md[2], digest, seed_len);
+        }
+        memcpy(seed, digest, seed_len);
+   }
+   
+    char *expected_hex = "6a912ba4188391a78e6f13d88ed2d14e13afce9db6f7dcbf4a48c24f3db02778";
+    
+    unsigned char *expected = hex2bin(expected_hex);
+    
+    ASSERT_EQ(0, memcmp(expected, digest, seed_len));
+
+    END_TEST(ecc);
+}
+
 TEST(ecc, hmac1)
 {
     // Test vector from Wikipedia
@@ -1205,6 +1241,7 @@ TEST(ecc, nist_ver_512)
 int test_ecc(void)
 {
     CALL_TEST(ecc, sha);
+    CALL_TEST(ecc, sha_monte);
     CALL_TEST(ecc, hmac1);
     CALL_TEST(ecc, hmac2);
     CALL_TEST(ecc, hmac_drbg);

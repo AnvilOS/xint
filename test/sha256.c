@@ -3,47 +3,46 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 
-struct sha256_ctx *sha256_new(void)
+static void sha256_process_chunk(struct sha_ctx *ctx, const uint8_t *pbuf);
+static void sha512_process_chunk(struct sha_ctx *ctx, const uint8_t *pbuf);
+
+static const uint32_t hv_224[] =
 {
-    struct sha256_ctx *ctx = (struct sha256_ctx *)malloc(sizeof(struct sha256_ctx));
-    sha256_reset(ctx);
-    return ctx;
-}
+    0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4
+};
 
-void sha224_reset(struct sha256_ctx *ctx)
+static const uint32_t hv_256[] =
 {
-    // Initialise hash values
-    ctx->hv[0] = 0xc1059ed8;
-    ctx->hv[1] = 0x367cd507;
-    ctx->hv[2] = 0x3070dd17;
-    ctx->hv[3] = 0xf70e5939;
-    ctx->hv[4] = 0xffc00b31;
-    ctx->hv[5] = 0x68581511;
-    ctx->hv[6] = 0x64f98fa7;
-    ctx->hv[7] = 0xbefa4fa4;
-    // Initialise buffer variables
-    ctx->pbuf = ctx->buf;
-    ctx->msg_len = 0;
-}
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+};
 
-void sha256_reset(struct sha256_ctx *ctx)
+static const uint64_t hv_384[] =
+{ 
+    0xcbbb9d5dc1059ed8, 0x629a292a367cd507, 0x9159015a3070dd17, 0x152fecd8f70e5939,
+    0x67332667ffc00b31, 0x8eb44a8768581511, 0xdb0c2e0d64f98fa7, 0x47b5481dbefa4fa4
+};
+
+static const uint64_t hv_512[] =
 {
-    // Initialise hash values
-    ctx->hv[0] = 0x6a09e667;
-    ctx->hv[1] = 0xbb67ae85;
-    ctx->hv[2] = 0x3c6ef372;
-    ctx->hv[3] = 0xa54ff53a;
-    ctx->hv[4] = 0x510e527f;
-    ctx->hv[5] = 0x9b05688c;
-    ctx->hv[6] = 0x1f83d9ab;
-    ctx->hv[7] = 0x5be0cd19;
-    // Initialise buffer variables
-    ctx->pbuf = ctx->buf;
-    ctx->msg_len = 0;
-}
+    0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+    0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
+};
 
-// The array of round constants is fixed
+static const uint64_t hv_512_224[] =
+{
+    0x8c3d37c819544da2, 0x73e1996689dcd4d6, 0x1dfab7ae32ff9c82, 0x679dd514582f9fcf,
+    0x0f6d2b697bd44da8, 0x77e36f7304C48942, 0x3f9d85a86a1d36C8, 0x1112e6ad91d692a1
+};
+
+static const uint64_t hv_512_256[] =
+{
+    0x22312194fc2bf72c, 0x9f555fa3c84c64c2, 0x2393b86b6f53b151, 0x963877195940eabd,
+    0x96283ee2a88effe3, 0xbe5e1e2553863992, 0x2b0199fc2c85b8aa, 0x0eb72ddC81c52ca2
+};
+
 static const uint32_t k32[] =
 {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -56,244 +55,6 @@ static const uint32_t k32[] =
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-#define byte_swap32(x) ((x)[0]<< 24|(x)[1]<<16|(x)[2]<<8|(x)[3])
-#define rightrotate32(x, n) (((x)>>(n))|((x)<<(32-(n))))
-
-void sha256_process_chunk(struct sha256_ctx *ctx)
-{
-    // Instead of pre-calculating the full 64 message schedule array we calculate
-    // each entry as required. Also we only keep the most recent 16 in a
-    // cirular fashion and use mod arithmetic to access them
-    uint32_t ww[16];
-#define w(a) ww[(a)&0xf]
-    
-    // Initialise working variables to current hash values
-    uint32_t a = ctx->hv[0];
-    uint32_t b = ctx->hv[1];
-    uint32_t c = ctx->hv[2];
-    uint32_t d = ctx->hv[3];
-    uint32_t e = ctx->hv[4];
-    uint32_t f = ctx->hv[5];
-    uint32_t g = ctx->hv[6];
-    uint32_t h = ctx->hv[7];
-    
-    for (int i=0; i<64; ++i)
-    {
-        if (i < 16)
-        {
-            w(i) = byte_swap32(&ctx->buf[4*i]);
-        }
-        else
-        {
-            uint32_t s0 = rightrotate32(w(i-15), 7) ^ rightrotate32(w(i-15), 18) ^ (w(i-15) >> 3);
-            uint32_t s1 = rightrotate32(w(i-2), 17) ^ rightrotate32(w(i-2), 19) ^ (w(i-2) >> 10);
-            w(i) = w(i-16) + s0 + w(i-7) + s1;
-        }
-        uint32_t S1 = rightrotate32(e, 6) ^ rightrotate32(e, 11) ^ rightrotate32(e, 25);
-        uint32_t ch = (e & f) ^ (~e & g);
-        uint32_t temp1 = h + S1 + ch + k32[i] + w(i);
-        uint32_t S0 = rightrotate32(a, 2) ^ rightrotate32(a, 13) ^ rightrotate32(a, 22);
-        uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
-        uint32_t temp2 = S0 + maj;
-        h = g;
-        g = f;
-        f = e;
-        e = d + temp1;
-        d = c;
-        c = b;
-        b = a;
-        a = temp1 + temp2;
-    }
-
-    ctx->hv[0] += a;
-    ctx->hv[1] += b;
-    ctx->hv[2] += c;
-    ctx->hv[3] += d;
-    ctx->hv[4] += e;
-    ctx->hv[5] += f;
-    ctx->hv[6] += g;
-    ctx->hv[7] += h;
-}
-
-void sha256_append(struct sha256_ctx *ctx, const uint8_t *msg, size_t n)
-{
-    const uint8_t *p = msg;
-    while (n--)
-    {
-        *ctx->pbuf++ = *p++;
-        ++ctx->msg_len;
-        if ((ctx->msg_len % 64) == 0)
-        {
-            sha256_process_chunk(ctx);
-            ctx->pbuf = ctx->buf;
-        }
-    }
-}
-
-void sha256_append_ch(struct sha256_ctx *ctx, uint8_t ch)
-{
-    sha256_append(ctx, &ch, 1);
-}
-
-void sha224_finalise(struct sha256_ctx *ctx, uint8_t digest[28])
-{
-    uint8_t *ptr = (uint8_t*)digest;
-    
-    uint64_t L = ctx->msg_len * 8;
-
-    // append a single 1 bit
-    sha256_append_ch(ctx, 0x80);
-
-    // append k '0' bits where k takes us up to 8 octets before the buf is full
-    while ((ctx->msg_len % 64) != 56)
-    {
-        sha256_append_ch(ctx, 0x00);
-    }
-    
-    // append L - the message size in bits
-    for (int i=0; i<8; ++i)
-    {
-        sha256_append_ch(ctx, L >> 56);
-        L <<= 8;
-    }
-    
-    // Produce the digest
-    for (int i=0; i<7; ++i)
-    {
-        *ptr++ = ctx->hv[i] >> 24 & 0xff;
-        *ptr++ = ctx->hv[i] >> 16 & 0xff;
-        *ptr++ = ctx->hv[i] >> 8 & 0xff;
-        *ptr++ = ctx->hv[i] >> 0 & 0xff;
-    }
-}
-
-void sha256_finalise(struct sha256_ctx *ctx, uint8_t digest[32])
-{
-    uint8_t *ptr = (uint8_t*)digest;
-    
-    uint64_t L = ctx->msg_len * 8;
-
-    // append a single 1 bit
-    sha256_append_ch(ctx, 0x80);
-
-    // append k '0' bits where k takes us up to 8 octets before the buf is full
-    while ((ctx->msg_len % 64) != 56)
-    {
-        sha256_append_ch(ctx, 0x00);
-    }
-    
-    // append L - the message size in bits
-    for (int i=0; i<8; ++i)
-    {
-        sha256_append_ch(ctx, L >> 56);
-        L <<= 8;
-    }
-    
-    // Produce the digest
-    for (int i=0; i<8; ++i)
-    {
-        *ptr++ = ctx->hv[i] >> 24 & 0xff;
-        *ptr++ = ctx->hv[i] >> 16 & 0xff;
-        *ptr++ = ctx->hv[i] >> 8 & 0xff;
-        *ptr++ = ctx->hv[i] >> 0 & 0xff;
-    }
-}
-
-void sha256_delete(struct sha256_ctx *ctx)
-{
-    free(ctx);
-}
-
-void sha224_calc(uint8_t digest[28], const uint8_t *src, size_t n_bytes)
-{
-    struct sha256_ctx *ctx = sha256_new();
-    sha224_reset(ctx);
-    sha256_append(ctx, (const uint8_t*)src, n_bytes);
-    sha224_finalise(ctx, digest);
-    sha256_delete(ctx);
-}
-
-void sha256_calc(uint8_t digest[32], const uint8_t *src, size_t n_bytes)
-{
-    struct sha256_ctx *ctx = sha256_new();
-    sha256_reset(ctx);
-    sha256_append(ctx, (const uint8_t*)src, n_bytes);
-    sha256_finalise(ctx, digest);
-    sha256_delete(ctx);
-}
-
-struct sha512_ctx *sha512_new(void)
-{
-    struct sha512_ctx *ctx = (struct sha512_ctx *)malloc(sizeof(struct sha512_ctx));
-    sha512_reset(ctx);
-    return ctx;
-}
-
-void sha384_reset(struct sha512_ctx *ctx)
-{
-    // Initialise hash values
-    ctx->hv[0] = 0xcbbb9d5dc1059ed8;
-    ctx->hv[1] = 0x629a292a367cd507;
-    ctx->hv[2] = 0x9159015a3070dd17;
-    ctx->hv[3] = 0x152fecd8f70e5939;
-    ctx->hv[4] = 0x67332667ffc00b31;
-    ctx->hv[5] = 0x8eb44a8768581511;
-    ctx->hv[6] = 0xdb0c2e0d64f98fa7;
-    ctx->hv[7] = 0x47b5481dbefa4fa4;
-    // Initialise buffer variables
-    ctx->pbuf = ctx->buf;
-    ctx->msg_len = 0;
-}
-
-void sha512_reset(struct sha512_ctx *ctx)
-{
-    // Initialise hash values
-    ctx->hv[0] = 0x6a09e667f3bcc908;
-    ctx->hv[1] = 0xbb67ae8584caa73b;
-    ctx->hv[2] = 0x3c6ef372fe94f82b;
-    ctx->hv[3] = 0xa54ff53a5f1d36f1;
-    ctx->hv[4] = 0x510e527fade682d1;
-    ctx->hv[5] = 0x9b05688c2b3e6c1f;
-    ctx->hv[6] = 0x1f83d9abfb41bd6b;
-    ctx->hv[7] = 0x5be0cd19137e2179;
-    // Initialise buffer variables
-    ctx->pbuf = ctx->buf;
-    ctx->msg_len = 0;
-}
-
-void sha512_224_reset(struct sha512_ctx *ctx)
-{
-    // Initialise hash values
-    ctx->hv[0] = 0x8c3d37c819544da2;
-    ctx->hv[1] = 0x73e1996689dcd4d6;
-    ctx->hv[2] = 0x1dfab7ae32ff9c82;
-    ctx->hv[3] = 0x679dd514582f9fcf;
-    ctx->hv[4] = 0x0f6d2b697bd44da8;
-    ctx->hv[5] = 0x77e36f7304C48942;
-    ctx->hv[6] = 0x3f9d85a86a1d36C8;
-    ctx->hv[7] = 0x1112e6ad91d692a1;
-    // Initialise buffer variables
-    ctx->pbuf = ctx->buf;
-    ctx->msg_len = 0;
-}
-
-void sha512_256_reset(struct sha512_ctx *ctx)
-{
-    // Initialise hash values
-    ctx->hv[0] = 0x22312194fc2bf72c;
-    ctx->hv[1] = 0x9f555fa3c84c64c2;
-    ctx->hv[2] = 0x2393b86b6f53b151;
-    ctx->hv[3] = 0x963877195940eabd;
-    ctx->hv[4] = 0x96283ee2a88effe3;
-    ctx->hv[5] = 0xbe5e1e2553863992;
-    ctx->hv[6] = 0x2b0199fc2c85b8aa;
-    ctx->hv[7] = 0x0eb72ddC81c52ca2;
-    // Initialise buffer variables
-    ctx->pbuf = ctx->buf;
-    ctx->msg_len = 0;
-}
-
-// The array of round constants is fixed
 static const uint64_t k64[] =
 {
     0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
@@ -318,6 +79,291 @@ static const uint64_t k64[] =
     0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817
 };
 
+size_t sha_mem_required(hashfunc_id id)
+{
+    size_t req_mem = 0;
+    switch (id)
+    {
+        case sha224:
+        case sha256:
+            req_mem = sizeof(struct sha_ctx) + sizeof(hv_256) + 64;
+            break;
+            
+        case sha384:
+        case sha512:
+        case sha512_224:
+        case sha512_256:
+            req_mem = sizeof(struct sha_ctx) + sizeof(hv_512) + 128;
+            break;
+    }
+    return req_mem;
+}
+
+void sha_ctx_init(struct sha_ctx *ctx, hashfunc_id id)
+{
+    switch (id)
+    {
+        case sha224:
+        case sha256:
+            ctx->phv = (uint8_t *)(ctx+1);
+            ctx->buf = ctx->phv + sizeof(hv_256);
+            ctx->process_chunk = sha256_process_chunk;
+            ctx->buf_len = 64;
+            ctx->size_size = 8;
+            ctx->id = id;
+            break;
+            
+        case sha384:
+        case sha512:
+        case sha512_224:
+        case sha512_256:
+            ctx->phv = (uint8_t *)(ctx+1);
+            ctx->buf = ctx->phv + sizeof(hv_512);
+            ctx->process_chunk = sha512_process_chunk;
+            ctx->buf_len = 128;
+            ctx->size_size = 16;
+            ctx->id = id;
+            break;
+            
+    }
+    switch (id)
+    {
+        case sha224:
+            ctx->phv_reload = hv_224;
+            ctx->digest_len = 28;
+            break;
+
+        case sha256:
+            ctx->phv_reload = hv_256;
+            ctx->digest_len = 32;
+            break;
+            
+        case sha384:
+            ctx->phv_reload = hv_384;
+            ctx->digest_len = 48;
+            break;
+            
+        case sha512:
+            ctx->phv_reload = hv_512;
+            ctx->digest_len = 64;
+            break;
+            
+        case sha512_224:
+            ctx->phv_reload = hv_512_224;
+            ctx->digest_len = 28;
+            break;
+            
+        case sha512_256:
+            ctx->phv_reload = hv_512_256;
+            ctx->digest_len = 32;
+            break;
+            
+        default:
+            assert(0);
+            break;
+    }
+    sha_reset(ctx);
+}
+
+struct sha_ctx *sha_new(hashfunc_id id)
+{
+    struct sha_ctx *ctx = (struct sha_ctx *)malloc(sha_mem_required(id));
+    sha_ctx_init(ctx, id);
+    return ctx;
+}
+
+void sha_reset(struct sha_ctx *ctx)
+{
+    // Initialise hash values
+    memcpy(ctx->phv, ctx->phv_reload, ctx->buf_len/2);
+    // Initialise buffer variables
+    ctx->pbuf = ctx->buf;
+    ctx->msg_len = 0;
+}
+
+void sha_append(struct sha_ctx *ctx, const uint8_t *msg, size_t n)
+{
+    if (n == 0)
+    {
+        return;
+    }
+    ctx->msg_len += n;
+    if (ctx->pbuf != ctx->buf)
+    {
+        // We already have some bytes so try to fill the buf
+        long space = ctx->buf_len - (ctx->pbuf - ctx->buf);
+        long copylen = space < n ? space : n;
+        memcpy(ctx->pbuf, msg, copylen);
+        n -= copylen;
+        msg += copylen;
+        ctx->pbuf += copylen;
+        if (ctx->pbuf == ctx->buf + ctx->buf_len)
+        {
+            ctx->process_chunk(ctx, ctx->buf);
+            ctx->pbuf = ctx->buf;
+        }
+    }
+    // At this point either we ran out of msg bytes
+    // or the buffer filled and we flushed it
+    assert(n == 0 || ctx->pbuf == ctx->buf);
+    while (n >= ctx->buf_len)
+    {
+        // Avoid memcpy
+        ctx->process_chunk(ctx, msg);
+        msg += ctx->buf_len;
+        n -= ctx->buf_len;
+    }
+    if (n)
+    {
+        // Add it to the buf
+        assert(ctx->pbuf == ctx->buf);
+        memcpy(ctx->buf, msg, n);
+        ctx->pbuf += n;
+    }
+}
+
+void sha_append_ch(struct sha_ctx *ctx, uint8_t ch)
+{
+    sha_append(ctx, &ch, 1);
+}
+
+void sha_finalise(struct sha_ctx *ctx, uint8_t digest[64])
+{
+    // Get the length before we start padding
+    uint64_t L = ctx->msg_len * 8;
+
+    // append a single 1 bit
+    sha_append_ch(ctx, 0x80);
+
+    // append k '0' bits where k takes us up to size_size octets before the buf is full
+    size_t k = ctx->buf_len - (ctx->pbuf - ctx->buf);
+    if (k < ctx->size_size)
+    {
+        k += ctx->buf_len;
+    }
+    k -= ctx->size_size;
+    for (size_t i = 0; i < k; ++i)
+    {
+        sha_append_ch(ctx, 0x00);
+    }
+    
+    // append L - the message size in bits
+    if (ctx->size_size == 16)
+    {
+        for (int i=0; i<8; ++i)
+        {
+            sha_append_ch(ctx, 0);
+        }
+    }
+    for (int i=0; i<8; ++i)
+    {
+        sha_append_ch(ctx, L >> 56);
+        L <<= 8;
+    }
+    
+    // Produce the digest
+    uint8_t *ptr = (uint8_t*)digest;
+    if (ctx->buf_len == 128)
+    {
+        uint64_t *hv = (uint64_t *)ctx->phv;
+        for (int i=0; i<8; ++i)
+        {
+            *ptr++ = hv[i] >> 56 & 0xff;
+            *ptr++ = hv[i] >> 48 & 0xff;
+            *ptr++ = hv[i] >> 40 & 0xff;
+            *ptr++ = hv[i] >> 32 & 0xff;
+            if (ptr - digest >= ctx->digest_len)
+            {
+                break;
+            }
+            *ptr++ = hv[i] >> 24 & 0xff;
+            *ptr++ = hv[i] >> 16 & 0xff;
+            *ptr++ = hv[i] >> 8 & 0xff;
+            *ptr++ = hv[i] >> 0 & 0xff;
+            if (ptr - digest >= ctx->digest_len)
+            {
+                break;
+            }
+        }
+    }
+    else
+    {
+        uint32_t *hv = (uint32_t *)ctx->phv;
+        for (int i=0; i<ctx->digest_len/4; ++i)
+        {
+            *ptr++ = hv[i] >> 24 & 0xff;
+            *ptr++ = hv[i] >> 16 & 0xff;
+            *ptr++ = hv[i] >> 8 & 0xff;
+            *ptr++ = hv[i] >> 0 & 0xff;
+        }
+    }
+}
+
+void sha_delete(struct sha_ctx *ctx)
+{
+    free(ctx);
+}
+
+#define byte_swap32(x) ((x)[0]<< 24|(x)[1]<<16|(x)[2]<<8|(x)[3])
+#define rightrotate32(x, n) (((x)>>(n))|((x)<<(32-(n))))
+
+static void sha256_process_chunk(struct sha_ctx *ctx, const uint8_t *pbuf)
+{
+    // Instead of pre-calculating the full 64 message schedule array we calculate
+    // each entry as required. Also we only keep the most recent 16 in a
+    // cirular fashion and use mod arithmetic to access them
+    uint32_t ww[16];
+#define w(a) ww[(a)&0xf]
+    
+    // Initialise working variables to current hash values
+    uint32_t *hv = (uint32_t *)ctx->phv;
+    uint32_t a = hv[0];
+    uint32_t b = hv[1];
+    uint32_t c = hv[2];
+    uint32_t d = hv[3];
+    uint32_t e = hv[4];
+    uint32_t f = hv[5];
+    uint32_t g = hv[6];
+    uint32_t h = hv[7];
+    
+    for (int i=0; i<64; ++i)
+    {
+        if (i < 16)
+        {
+            w(i) = byte_swap32(&pbuf[4*i]);
+        }
+        else
+        {
+            uint32_t s0 = rightrotate32(w(i-15), 7) ^ rightrotate32(w(i-15), 18) ^ (w(i-15) >> 3);
+            uint32_t s1 = rightrotate32(w(i-2), 17) ^ rightrotate32(w(i-2), 19) ^ (w(i-2) >> 10);
+            w(i) = w(i-16) + s0 + w(i-7) + s1;
+        }
+        uint32_t S1 = rightrotate32(e, 6) ^ rightrotate32(e, 11) ^ rightrotate32(e, 25);
+        uint32_t ch = (e & f) ^ (~e & g);
+        uint32_t temp1 = h + S1 + ch + k32[i] + w(i);
+        uint32_t S0 = rightrotate32(a, 2) ^ rightrotate32(a, 13) ^ rightrotate32(a, 22);
+        uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
+        uint32_t temp2 = S0 + maj;
+        h = g;
+        g = f;
+        f = e;
+        e = d + temp1;
+        d = c;
+        c = b;
+        b = a;
+        a = temp1 + temp2;
+    }
+
+    hv[0] += a;
+    hv[1] += b;
+    hv[2] += c;
+    hv[3] += d;
+    hv[4] += e;
+    hv[5] += f;
+    hv[6] += g;
+    hv[7] += h;
+}
+
 #define byte_swap64(x) (          \
     ((uint64_t)((x)[0])<<56) |  \
     ((uint64_t)((x)[1])<<48) |  \
@@ -331,7 +377,7 @@ static const uint64_t k64[] =
 
 #define rightrotate64(x, n) (((x)>>(n))|((x)<<(64-(n))))
 
-void sha512_process_chunk(struct sha512_ctx *ctx)
+static void sha512_process_chunk(struct sha_ctx *ctx, const uint8_t *pbuf)
 {
     // Instead of pre-calculating the full 64 message schedule array we calculate
     // each entry as required. Also we only keep the most recent 16 in a
@@ -340,20 +386,21 @@ void sha512_process_chunk(struct sha512_ctx *ctx)
     #define w(a) ww[(a)&0xf]
     
     // Initialise working variables to current hash values
-    uint64_t a = ctx->hv[0];
-    uint64_t b = ctx->hv[1];
-    uint64_t c = ctx->hv[2];
-    uint64_t d = ctx->hv[3];
-    uint64_t e = ctx->hv[4];
-    uint64_t f = ctx->hv[5];
-    uint64_t g = ctx->hv[6];
-    uint64_t h = ctx->hv[7];
+    uint64_t *hv = (uint64_t *)ctx->phv;
+    uint64_t a = hv[0];
+    uint64_t b = hv[1];
+    uint64_t c = hv[2];
+    uint64_t d = hv[3];
+    uint64_t e = hv[4];
+    uint64_t f = hv[5];
+    uint64_t g = hv[6];
+    uint64_t h = hv[7];
     
     for (int i=0; i<80; ++i)
     {
         if (i < 16)
         {
-            w(i) = byte_swap64(&ctx->buf[8*i]);
+            w(i) = byte_swap64(&pbuf[8*i]);
         }
         else
         {
@@ -377,237 +424,67 @@ void sha512_process_chunk(struct sha512_ctx *ctx)
         a = temp1 + temp2;
     }
 
-    ctx->hv[0] += a;
-    ctx->hv[1] += b;
-    ctx->hv[2] += c;
-    ctx->hv[3] += d;
-    ctx->hv[4] += e;
-    ctx->hv[5] += f;
-    ctx->hv[6] += g;
-    ctx->hv[7] += h;
+    hv[0] += a;
+    hv[1] += b;
+    hv[2] += c;
+    hv[3] += d;
+    hv[4] += e;
+    hv[5] += f;
+    hv[6] += g;
+    hv[7] += h;
 }
 
-void sha512_append(struct sha512_ctx *ctx, const uint8_t *msg, size_t n)
+void sha224_calc(uint8_t digest[28], const uint8_t *src, size_t n_bytes)
 {
-    const uint8_t *p = msg;
-    while (n--)
-    {
-        *ctx->pbuf++ = *p++;
-        ++ctx->msg_len;
-        if ((ctx->msg_len % 128) == 0)
-        {
-            sha512_process_chunk(ctx);
-            ctx->pbuf = ctx->buf;
-        }
-    }
+    struct sha_ctx *ctx = sha_new(sha224);
+    sha_reset(ctx);
+    sha_append(ctx, (const uint8_t*)src, n_bytes);
+    sha_finalise(ctx, digest);
+    sha_delete(ctx);
 }
 
-void sha512_append_ch(struct sha512_ctx *ctx, uint8_t ch)
+void sha256_calc(uint8_t digest[32], const uint8_t *src, size_t n_bytes)
 {
-    sha512_append(ctx, &ch, 1);
-}
-
-void sha384_finalise(struct sha512_ctx *ctx, uint8_t digest[48])
-{
-    uint8_t *ptr = (uint8_t*)digest;
-    
-    uint64_t L = ctx->msg_len * 8;
-
-    // append a single 1 bit
-    sha512_append_ch(ctx, 0x80);
-
-    // append k '0' bits where k takes us up to 16 octets before the buf is full
-    while ((ctx->msg_len % 128) != 112)
-    {
-        sha512_append_ch(ctx, 0x00);
-    }
-    
-    // append L - the message size in bits
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, 0);
-    }
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, L >> 56);
-        L <<= 8;
-    }
-    
-    // Produce the digest
-    for (int i=0; i<6; ++i)
-    {
-        *ptr++ = ctx->hv[i] >> 56 & 0xff;
-        *ptr++ = ctx->hv[i] >> 48 & 0xff;
-        *ptr++ = ctx->hv[i] >> 40 & 0xff;
-        *ptr++ = ctx->hv[i] >> 32 & 0xff;
-        *ptr++ = ctx->hv[i] >> 24 & 0xff;
-        *ptr++ = ctx->hv[i] >> 16 & 0xff;
-        *ptr++ = ctx->hv[i] >> 8 & 0xff;
-        *ptr++ = ctx->hv[i] >> 0 & 0xff;
-    }
-}
-
-void sha512_finalise(struct sha512_ctx *ctx, uint8_t digest[64])
-{
-    uint8_t *ptr = (uint8_t*)digest;
-    
-    uint64_t L = ctx->msg_len * 8;
-
-    // append a single 1 bit
-    sha512_append_ch(ctx, 0x80);
-
-    // append k '0' bits where k takes us up to 8 octets before the buf is full
-    while ((ctx->msg_len % 128) != 112)
-    {
-        sha512_append_ch(ctx, 0x00);
-    }
-    
-    // append L - the message size in bits
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, 0);
-    }
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, L >> 56);
-        L <<= 8;
-    }
-    
-    // Produce the digest
-    for (int i=0; i<8; ++i)
-    {
-        *ptr++ = ctx->hv[i] >> 56 & 0xff;
-        *ptr++ = ctx->hv[i] >> 48 & 0xff;
-        *ptr++ = ctx->hv[i] >> 40 & 0xff;
-        *ptr++ = ctx->hv[i] >> 32 & 0xff;
-        *ptr++ = ctx->hv[i] >> 24 & 0xff;
-        *ptr++ = ctx->hv[i] >> 16 & 0xff;
-        *ptr++ = ctx->hv[i] >> 8 & 0xff;
-        *ptr++ = ctx->hv[i] >> 0 & 0xff;
-    }
-}
-
-void sha512_224_finalise(struct sha512_ctx *ctx, uint8_t digest[28])
-{
-    uint8_t *ptr = (uint8_t*)digest;
-    
-    uint64_t L = ctx->msg_len * 8;
-
-    // append a single 1 bit
-    sha512_append_ch(ctx, 0x80);
-
-    // append k '0' bits where k takes us up to 8 octets before the buf is full
-    while ((ctx->msg_len % 128) != 112)
-    {
-        sha512_append_ch(ctx, 0x00);
-    }
-    
-    // append L - the message size in bits
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, 0);
-    }
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, L >> 56);
-        L <<= 8;
-    }
-    
-    // Produce the digest
-    for (int i=0; i<3; ++i)
-    {
-        *ptr++ = ctx->hv[i] >> 56 & 0xff;
-        *ptr++ = ctx->hv[i] >> 48 & 0xff;
-        *ptr++ = ctx->hv[i] >> 40 & 0xff;
-        *ptr++ = ctx->hv[i] >> 32 & 0xff;
-        *ptr++ = ctx->hv[i] >> 24 & 0xff;
-        *ptr++ = ctx->hv[i] >> 16 & 0xff;
-        *ptr++ = ctx->hv[i] >> 8 & 0xff;
-        *ptr++ = ctx->hv[i] >> 0 & 0xff;
-    }
-    *ptr++ = ctx->hv[3] >> 56 & 0xff;
-    *ptr++ = ctx->hv[3] >> 48 & 0xff;
-    *ptr++ = ctx->hv[3] >> 40 & 0xff;
-    *ptr++ = ctx->hv[3] >> 32 & 0xff;
-}
-
-void sha512_256_finalise(struct sha512_ctx *ctx, uint8_t digest[32])
-{
-    uint8_t *ptr = (uint8_t*)digest;
-    
-    uint64_t L = ctx->msg_len * 8;
-
-    // append a single 1 bit
-    sha512_append_ch(ctx, 0x80);
-
-    // append k '0' bits where k takes us up to 8 octets before the buf is full
-    while ((ctx->msg_len % 128) != 112)
-    {
-        sha512_append_ch(ctx, 0x00);
-    }
-    
-    // append L - the message size in bits
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, 0);
-    }
-    for (int i=0; i<8; ++i)
-    {
-        sha512_append_ch(ctx, L >> 56);
-        L <<= 8;
-    }
-    
-    // Produce the digest
-    for (int i=0; i<4; ++i)
-    {
-        *ptr++ = ctx->hv[i] >> 56 & 0xff;
-        *ptr++ = ctx->hv[i] >> 48 & 0xff;
-        *ptr++ = ctx->hv[i] >> 40 & 0xff;
-        *ptr++ = ctx->hv[i] >> 32 & 0xff;
-        *ptr++ = ctx->hv[i] >> 24 & 0xff;
-        *ptr++ = ctx->hv[i] >> 16 & 0xff;
-        *ptr++ = ctx->hv[i] >> 8 & 0xff;
-        *ptr++ = ctx->hv[i] >> 0 & 0xff;
-    }
-}
-
-void sha512_delete(struct sha512_ctx *ctx)
-{
-    free(ctx);
+    struct sha_ctx *ctx = sha_new(sha256);
+    sha_reset(ctx);
+    sha_append(ctx, (const uint8_t*)src, n_bytes);
+    sha_append(ctx, (const uint8_t*)src, 0);
+    sha_finalise(ctx, digest);
+    sha_delete(ctx);
 }
 
 void sha384_calc(uint8_t digest[48], const uint8_t *src, size_t n_bytes)
 {
-    struct sha512_ctx *ctx = sha512_new();
-    sha384_reset(ctx);
-    sha512_append(ctx, (const uint8_t*)src, n_bytes);
-    sha384_finalise(ctx, digest);
-    sha512_delete(ctx);
+    struct sha_ctx *ctx = sha_new(sha384);
+    sha_reset(ctx);
+    sha_append(ctx, (const uint8_t*)src, n_bytes);
+    sha_finalise(ctx, digest);
+    sha_delete(ctx);
 }
 
 void sha512_calc(uint8_t digest[64], const uint8_t *src, size_t n_bytes)
 {
-    struct sha512_ctx *ctx = sha512_new();
-    sha512_reset(ctx);
-    sha512_append(ctx, (const uint8_t*)src, n_bytes);
-    sha512_finalise(ctx, digest);
-    sha512_delete(ctx);
+    struct sha_ctx *ctx = sha_new(sha512);
+    sha_reset(ctx);
+    sha_append(ctx, (const uint8_t*)src, n_bytes);
+    sha_finalise(ctx, digest);
+    sha_delete(ctx);
 }
 
 void sha512_224_calc(uint8_t digest[28], const uint8_t *src, size_t n_bytes)
 {
-    struct sha512_ctx *ctx = sha512_new();
-    sha512_224_reset(ctx);
-    sha512_append(ctx, (const uint8_t*)src, n_bytes);
-    sha512_224_finalise(ctx, digest);
-    sha512_delete(ctx);
+    struct sha_ctx *ctx = sha_new(sha512_224);
+    sha_reset(ctx);
+    sha_append(ctx, (const uint8_t*)src, n_bytes);
+    sha_finalise(ctx, digest);
+    sha_delete(ctx);
 }
 
 void sha512_256_calc(uint8_t digest[32], const uint8_t *src, size_t n_bytes)
 {
-    struct sha512_ctx *ctx = sha512_new();
-    sha512_256_reset(ctx);
-    sha512_append(ctx, (const uint8_t*)src, n_bytes);
-    sha512_256_finalise(ctx, digest);
-    sha512_delete(ctx);
+    struct sha_ctx *ctx = sha_new(sha512_256);
+    sha_reset(ctx);
+    sha_append(ctx, (const uint8_t*)src, n_bytes);
+    sha_finalise(ctx, digest);
+    sha_delete(ctx);
 }

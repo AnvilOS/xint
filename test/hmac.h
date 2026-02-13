@@ -9,14 +9,15 @@
 
 struct hmac_sha256_ctx
 {
-    struct sha256_ctx *sha256_ctx;
-    uint8_t blk_len_key[64];
-    uint8_t o_key_pad[64];
-    uint8_t i_key_pad[64];
-    uint8_t int_digest[32];
+    struct sha_ctx *sha_ctx;
+    size_t block_len;
+    uint8_t *blk_len_key;
+    uint8_t *o_key_pad;
+    uint8_t *i_key_pad;
+    uint8_t *int_digest;
 };
 
-struct hmac_sha256_ctx *hmac_sha256_new(const uint8_t *key, size_t keylen);
+struct hmac_sha256_ctx *hmac_sha256_new(hashfunc_id id, const uint8_t *key, size_t keylen);
 void hmac_sha256_reset(struct hmac_sha256_ctx *ctx, const uint8_t *key, size_t keylen);
 void hmac_sha256_append(struct hmac_sha256_ctx *ctx, const uint8_t *msg, size_t n);
 void hmac_sha256_append_ch(struct hmac_sha256_ctx *ctx, uint8_t ch);

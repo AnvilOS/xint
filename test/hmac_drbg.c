@@ -7,7 +7,7 @@
 struct hmac_drbg_ctx *hmac_drbg_instantiate(unsigned char *seed, int seedlen)
 {
     struct hmac_drbg_ctx *ctx = (struct hmac_drbg_ctx *)malloc(sizeof(struct hmac_drbg_ctx));
-    ctx->hmac_ctx = hmac_sha256_new(seed, seedlen);
+    ctx->hmac_ctx = hmac_sha256_new(sha256, seed, seedlen);
     ctx->outlen = 32;
     memset(ctx->K, 0, ctx->outlen);
     memset(ctx->V, 1, ctx->outlen);
