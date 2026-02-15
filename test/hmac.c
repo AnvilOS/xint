@@ -81,6 +81,7 @@ void hmac_finalise(struct hmac_ctx *ctx, uint8_t *digest)
 
 void hmac_delete(struct hmac_ctx *ctx)
 {
+    // XXX: memset 0 here ???
     free(ctx);
 }
 

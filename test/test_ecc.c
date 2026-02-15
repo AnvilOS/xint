@@ -265,15 +265,21 @@ TEST(ecc, hmac_drbg)
     long seedlen = entropy_len + nonce_len;
     memcpy(seed, entropy, entropy_len);
     memcpy(seed+entropy_len, nonce, nonce_len);
-    struct hmac_drbg_ctx *drbg = hmac_drbg_instantiate(seed, seedlen);
+    struct hmac_drbg_ctx *drbg = hmac_drbg_instantiate(sha256, seed, seedlen);
 //    uint8_t block[32];
 //    hmac_calc(block, drbg->K, drbg->outlen, drbg->V, drbg->outlen);
 
+    unsigned char buf[128];
     
-    hmac_drbg_generate(drbg, 1024, NULL, 0);
-    hmac_drbg_generate(drbg, 1024, NULL, 0);
-    hmac_drbg_generate(drbg, 1024, NULL, 0);
-    hmac_drbg_generate(drbg, 1024, NULL, 0);
+    hmac_drbg_generate(drbg, buf, 1008, NULL, 0);
+    hmac_drbg_generate(drbg, buf, 1024, NULL, 0);
+    hmac_drbg_generate(drbg, buf, 1024, NULL, 0);
+    hmac_drbg_generate(drbg, buf, 1024, NULL, 0);
+    
+    
+    //e528e9abf2dece54d47c7e75e5fe302149f817ea9fb4bee6f4199697d04d5b89d54fbb978a15b5c443c9ec21036d2460b6f73ebad0dc2aba6e624abf07745bc107694bb7547bb0995f70de25d6b29e2d3011bb19d27676c07162c8b5ccde0668961df86803482cb37ed6d5c0bb8d50cf1f50d476aa0458bdaba806f48be9dcb8
+
+
 //    hmac_drbg_update(drbg, tmp_vec, entropy_len+nonce_len);
     //    xint_to_buf(seed, rolen, v_int);
     //    xint_to_buf(seed + rolen, rolen, h1_int);
